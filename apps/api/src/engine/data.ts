@@ -32,7 +32,7 @@ export type EngineData = {
 
 type Raw = Record<string, string>;
 
-function readTable(dataDir: string, name: string, columns: string[]): Raw[] {
+export function readTable(dataDir: string, name: string, columns: string[]): Raw[] {
   const file = join(dataDir, `${name}.csv`);
   if (!existsSync(file)) throw new Error(`engine: missing data file ${file}`);
   const rows: Raw[] = parse(readFileSync(file), { columns: true, skip_empty_lines: true, trim: true, cast: false });

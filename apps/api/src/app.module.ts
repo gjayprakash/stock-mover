@@ -11,6 +11,7 @@ import { StockModule } from './stock/stock.module';
 import { AuthModule } from './auth/auth.module';
 import { DriversModule } from './drivers/drivers.module';
 import { RequestsModule } from './requests/requests.module';
+import { ShipmentsModule } from './shipments/shipments.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { RequestsModule } from './requests/requests.module';
     StockModule,
     DriversModule, // drivers + phone pairing (#81)
     RequestsModule, // requests between stores (#79)
+    ShipmentsModule, // shipments, driver trips, pings (#82)
     AuthModule, // users + sessions; routes need sign-in only when AUTH_REQUIRED=true
   ],
   controllers: [HealthController],

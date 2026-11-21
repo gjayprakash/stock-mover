@@ -12,7 +12,7 @@ export function AssignDriver({ drivers, onAssign }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const id = useId();
-  const paired = (drivers ?? []).filter((d) => d.status === 'Paired');
+  const paired = (drivers ?? []).filter((d) => d.status === 'Paired' || d.status === 'PAIRED');
 
   if (!open) {
     return (

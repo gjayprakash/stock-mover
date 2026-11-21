@@ -181,4 +181,26 @@ export type TransferRequest = {
   days: number;                            // lead_times route days
   due_on: string | null;                   // approve date + days
   giver_on_hand: number; giver_cover_days_after: number | null;
+// ---- Shipments and driver trips (#82) ----
+export type ShipmentStatus = "approved" | "assigned" | "in_transit" | "delivered" | "received";
+/** One location ping from the driver's phone. `place` = nearest town from the bundled PIN table. */
+export type LocationPing = { place: string; lat: number; lng: number; taken_at: string };
+/** GET /api/shipments?dir=in|out → { store_id, shipments }. POST /api/shipments/:id/assign {driver_id} | /receive {qty_received} → Shipment. */
+export type Shipment = {
+  id: string; request_id: string;
+  sku_id: string; style_name: string; size: string; qty: number; value_mrp: number;
+  from_id: string; to_id: string; status: ShipmentStatus;
+  due_date: string;                        // YYYY-MM-DD = approved date (IST) + lead_times route days
+  lead_time_days: number;
+  driver: { id: string; name: string; phone_e164: string } | null;
+  requested_at: string; approved_at: string;
+  picked_up_at: string | null; delivered_at: string | null; received_at: string | null;
+  qty_received: number | null;
+  pings: LocationPing[];                   // newest first
+};
+/** GET /api/driver/trip (device cookie) → the driver's open trips, oldest first. */
+export type DriverTrip = {
+  id: string; status: "assigned" | "in_transit";
+  from_store_id: string; from_store_name: string; to_store_id: string; to_store_name: string;
+  pieces: number; manager_phone: string; last_ping_at: string | null;
 };

@@ -1,8 +1,8 @@
-import { clean, key, displayCategory, type CleanData, type DataFlag, type Locations } from './clean';
+import { clean, key, displayCategory, leadTime, type CleanData, type DataFlag, type Locations } from './clean';
 import { computeVelocity, type Basis, type Velocity } from './velocity';
 import type { EngineData } from './data';
 import { AS_OF, TARGET_COVER, DONOR_KEEP, WINDOW_DAYS, WAREHOUSE_ID } from './params';
-import { daysBetween } from './dates';
+import { addDays, daysBetween } from './dates';
 
 export type Position = {
   store_id: string;
@@ -48,11 +48,18 @@ export type Positions = {
 
 /** Pieces received after the snapshot (#23 Add stock). Applied on the next run. */
 export type Receipt = { location_id: string; sku_id: string; qty: number; received_on: string };
+/**
+ * App transfers (#79 requests, #82 shipments), applied on top of the snapshot like receipts (rule 3).
+ * Open (approved → delivered, not yet received): out of the giver's on_hand, in transit to the receiver,
+ * arriving approved_on + lead time. Received: out of the giver, qty_received on hand at the receiver.
+ */
+export type Transfer = { from: string; to: string; sku_id: string; qty: number; approved_on: string; qty_received: number | null };
 /** SKUs created by an upload (#23), not in items.csv. */
 export type ExtraItem = { sku_id: string; style_id: string; style_name: string; category: string; size: string; mrp: number };
 
 export function buildPositions(
   data: EngineData, locations: Locations | null = null, receipts: Receipt[] = [], extraItems: ExtraItem[] = [],
+  transfers: Transfer[] = [],
 ): Positions {
   const knownSku = new Set(data.items.map((i) => i.sku_id));
   for (const x of extraItems) {
@@ -72,6 +79,26 @@ export function buildPositions(
       row.oldest_stock_received_on = old && old < r.received_on ? old : r.received_on;
     } else {
       c.snapshot.push({ location_id: r.location_id, sku_id: r.sku_id, on_hand: r.qty, in_transit: 0, in_transit_arrives_on: null, oldest_stock_received_on: r.received_on });
+    }
+  }
+  const row = (loc: string, sku: string) => {
+    let r = c.snapshot.find((x) => x.location_id === loc && x.sku_id === sku);
+    if (!r) c.snapshot.push((r = { location_id: loc, sku_id: sku, on_hand: 0, in_transit: 0, in_transit_arrives_on: null, oldest_stock_received_on: null }));
+    return r;
+  };
+  const known = (loc: string) => loc === WAREHOUSE_ID || c.storeById.has(loc);
+  for (const t of transfers) {
+    if (!c.items.has(t.sku_id) || !known(t.from) || !c.storeById.has(t.to)) continue;
+    const giver = row(t.from, t.sku_id);
+    giver.on_hand = Math.max(0, giver.on_hand - t.qty);
+    const recv = row(t.to, t.sku_id);
+    if (t.qty_received !== null) {
+      if (recv.on_hand <= 0) recv.oldest_stock_received_on = t.approved_on;
+      recv.on_hand = Math.max(0, recv.on_hand) + t.qty_received;
+    } else {
+      const arrives = addDays(t.approved_on, leadTime(t.from, t.to, c.storeById, c.leadTimes));
+      recv.in_transit += t.qty;
+      if (!recv.in_transit_arrives_on || arrives < recv.in_transit_arrives_on) recv.in_transit_arrives_on = arrives;
     }
   }
   const snap = new Map<string, (typeof c.snapshot)[number]>();

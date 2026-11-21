@@ -1,6 +1,6 @@
 import type { HistoryFile, MovesFile } from '@sm/contract';
 import { loadData, loadLocations, type Store } from './data';
-import { buildPositions, type ExtraItem, type Receipt } from './position';
+import { buildPositions, type ExtraItem, type Receipt, type Transfer } from './position';
 import { generateMoves } from './moves';
 import { validate } from './validate';
 import { buildSummary, buildHistory, nextRunAt } from './summary';
@@ -18,15 +18,17 @@ export type EngineInput = {
   /** #23: committed stock receipts (Add stock) and the SKUs those uploads created. Applied from the next run. */
   receipts?: Receipt[];
   extraItems?: ExtraItem[];
+  /** #82: app transfers not in the snapshot (approved … received). Rule 3: open ones are in transit to the receiver. */
+  transfers?: Transfer[];
 };
 export type EngineOutput = { moves: MovesFile; history: HistoryFile };
 
 // Bump on any engine change that alters the move list: RunsService re-runs on boot when the latest list has another version.
-export const ENGINE_VERSION = '1.2';
+export const ENGINE_VERSION = '1.3';
 
 /** loadData → buildPositions → generateMoves → validate → summary. Throws (run FAILS) on any violation. */
 export function runEngine(input: EngineInput): EngineOutput {
-  const P = buildPositions(loadData(input.dataDir, input.extraStores), input.locations ?? loadLocations(input.dataDir), input.receipts, input.extraItems);
+  const P = buildPositions(loadData(input.dataDir, input.extraStores), input.locations ?? loadLocations(input.dataDir), input.receipts, input.extraItems, input.transfers);
   const gen = generateMoves(P);
   const checked = validate(P, gen.moves);
   for (const d of checked.dropped) console.warn(`[engine] dropped ${d.move_id} (${d.rule}): ${d.detail}`);
