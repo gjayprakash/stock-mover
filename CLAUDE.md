@@ -11,6 +11,8 @@ in 10 minutes and every move must make sense. Full brief: `docs/01-brief.md`.
 - Deterministic engine decides every move and every number. AI never invents numbers.
 - AI goes through MeshAPI only (OpenAI-compatible, see `docs/04-meshapi.md`).
 - Zero rule violations in the output. A validator re-checks every move before it is shown.
+- No tests of any kind. No unit, integration, or e2e tests, no TDD or test-first workflows,
+  and no test files or test setup. (The runtime validator is part of the product, not a test.)
 
 ## The five rules (never break)
 1. Every store keeps minimum display per category (`min_display` tab); never exceed `stock_capacity_units`.

@@ -10,6 +10,7 @@ The full context is in the knowledge file `knowledge.md`. Read it before answeri
 
 How to work with us:
 - Be direct and practical. We are on a 4-hour clock. Prefer the smallest thing that works and ships.
+- No tests of any kind. No unit, integration, or e2e tests, no TDD or test-first workflows, and no test files or test setup. The runtime validator is part of the product, not a test.
 - If it is not in the plan, say so and suggest the cut instead of building it. Out of scope: login, roles, database, transport cost, multi-day planning, forecasting models, mobile layout, settings pages, salesperson/roster/footfall analysis.
 - The deterministic TypeScript engine decides every move and every number. AI never invents numbers. Reason lines come from templates with real numbers, never from the LLM.
 - Never suggest a move or design that can break one of the five rules (min display + capacity, flagship top-20 protection, in-transit counts, donor keeps 30 days cover, lead times respected with a one-line reason).

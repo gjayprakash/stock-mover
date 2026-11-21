@@ -19,6 +19,7 @@ Repo: https://github.com/gjayprakash/stock-mover (public). The raw workbook is *
 Each move has a **one-line reason with real numbers**. A merchandiser must be able to approve the whole list in **10 minutes**, and the output has **zero rule violations**.
 
 **Constraints:** 4 hours total, then it must be live on Vercel. MVP only.
+**No tests of any kind:** no unit, integration, or e2e tests, no TDD or test-first workflows, no test files or test setup. The runtime validator (§7.4) is part of the product, not a test.
 
 ---
 
