@@ -37,7 +37,7 @@ in 10 minutes and every move must make sense. Full brief: `docs/01-brief.md`.
 - Approvals of the engine list live in the browser (localStorage, keyed by signed-in user) + "Export approved CSV".
 - Users and roles (plan #87, `docs/07-rbac-transit-research.md`): super admins (the first seeded by `npm run seed:admin`, more added by email on People; no sign-up) see all locations; store managers see only their store (app-layer scope, `apps/api/src/auth/scope.ts`). Sign-in is always required (no on/off switch). Store-to-store requests, shipments and driver phones (paired by WhatsApp link, Hindi or English) follow the same five rules; in-transit transfers feed the daily run.
 - Daily run = GitHub Actions schedule hitting `POST /api/run` (Render cron jobs are not free). UI shows last run and next run.
-- AI (MeshAPI) does three things only: morning brief, "Ask Stock Mover" chat grounded in moves.json, polishing nothing else.
+- AI (MeshAPI) does three things only: morning brief, "Ask Stock Mover" chat (grounded in our data, general answers labelled; see Decision log), polishing nothing else.
 - Reason lines are built from templates with real numbers, not written by the LLM.
 
 ## Out of scope (say no)
@@ -59,6 +59,7 @@ phase 2 live GPS tracking (#86). Mobile layout only for the driver app (`/pair`,
 - 2026-11-21, Jay: daily run = `.github/workflows/daily-run.yml` at 00:30 UTC (06:00 IST) + manual dispatch; needs repo secret `CRON_SECRET` equal to Render's.
 - 2026-11-21, Asjad: store → store `lead_time_days` = `travel_days` = the `lead_times` tab route (same city 2 / same zone 4 / other zone 7, from `stores.city`/`zone`); distance only ranks receivers. Validator rejects any lead time below the tab. API re-runs the engine on boot when the latest list's `engine_version` ≠ `ENGINE_VERSION` (now 1.1): bump it with every engine change.
 - 2026-11-21, Jay: login and roles are now in scope (plan #87, issues #76–#85, all merged): super admin + store managers, requests between stores, shipments with driver phones, driver app in Hindi or English. Supersedes #19 and the old "no auth, no users" decision. Phase 2 live map is #86, not started.
+- 2026-11-21, Asjad: Ask v2 answers any question. Answers about our data (today's list, 12-week history, past runs, rules) are checked number by number, each figure only for its own store, product, week or run; general answers are allowed, get none of our data and are labelled "not checked"; any figure about our stores in them is checked too. Forecasts: past trend checked, outlook in words only. The AI log records the mode (DATA / GENERAL / MIXED). Chats are kept in the browser per user.
 - 2026-11-21, Jay: sign-in is always on. The `AUTH_REQUIRED` switch and the KNP-03 demo fallbacks are removed.
 - 2026-11-21, Asjad: more than one super admin (the `one_super_admin` index is dropped at boot). A super admin adds super admins and store managers by email on People (`/managers`); one email = one role (409 names the role it has). Nobody can turn themselves off, and the last active super admin cannot be turned off.
 

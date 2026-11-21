@@ -12,14 +12,14 @@ import { useAiLog } from '../features/ai-usage/useAiLog';
 
 const STEPS = [
   ['Engine builds the list', 'Every move and number is worked out by fixed rules first.'],
-  ['AI reads only that list', "It gets today's list and your question. Nothing else."],
-  ['Numbers are matched', "Every number in the reply is looked up in today's list."],
-  ['Wrong number? Stopped.', "If any number is not found, you see \"not in today's data\" instead."],
+  ['AI reads only what the question needs', "Today's list, and the 12-week history, past runs or rules when you ask about them. A general question gets none of your data."],
+  ['Numbers are matched', 'Every number about your stock is looked up in that data, for the store, product, week or run it is about.'],
+  ['Wrong number? Stopped.', 'If a number is not found, the answer is held back. General answers are labelled as not checked.'],
 ];
 const SAFETY = [
-  ["Sees only today's list", 'No outside data, no guessing'],
-  ['Every number is matched', 'Any number not in the list stops the answer'],
-  ['Says when it does not know', '"That is not in today\'s data"'],
+  ['Sees only your own data', "Today's list, 12-week history, past runs and rules, within what you may see"],
+  ['Every number is matched', 'Any number about your stock that is not in the data stops the answer'],
+  ['General answers are labelled', '"General answer. Not checked against your data."'],
   ['The key stays on our server', 'Calls go through MeshAPI, never from your browser'],
 ];
 
@@ -133,7 +133,7 @@ export default function AiUsagePage() {
               <Tile
                 tone="ok"
                 big={`${num(t.numbers_found)} of ${num(t.numbers_total)}`}
-                label="numbers in answers matched today's list"
+                label="numbers in answers matched your data"
               />
               <Tile
                 tone="held"
@@ -176,7 +176,7 @@ export default function AiUsagePage() {
             </div>
             <Highlighted text={example.output} />
             <div className="text-[15px] font-semibold text-ok">
-              {example.numbers_found} of {example.numbers_total} numbers found in today's list. Shown to you.
+              {example.numbers_found} of {example.numbers_total} numbers found in your data. Shown to you.
             </div>
           </Card>
         )}
