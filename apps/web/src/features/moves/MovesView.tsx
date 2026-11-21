@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import type { Move, MovesFile } from '@sm/contract';
 import { Button, Card, Chip, EmptyState, inr } from './deps';
 import { applyFilters, EMPTY_FILTERS, type ApprovalStatus, type Filters } from './filters';
@@ -38,10 +38,28 @@ export function MovesView(p: MovesViewProps) {
     setSelected(new Set());
   }, [filterKey, file]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Bring the expanded row into view once it is on screen (deep links land before the file loads).
+  const scrolledTo = useRef('');
   useEffect(() => {
-    if (!filters.move) return;
-    document.getElementById(`move-${filters.move}`)?.scrollIntoView({ block: 'center' });
-  }, [filters.move, page]);
+    if (!filters.move) { scrolledTo.current = ''; return; }
+    if (scrolledTo.current === filters.move) return;
+    const id = setTimeout(() => {
+      const el = document.getElementById(`move-${filters.move}`);
+      if (!el) return;
+      (el.previousElementSibling ?? el).scrollIntoView({ block: 'start' });
+      scrolledTo.current = filters.move;
+    }, 50);
+    return () => clearTimeout(id);
+  }, [filters.move, page, file, rows]);
+
+  // 5-second Undo after a skip (single or bulk).
+  const [undoIds, setUndoIds] = useState<string[]>([]);
+  useEffect(() => {
+    if (!undoIds.length) return;
+    const t = setTimeout(() => setUndoIds([]), 5000);
+    return () => clearTimeout(t);
+  }, [undoIds]);
+  const skip = (ids: string[]) => { p.skipMoves(ids); setUndoIds(ids); };
 
   const pageRows = rows.slice(page * PAGE, page * PAGE + PAGE);
   const pageSelectable = pageRows.filter((m) => !p.statusOf(m.id));
@@ -65,7 +83,7 @@ export function MovesView(p: MovesViewProps) {
     setSelected(new Set(chosen.filter((m) => m.needs_signoff).map((m) => m.id)));
   };
   const skipSelected = () => {
-    p.skipMoves(chosen.map((m) => m.id));
+    skip(chosen.map((m) => m.id));
     setNote('');
     setSelected(new Set());
   };
@@ -153,14 +171,17 @@ export function MovesView(p: MovesViewProps) {
                     {open && (
                       <tr id={`move-${m.id}`}>
                         <td colSpan={7} className="p-0">
+                          {/* On a phone the table scrolls sideways; pin the detail to the card's width so it never gets cut off. */}
+                          <div className="sticky left-0 w-[calc(100vw-2rem)] md:static md:w-auto">
                           <MoveDetail
                             move={m}
                             status={status}
                             onApprove={() => { p.approveMoves([m.id]); toggle(m.id, false); }}
-                            onSkip={() => { p.skipMoves([m.id]); toggle(m.id, false); }}
+                            onSkip={() => { skip([m.id]); toggle(m.id, false); }}
                             onUndo={() => p.undo([m.id])}
                             extra={<AlternativesList move={m} />}
                           />
+                          </div>
                         </td>
                       </tr>
                     )}
@@ -197,7 +218,7 @@ export function MovesView(p: MovesViewProps) {
         )}
       </Card>
 
-      {(chosen.length > 0 || note) && (
+      {(chosen.length > 0 || note || undoIds.length > 0) && (
         <section className="sticky bottom-20 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-2xl bg-brown px-6 py-4 text-[#FFFBF2] shadow-[0_16px_40px_rgba(81,29,0,0.35)] md:bottom-6">
           <span className="text-base">
             {chosen.length > 0 ? (
@@ -207,6 +228,14 @@ export function MovesView(p: MovesViewProps) {
               </>
             ) : null}
             {note && <span className="ml-2 font-semibold text-[#F4A27C]">{note}</span>}
+            {undoIds.length > 0 && (
+              <span className="ml-2" role="status">
+                Skipped {undoIds.length} {undoIds.length === 1 ? 'move' : 'moves'}.{' '}
+                <button type="button" className="font-semibold text-[#F4A27C] underline" onClick={() => { p.undo(undoIds); setUndoIds([]); }}>
+                  Undo
+                </button>
+              </span>
+            )}
           </span>
           {chosen.length > 0 && (
             <span className="flex flex-wrap gap-2.5">

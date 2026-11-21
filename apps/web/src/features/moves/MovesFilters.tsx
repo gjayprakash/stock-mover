@@ -77,9 +77,11 @@ export function MovesFilters({ file, filters, onChange }: Props) {
             ))}
           </select>
         </div>
-        <label className="flex min-h-[50px] flex-[1_1_220px] cursor-pointer items-center gap-3 text-[15px] font-semibold">
+        <label htmlFor="moves-signoff" className="flex min-h-[50px] flex-[1_1_220px] cursor-pointer items-center gap-3 text-[15px] font-semibold">
           <input
+            id="moves-signoff"
             type="checkbox"
+            aria-label={`Only the ${signoffCount} that need sign-off`}
             checked={filters.signoff}
             onChange={(e) => onChange({ ...filters, signoff: e.target.checked, move: '' })}
             className="h-[22px] w-[22px] accent-[#C7400E]"

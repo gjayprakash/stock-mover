@@ -13,7 +13,7 @@ const CHECKS: [keyof Move['checks'], string][] = [
 ];
 
 function SideRow({ label, wh, before, after }: { label: string; wh: boolean; before: Side; after: Side }) {
-  const td = 'px-3 py-2';
+  const td = 'px-1.5 py-2 align-top md:px-3';
   return (
     <tr className="border-t border-[#F3E8D2]">
       <th scope="row" className={`${td} text-left font-semibold`}>{label}</th>
@@ -41,14 +41,14 @@ export function MoveDetail({ move: m, status, onApprove, onSkip, onUndo, extra }
     <div className="grid gap-6 bg-[#FFFDF8] px-5 py-5 md:px-7 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
       <div className="flex min-w-0 flex-col gap-5">
         <div className="relative overflow-x-auto">
-          <table className="w-full min-w-[520px] border-collapse text-sm">
+          <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="text-left text-[#4A3A2E]">
-                <th className="px-3 py-2 font-bold">{m.id}</th>
-                <th className="px-3 py-2 font-bold">On the shelf</th>
-                <th className="px-3 py-2 font-bold">On the way</th>
-                <th className="px-3 py-2 font-bold">Sells</th>
-                <th className="px-3 py-2 font-bold">Days of stock</th>
+                <th className="px-1.5 py-2 align-bottom font-bold md:px-3">{m.id}</th>
+                <th className="px-1.5 py-2 align-bottom font-bold md:px-3">On the shelf</th>
+                <th className="px-1.5 py-2 align-bottom font-bold md:px-3">On the way</th>
+                <th className="px-1.5 py-2 align-bottom font-bold md:px-3">Sells</th>
+                <th className="px-1.5 py-2 align-bottom font-bold md:px-3">Days of stock</th>
               </tr>
             </thead>
             <tbody>
