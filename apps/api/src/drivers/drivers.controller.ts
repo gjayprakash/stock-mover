@@ -83,6 +83,16 @@ export class DriverPhoneController {
     setDriverCookie(res, device);
   }
 
+  /** Join screen: store and manager behind a link, without using it (POST so the token never sits in a URL). */
+  @Post('pair-preview')
+  @HttpCode(200)
+  async pairPreview(@Req() req: Request, @Body() body: { token?: unknown }) {
+    if (pairLimited(clientIp(req))) throw new HttpException({ error: 'Too many tries. Wait a minute.' }, 429);
+    const who = await this.drivers.preview(typeof body?.token === 'string' ? body.token : '');
+    if (!who) throw new HttpException({ error: 'This link is used or expired. Ask your manager for a new one.' }, 410);
+    return who;
+  }
+
   @UseGuards(DriverDeviceGuard)
   @Get('me')
   me(@Req() req: Request) {

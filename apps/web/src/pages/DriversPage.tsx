@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createDriver, listDrivers, newPairLink, revokeDriver, type Driver, type PairLink } from '../features/drivers/api';
 import { ConnectCard } from '../features/drivers/ConnectCard';
 import { DriverCard } from '../features/drivers/DriverCard';
+import { AdminStorePicker, useNeedsStore } from '../features/auth/AdminStorePicker';
+import { EmptyState } from '../components/EmptyState';
 
 const errText = (e: unknown) => (e instanceof Error ? e.message : 'Something went wrong. Try again.');
 
@@ -15,9 +17,11 @@ export default function DriversPage() {
   const [error, setError] = useState<string | null>(null);
   const topRef = useRef<HTMLDivElement>(null);
 
+  const needsStore = useNeedsStore();
   const refresh = useCallback(() => {
+    if (needsStore) return;
     listDrivers().then((d) => { setDrivers(d); setListError(null); }, (e) => setListError(errText(e)));
-  }, []);
+  }, [needsStore]);
   useEffect(refresh, [refresh]);
 
   const run = async (job: () => Promise<void>) => {
@@ -71,6 +75,10 @@ export default function DriversPage() {
         </p>
       </div>
 
+      <AdminStorePicker purpose="to manage its drivers" />
+      {needsStore ? (
+        <EmptyState title="Pick a store" body="Drivers belong to one store. Choose it above to connect phones and see its drivers." />
+      ) : (<>
       <ConnectCard pair={pair} done={done} busy={busy} error={error} onCreate={onCreate} onNewLink={onNewLink} onPaired={onPaired} onRestart={onRestart} />
 
       <section className="flex flex-col gap-4">
@@ -89,6 +97,7 @@ export default function DriversPage() {
           </div>
         )}
       </section>
+      </>)}
     </div>
   );
 }
