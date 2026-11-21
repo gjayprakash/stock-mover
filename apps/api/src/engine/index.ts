@@ -1,6 +1,6 @@
 import type { HistoryFile, MovesFile } from '@sm/contract';
 import { loadData, loadLocations, type Store } from './data';
-import { buildPositions } from './position';
+import { buildPositions, type ExtraItem, type Receipt } from './position';
 import { generateMoves } from './moves';
 import { validate } from './validate';
 import { buildSummary, buildHistory, nextRunAt } from './summary';
@@ -15,6 +15,9 @@ export type EngineInput = {
   locations?: Record<string, { lat: number; lng: number }>;
   /** #21: stores added in the app (same columns as stores.csv). Pass to loadData(dataDir, extraStores). */
   extraStores?: Store[];
+  /** #23: committed stock receipts (Add stock) and the SKUs those uploads created. Applied from the next run. */
+  receipts?: Receipt[];
+  extraItems?: ExtraItem[];
 };
 export type EngineOutput = { moves: MovesFile; history: HistoryFile };
 
@@ -22,7 +25,7 @@ export const ENGINE_VERSION = '1.0';
 
 /** loadData → buildPositions → generateMoves → validate → summary. Throws (run FAILS) on any violation. */
 export function runEngine(input: EngineInput): EngineOutput {
-  const P = buildPositions(loadData(input.dataDir, input.extraStores), input.locations ?? loadLocations(input.dataDir));
+  const P = buildPositions(loadData(input.dataDir, input.extraStores), input.locations ?? loadLocations(input.dataDir), input.receipts, input.extraItems);
   const gen = generateMoves(P);
   const checked = validate(P, gen.moves);
   for (const d of checked.dropped) console.warn(`[engine] dropped ${d.move_id} (${d.rule}): ${d.detail}`);

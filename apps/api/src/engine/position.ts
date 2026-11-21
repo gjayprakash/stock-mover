@@ -46,13 +46,39 @@ export type Positions = {
   flags: DataFlag[];
 };
 
-export function buildPositions(data: EngineData, locations: Locations | null = null): Positions {
+/** Pieces received after the snapshot (#23 Add stock). Applied on the next run. */
+export type Receipt = { location_id: string; sku_id: string; qty: number; received_on: string };
+/** SKUs created by an upload (#23), not in items.csv. */
+export type ExtraItem = { sku_id: string; style_id: string; style_name: string; category: string; size: string; mrp: number };
+
+export function buildPositions(
+  data: EngineData, locations: Locations | null = null, receipts: Receipt[] = [], extraItems: ExtraItem[] = [],
+): Positions {
+  const knownSku = new Set(data.items.map((i) => i.sku_id));
+  for (const x of extraItems) {
+    if (knownSku.has(x.sku_id)) continue;
+    knownSku.add(x.sku_id);
+    data.items.push({ ...x, cost_price: 0, launch_date: AS_OF, is_core_style: false, is_packaging: false });
+  }
   const c = clean(data, locations);
+  // Receipts go on top of the snapshot after the A8 count check (a receipt is not a wrong count):
+  // on_hand += qty at that location, oldest_stock_received_on = min(existing, received_on).
+  for (const r of receipts) {
+    if (!c.items.has(r.sku_id) || (r.location_id !== WAREHOUSE_ID && !c.storeById.has(r.location_id))) continue;
+    const row = c.snapshot.find((x) => x.location_id === r.location_id && x.sku_id === r.sku_id);
+    if (row) {
+      const old = row.on_hand > 0 ? row.oldest_stock_received_on : null;
+      row.on_hand = Math.max(0, row.on_hand) + r.qty;
+      row.oldest_stock_received_on = old && old < r.received_on ? old : r.received_on;
+    } else {
+      c.snapshot.push({ location_id: r.location_id, sku_id: r.sku_id, on_hand: r.qty, in_transit: 0, in_transit_arrives_on: null, oldest_stock_received_on: r.received_on });
+    }
+  }
   const snap = new Map<string, (typeof c.snapshot)[number]>();
   const wh: Positions['wh'] = new Map();
   for (const r of c.snapshot) {
     if (r.location_id === WAREHOUSE_ID) {
-      wh.set(r.sku_id, { on_hand: Math.max(0, r.on_hand), stock_age_days: r.oldest_stock_received_on ? daysBetween(r.oldest_stock_received_on, AS_OF) : null });
+      wh.set(r.sku_id, { on_hand: Math.max(0, r.on_hand), stock_age_days: r.oldest_stock_received_on ? Math.max(0, daysBetween(r.oldest_stock_received_on, AS_OF)) : null });
     } else if (c.storeById.has(r.location_id)) snap.set(key(r.location_id, r.sku_id), r);
   }
   // Grain: every store×SKU in the snapshot or the weekly history.
@@ -78,7 +104,7 @@ export function buildPositions(data: EngineData, locations: Locations | null = n
       target_units: target,
       need: Math.max(0, target - available),
       surplus: Math.max(0, on_hand - Math.ceil(v.velocity * DONOR_KEEP)),
-      stock_age_days: on_hand > 0 && s?.oldest_stock_received_on ? daysBetween(s.oldest_stock_received_on, AS_OF) : null,
+      stock_age_days: on_hand > 0 && s?.oldest_stock_received_on ? Math.max(0, daysBetween(s.oldest_stock_received_on, AS_OF)) : null,
       lost_sales_12w: v.velocity * Math.max(0, WINDOW_DAYS - v.instock_days),
       flagged: c.flags.has(k),
       v,

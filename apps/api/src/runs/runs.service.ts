@@ -5,6 +5,7 @@ import { DbService } from '../db/db.service';
 import { runEngine } from '../engine';
 import { GeoService } from '../geo/geo.service';
 import { StoresService } from '../stores/stores.service';
+import { StockService } from '../stock/stock.service';
 
 export const AS_OF = '2026-10-31';
 export const TODAY = '2026-11-01';
@@ -26,6 +27,7 @@ export class RunsService implements OnApplicationBootstrap {
     private readonly db: DbService,
     private readonly geo: GeoService,
     private readonly stores: StoresService,
+    private readonly stock: StockService,
   ) {}
 
   /** Other modules (AI brief) register here; called after every FINISHED run, errors are logged and ignored. */
@@ -70,7 +72,7 @@ export class RunsService implements OnApplicationBootstrap {
     try {
       const { moves, history } = runEngine({
         dataDir: DATA_DIR, asOf: AS_OF, today: TODAY, now, runId, locations: this.geo.locations(),
-        extraStores: this.stores.extraStores(),
+        extraStores: this.stores.extraStores(), receipts: this.stock.receipts(), extraItems: this.stock.extraItems(),
       });
       const violations = moves.summary.violations;
       if (violations > 0) throw new Error(`validator found ${violations} rule violations; list not published`);
