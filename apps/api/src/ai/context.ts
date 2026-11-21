@@ -117,7 +117,7 @@ export function storeFlows(m: MovesFile): StoreFlow[] {
  * Full detail for every tagged or recognised entity (#13), so vague questions ("what is not going right?")
  * are answered from the data for that entity.
  */
-function focusOn(m: MovesFile, about: About) {
+export function focusOn(m: MovesFile, about: About) {
   const flows = new Map(storeFlows(m).map((f) => [f.store, f]));
   const problemsOf = (pred: (p: MovesFile['problems'][number]) => boolean) =>
     m.problems.filter(pred).map(({ id, tag, title, seen, fix }) => ({ id, tag, title, seen, fix }));
