@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
@@ -29,6 +29,10 @@ export default function AskPage() {
   // Tagged stores/products stay for following questions until removed.
   const [tags, setTags] = useState<Tag[]>(savedTags);
   const [picker, setPicker] = useState(false);
+  const [pickerQ, setPickerQ] = useState('');
+  const pickerKey = useRef<((e: KeyboardEvent) => void) | null>(null);
+  const openPicker = () => { setPickerQ(''); setPicker(true); };
+  const narrow = useNarrow();
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => { savedTags = tags; }, [tags]);
   const addTag = (t: Tag) => {
@@ -83,7 +87,8 @@ export default function AskPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, data]);
 
-  const onSubmit = (e: FormEvent) => { e.preventDefault(); void send(input); };
+  // Enter while the picker is open chooses a tag; it never sends the question.
+  const onSubmit = (e: FormEvent) => { e.preventDefault(); if (!picker) void send(input); };
   const tries = tags.length ? tagSuggestions(data, tags) : suggestions(data);
 
   const canSee = (
@@ -138,7 +143,7 @@ export default function AskPage() {
                   </div>
                 ) : (
                   <div key={m.id} className="flex max-w-[92%] flex-col gap-2 md:max-w-[86%]">
-                    <div className="rounded-2xl rounded-bl-sm bg-tint px-5 py-4 text-base leading-relaxed whitespace-pre-wrap text-ink">
+                    <div className="rounded-2xl rounded-bl-sm bg-tint px-5 py-4 text-base leading-relaxed text-ink">
                       {m.pending && !m.text ? <TypingDots /> : <AnswerText text={m.text} m={data} />}
                     </div>
                     {!m.pending && <StatusLine final={m.final} />}
@@ -164,7 +169,7 @@ export default function AskPage() {
           <form onSubmit={onSubmit} className="relative flex shrink-0 flex-wrap items-end gap-3 border-t border-line px-5 py-4 md:px-8 md:py-5">
             {picker && (
               <div className="absolute inset-x-3 bottom-full md:inset-x-8">
-                <TagPicker m={data} taken={tags} onPick={addTag} onClose={closePicker} />
+                <TagPicker m={data} taken={tags} onPick={addTag} onClose={closePicker} q={pickerQ} onQ={setPickerQ} keyRef={pickerKey} />
               </div>
             )}
             {tags.length > 0 && (
@@ -180,14 +185,23 @@ export default function AskPage() {
                 ref={inputRef}
                 onChange={(e) => {
                   // Typing "@" opens the picker (checked on the value, since phone keyboards do not report the key).
+                  // Letters typed after "@" before focus moves go to the picker's filter, not the question.
                   const v = e.target.value;
-                  if (v.length === input.length + 1 && v.endsWith('@') && tags.length < MAX_TAGS) { setInput(v.slice(0, -1)); setPicker(true); }
-                  else setInput(v);
+                  const at = v.indexOf('@', Math.max(0, input.length - 1));
+                  if (picker) {
+                    if (v.startsWith(input) && v.length > input.length) setPickerQ((q) => q + v.slice(input.length).replace(/^@/, ''));
+                    else setInput(v);
+                  } else if (v.startsWith(input) && v.length > input.length && at >= input.length && tags.length < MAX_TAGS) {
+                    setInput(v.slice(0, at));
+                    setPickerQ(v.slice(at + 1));
+                    setPicker(true);
+                  } else setInput(v);
                 }}
-                placeholder="Type a question, or @ to tag a store or product"
+                onKeyDown={(e) => { if (picker && pickerKey.current && ['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(e.key)) pickerKey.current(e); }}
+                placeholder={narrow ? 'Ask, or @ to tag' : 'Type a question, or @ to tag a store or product'}
                 className="h-14 w-full min-w-0 rounded-xl border-[1.5px] border-[#D9C49C] bg-[#FFFDF8] px-4 text-[17px] text-ink disabled:opacity-60 md:px-[18px]" />
             </div>
-            <Button type="button" variant="outline" disabled={busy || tags.length >= MAX_TAGS} onClick={() => setPicker((o) => !o)}
+            <Button type="button" variant="outline" disabled={busy || tags.length >= MAX_TAGS} onClick={() => (picker ? setPicker(false) : openPicker())}
               aria-expanded={picker} aria-label="Tag a store or product" title={tags.length >= MAX_TAGS ? `At most ${MAX_TAGS} tags` : undefined}
               className="h-14 shrink-0 px-4">
               <span aria-hidden="true" className="text-xl xl:hidden">@</span><span aria-hidden="true" className="max-xl:hidden">Tag a store or product</span>
@@ -235,4 +249,17 @@ function NextQuestions({ m, fallback, busy, onAsk }: { m: Extract<Msg, { me: fal
       </div>
     </div>
   );
+}
+
+/** True under 640 px, for the shorter question hint (a placeholder cannot be changed with CSS). */
+function useNarrow() {
+  const q = '(max-width: 639px)';
+  const [narrow, setNarrow] = useState(() => typeof window !== 'undefined' && window.matchMedia(q).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(q);
+    const on = () => setNarrow(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+  return narrow;
 }

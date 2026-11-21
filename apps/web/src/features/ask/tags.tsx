@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type MutableRefObject } from 'react';
 import { Link } from 'react-router-dom';
 import type { MovesFile } from '@sm/contract';
 import { storeLabel } from '../../lib/format';
@@ -66,8 +66,14 @@ export function tagSuggestions(m: MovesFile | null, tags: Tag[]): string[] {
 }
 
 /** Searchable picker (stores + products). Opens above the input; Esc closes, arrows + Enter choose. */
-export function TagPicker({ m, taken, onPick, onClose }: { m: MovesFile | null; taken: Tag[]; onPick: (t: Tag) => void; onClose: () => void }) {
-  const [q, setQ] = useState('');
+export function TagPicker({ m, taken, onPick, onClose, q, onQ, keyRef }: {
+  m: MovesFile | null; taken: Tag[]; onPick: (t: Tag) => void; onClose: () => void;
+  /** Filter text, owned by the page so letters typed after "@" in the question box land here. */
+  q: string; onQ: (q: string) => void;
+  /** The page forwards arrow/Enter/Esc keys pressed in the question box while the picker is open. */
+  keyRef: MutableRefObject<((e: KeyboardEvent) => void) | null>;
+}) {
+  const setQ = onQ;
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
@@ -82,7 +88,8 @@ export function TagPicker({ m, taken, onPick, onClose }: { m: MovesFile | null; 
   }, [q, opts, taken]);
   const flat = groups.flatMap((g) => g.items);
 
-  useEffect(() => { inputRef.current?.focus(); }, []);
+  // Layout effect: focus moves before the next keystroke, so fast typing after "@" lands in the filter.
+  useLayoutEffect(() => { inputRef.current?.focus(); }, []);
   // Never taller than the space between the card top and the input row (the card clips overflow),
   // re-measured when a phone keyboard resizes the window.
   const rootRef = useRef<HTMLDivElement>(null);
@@ -109,6 +116,8 @@ export function TagPicker({ m, taken, onPick, onClose }: { m: MovesFile | null; 
     else if (e.key === 'Enter') { e.preventDefault(); if (flat[active]) onPick(flat[active]); }
     else if (e.key === 'Escape') { e.preventDefault(); onClose(); }
   };
+  keyRef.current = onKey;
+  useEffect(() => () => { keyRef.current = null; }, [keyRef]);
 
   let i = -1;
   return (

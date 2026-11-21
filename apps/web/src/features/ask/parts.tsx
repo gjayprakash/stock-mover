@@ -18,19 +18,71 @@ export function suggestions(m: MovesFile | null): string[] {
 
 const TOKEN = /\b([A-Z]{2,4}-\d{2}(?:-[A-Z0-9]+)?|M\d{4})\b/g;
 
-/** Answer text with known move ids and store ids turned into links. */
-export function AnswerText({ text, m }: { text: string; m: MovesFile | null }) {
-  const stores = new Set(m?.stores.map((s) => s.store_id));
-  const moves = new Set(m?.moves.map((mv) => mv.id));
+type Ids = { stores: Set<string>; moves: Set<string> };
+
+/** Plain text with known move ids and store ids turned into links. */
+function Linked({ text, ids }: { text: string; ids: Ids }) {
   const parts = text.split(TOKEN);
   return (
     <>
       {parts.map((p, i) => {
-        if (i % 2 === 1 && moves.has(p)) return <Link key={i} to={`/moves?move=${p}`} className="font-semibold text-cta underline hover:text-brown">{p}</Link>;
-        if (i % 2 === 1 && stores.has(p)) return <Link key={i} to={`/stores/${p}`} className="font-semibold text-cta underline hover:text-brown">{p}</Link>;
+        if (i % 2 === 1 && ids.moves.has(p)) return <Link key={i} to={`/moves?move=${p}`} className="font-semibold text-cta underline hover:text-brown">{p}</Link>;
+        if (i % 2 === 1 && ids.stores.has(p)) return <Link key={i} to={`/stores/${p}`} className="font-semibold text-cta underline hover:text-brown">{p}</Link>;
         return <Fragment key={i}>{p}</Fragment>;
       })}
     </>
+  );
+}
+
+/** One line: **bold** spans become <strong>; everything else is text (React escapes it, so no HTML gets in). */
+function Inline({ text, ids }: { text: string; ids: Ids }) {
+  const parts = text.split(/\*\*(.+?)\*\*/g);
+  return (
+    <>
+      {parts.map((p, i) => (i % 2 === 1
+        ? <strong key={i} className="font-semibold text-brown"><Linked text={p} ids={ids} /></strong>
+        : <Linked key={i} text={p} ids={ids} />))}
+    </>
+  );
+}
+
+type Block = { kind: 'p'; line: string } | { kind: 'ul' | 'ol'; items: string[] } | { kind: 'gap' };
+const BULLET = /^\s*[-*•]\s+(.*)$/;
+const NUMBERED = /^\s*\d+[.)]\s+(.*)$/;
+
+/**
+ * Answer text. Renders only the Markdown subset the model uses: **bold**, "- " bullet lines,
+ * "1. " numbered lines and line breaks. Anything else stays plain text. Move/store ids are links.
+ */
+export function AnswerText({ text, m }: { text: string; m: MovesFile | null }) {
+  const ids: Ids = { stores: new Set(m?.stores.map((s) => s.store_id)), moves: new Set(m?.moves.map((mv) => mv.id)) };
+  const blocks: Block[] = [];
+  for (const line of text.split('\n')) {
+    const b = BULLET.exec(line);
+    const n = b ? null : NUMBERED.exec(line);
+    const last = blocks[blocks.length - 1];
+    if (b || n) {
+      const kind = b ? 'ul' : 'ol';
+      const item = (b ?? n)![1];
+      if (last && last.kind === kind) last.items.push(item);
+      else blocks.push({ kind, items: [item] });
+    } else if (!line.trim()) {
+      if (last && last.kind !== 'gap') blocks.push({ kind: 'gap' });
+    } else blocks.push({ kind: 'p', line });
+  }
+  return (
+    <div className="flex flex-col">
+      {blocks.map((bl, i) => {
+        if (bl.kind === 'gap') return <div key={i} className="h-2" aria-hidden="true" />;
+        if (bl.kind === 'p') return <p key={i} className="m-0"><Inline text={bl.line} ids={ids} /></p>;
+        const List = bl.kind === 'ul' ? 'ul' : 'ol';
+        return (
+          <List key={i} className={`my-1 pl-6 ${bl.kind === 'ul' ? 'list-disc' : 'list-decimal'}`}>
+            {bl.items.map((it, k) => <li key={k} className="pl-1"><Inline text={it} ids={ids} /></li>)}
+          </List>
+        );
+      })}
+    </div>
   );
 }
 
