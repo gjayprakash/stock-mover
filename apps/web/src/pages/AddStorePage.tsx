@@ -1,6 +1,6 @@
-import { PageTitle } from './PageTitle';
+import { AddStoreForm } from '../features/add-store/AddStoreForm';
 
-/** Placeholder route. The Add store screen issue (#22) replaces this body. */
+/** /add-store: add a new store (#22). Backend: apps/api/src/stores (POST /api/stores, GET /api/geo). */
 export default function AddStorePage() {
-  return <PageTitle title="Add store" />;
+  return <AddStoreForm />;
 }
