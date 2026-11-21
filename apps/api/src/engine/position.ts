@@ -1,4 +1,4 @@
-import { clean, key, displayCategory, type CleanData, type DataFlag } from './clean';
+import { clean, key, displayCategory, type CleanData, type DataFlag, type Locations } from './clean';
 import { computeVelocity, type Basis, type Velocity } from './velocity';
 import type { EngineData } from './data';
 import { AS_OF, TARGET_COVER, DONOR_KEEP, WINDOW_DAYS, WAREHOUSE_ID } from './params';
@@ -46,8 +46,8 @@ export type Positions = {
   flags: DataFlag[];
 };
 
-export function buildPositions(data: EngineData): Positions {
-  const c = clean(data);
+export function buildPositions(data: EngineData, locations: Locations | null = null): Positions {
+  const c = clean(data, locations);
   const snap = new Map<string, (typeof c.snapshot)[number]>();
   const wh: Positions['wh'] = new Map();
   for (const r of c.snapshot) {

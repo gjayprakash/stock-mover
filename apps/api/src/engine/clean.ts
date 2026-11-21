@@ -1,5 +1,6 @@
 import type { EngineData, Item, Store, SnapshotRow, WeeklyRow, BillLine } from './data';
 import { WAREHOUSE_ID } from './params';
+import { roadKm, travelDays, type LatLng } from '../geo/distance';
 
 export const ACCESSORIES = 'Accessories (Safa/Mala/Stole)';
 export const DISPLAY_CATEGORIES = ['Kurta Set', 'Sherwani', 'Indo-Western', 'Jacket', 'Mojari', ACCESSORIES] as const;
@@ -29,8 +30,21 @@ export function parseLeadTimes(rows: EngineData['lead_times']): LeadTimes {
   return lt as LeadTimes;
 }
 
-/** Days for a move from → to (store_id or WH-KOL). */
-export function leadTime(from: string, to: string, stores: Map<string, Store>, lt: LeadTimes): number {
+export type Locations = Record<string, LatLng>;
+
+/** Road km and travel days between two stores, or null when either has no location (#20/#25). */
+export function storeDistance(from: string, to: string, locations: Locations | null): { km: number; days: number } | null {
+  const a = locations?.[from], b = locations?.[to];
+  if (!a || !b) return null;
+  const km = roadKm(a, b);
+  return { km, days: travelDays(km) };
+}
+
+/**
+ * Days for a move from → to (store_id or WH-KOL). Warehouse lanes: lead_times by zone (3 / 4 / 6).
+ * Store → store: travel days from distance when both stores have a location, else the lead_times route.
+ */
+export function leadTime(from: string, to: string, stores: Map<string, Store>, lt: LeadTimes, locations: Locations | null = null): number {
   const dest = stores.get(to);
   if (!dest) throw new Error(`engine: unknown destination ${to}`);
   if (from === WAREHOUSE_ID) {
@@ -40,6 +54,8 @@ export function leadTime(from: string, to: string, stores: Map<string, Store>, l
   }
   const src = stores.get(from);
   if (!src) throw new Error(`engine: unknown source ${from}`);
+  const dist = storeDistance(from, to, locations);
+  if (dist) return dist.days;
   if (src.city === dest.city) return lt.sameCity;
   if (src.zone === dest.zone) return lt.sameZone;
   return lt.otherZone;
@@ -61,11 +77,12 @@ export type CleanData = {
   protectedStyles: Set<string>; // `${store_id}|${style_id}`
   flags: Map<string, DataFlag>; // `${store_id}|${sku_id}`
   raw: EngineData;
+  locations: Locations | null; // lat/lng per store_id + WH-KOL (#20), null → route table
 };
 
 export const key = (a: string, b: string) => `${a}|${b}`;
 
-export function clean(data: EngineData): CleanData {
+export function clean(data: EngineData, locations: Locations | null = null): CleanData {
   const items = new Map(data.items.filter((i) => !i.is_packaging).map((i) => [i.sku_id, i]));
   const isItem = (sku: string) => items.has(sku);
   const storeById = new Map(data.stores.map((s) => [s.store_id, s]));
@@ -115,5 +132,6 @@ export function clean(data: EngineData): CleanData {
     protectedStyles: new Set(data.flagship_protected.map((f) => key(f.store_id, f.style_id))),
     flags,
     raw: data,
+    locations,
   };
 }

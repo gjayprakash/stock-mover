@@ -1,9 +1,9 @@
 // Move generation (docs/02-engine.md §3). Deterministic: same positions in → same moves out.
 import type { Blocked, Flag, Move, MoveTrigger, MoveType, Side } from '@sm/contract';
-import { displayCategory, key, leadTime } from './clean';
+import { displayCategory, key, leadTime, storeDistance } from './clean';
 import type { Position, Positions } from './position';
 import {
-  AGE_COVER, AGE_DAYS, REORDER_COVER, BASIS_OWN_DAYS, DONOR_KEEP, MIN_DONOR_COVER, MIN_NEED_VELOCITY, MIN_PULL_BACK,
+  AGE_COVER, AGE_DAYS, REORDER_COVER, JUMP_AHEAD_MIN_COVER, BASIS_OWN_DAYS, DONOR_KEEP, MIN_DONOR_COVER, MIN_NEED_VELOCITY, MIN_PULL_BACK,
   MIN_STORE_MOVE, SIGNOFF_INR, STOCKOUT_DAYS, TARGET_COVER, TODAY, WAREHOUSE_ID, WINDOW_DAYS,
 } from './params';
 import { addDays } from './dates';
@@ -80,7 +80,32 @@ export function generateMoves(P: Positions): GenerateResult {
     flagSeen.add(k);
     flags.push({ kind, store_id, sku_id, note });
   };
-  const lt = (from: string, to: string) => leadTime(from, to, c.storeById, c.leadTimes);
+  const lt = (from: string, to: string) => leadTime(from, to, c.storeById, c.leadTimes, c.locations);
+
+  type Ranked = { r: Position; km: number | null; days: number; jumped?: Ranked };
+  const altOf = (x: Ranked) => ({ store_id: x.r.store_id, distance_km: x.km ?? 0, travel_days: x.days });
+  /**
+   * Receivers for pieces leaving `from`, nearest first (#25): travel days, km, lowest cover, higher velocity.
+   * Guard: a fully-out store (cover 0, velocity > 0) jumps ahead of a closer store with ≥ JUMP_AHEAD_MIN_COVER days.
+   */
+  const orderReceivers = (from: string, list: Position[]): Ranked[] => {
+    const rest: Ranked[] = list.map((r) => {
+      const d = storeDistance(from, r.store_id, c.locations);
+      return { r, km: d?.km ?? null, days: lt(from, r.store_id) };
+    }).sort((a, b) => a.days - b.days || (a.km ?? 0) - (b.km ?? 0) || (L.cover(a.r) ?? 0) - (L.cover(b.r) ?? 0) ||
+      b.r.velocity - a.r.velocity || a.r.store_id.localeCompare(b.r.store_id));
+    const out: Ranked[] = [];
+    const fullyOut = (x: Ranked) => L.avail(x.r) <= 0 && x.r.velocity > 0;
+    while (rest.length) {
+      let i = 0;
+      if ((L.cover(rest[0].r) ?? Infinity) >= JUMP_AHEAD_MIN_COVER) {
+        const j = rest.findIndex(fullyOut);
+        if (j > 0) { i = j; rest[j].jumped = rest[0]; }
+      }
+      out.push(rest.splice(i, 1)[0]);
+    }
+    return out;
+  };
   const isProtected = (store: string, style: string) => c.storeById.get(store)!.tier === 'S++' && c.protectedStyles.has(key(store, style));
 
   // Rows grouped by SKU, in a stable order.
@@ -110,6 +135,7 @@ export function generateMoves(P: Positions): GenerateResult {
   /** Records the move, updates the ledger, fills before/after sides. */
   const emit = (a: {
     type: MoveType; trigger: MoveTrigger; sku: string; from: string; to: string; qty: number;
+    geo?: Pick<Move, 'distance_km' | 'travel_days' | 'alternatives'>;
     reason: (x: { lead: number; arrives: string; fromAfter: Side; toAfter: Side; fromBefore: Side; toBefore: Side }) => string;
     priority: (x: { lead: number }) => number;
   }) => {
@@ -135,6 +161,7 @@ export function generateMoves(P: Positions): GenerateResult {
       velocity_basis: (toP ?? src)?.basis ?? 'peer',
       stock_age_days: src ? src.stock_age_days : P.wh.get(a.sku)?.stock_age_days ?? null,
       checks: { min_display: false, capacity: false, flagship: false, in_transit: false, donor_cover_30: false },
+      distance_km: a.geo?.distance_km ?? null, travel_days: a.geo?.travel_days ?? null, alternatives: a.geo?.alternatives ?? [],
     });
   };
 
@@ -198,16 +225,17 @@ export function generateMoves(P: Positions): GenerateResult {
     let spare = Math.min(L.onHand(a) - keep, L.catHeadroom(a.store_id, a.category));
     if (L.catHeadroom(a.store_id, a.category) < L.onHand(a) - keep) blocked.min_display++;
     if (spare < MIN_STORE_MOVE) continue;
-    const takers = bySku.get(a.sku_id)!
-      .filter((t) => t.store_id !== a.store_id && !t.flagged && t.velocity > a.velocity && t.velocity >= MIN_NEED_VELOCITY && L.need(t) > 0)
-      .sort((x, y) => y.velocity - x.velocity || x.store_id.localeCompare(y.store_id));
-    for (const t of takers) {
+    const takers = orderReceivers(a.store_id, bySku.get(a.sku_id)!
+      .filter((t) => t.store_id !== a.store_id && !t.flagged && t.velocity > a.velocity && t.velocity >= MIN_NEED_VELOCITY && L.need(t) >= MIN_STORE_MOVE));
+    for (const o of takers) {
+      const t = o.r;
       const q = Math.min(spare, L.need(t));
       if (q < MIN_STORE_MOVE) continue;
       if (!canReceive(t, q)) continue;
       emit({
         type: 'STORE_TO_STORE', trigger: 'AGEING', sku: a.sku_id, from: a.store_id, to: t.store_id, qty: q,
-        reason: () => R.ageing({ from: a.store_id, age: a.stock_age_days!, sold: a.units_12w, to: t.store_id, toV: t.velocity, qty: q }),
+        geo: { distance_km: o.km, travel_days: o.days, alternatives: takers.filter((x) => x !== o).slice(0, 5).map(altOf) },
+        reason: () => R.ageing({ from: a.store_id, age: a.stock_age_days!, sold: a.units_12w, to: t.store_id, toV: t.velocity, qty: q, days: o.days }),
         priority: () => ageingPriority({ qty: q, mrp: a.mrp, age: a.stock_age_days }),
       });
       spare -= q;
@@ -320,53 +348,72 @@ export function generateMoves(P: Positions): GenerateResult {
     }
   }
 
-  // ── B. Store → store for need the warehouse could not cover ───────────────────────────────
-  const receivers = [...unmet.keys()]
-    .map((k) => P.rows.get(k)!)
-    .sort((a, b) => (L.cover(a) ?? 0) - (L.cover(b) ?? 0) || b.velocity - a.velocity || a.store_id.localeCompare(b.store_id) || a.sku_id.localeCompare(b.sku_id));
-  for (const r of receivers) {
-    let want = L.need(r);
-    if (want < MIN_STORE_MOVE) continue; // tiny needs sell out before a transfer lands anyway
-    const donors = bySku.get(r.sku_id)!
-      .filter((d) => d.store_id !== r.store_id && !d.flagged && L.onHand(d) > 0)
-      .sort((a, b) => (L.cover(b) ?? Infinity) - (L.cover(a) ?? Infinity) || lt(a.store_id, r.store_id) - lt(b.store_id, r.store_id) || a.store_id.localeCompare(b.store_id));
+  // ── B. Store → store for need the warehouse could not cover. Donor-driven, nearest receiver first (#25).
+  const unmetBySku = new Map<string, Position[]>();
+  for (const k of [...unmet.keys()].sort()) {
+    const r = P.rows.get(k)!;
+    if (!unmetBySku.has(r.sku_id)) unmetBySku.set(r.sku_id, []);
+    unmetBySku.get(r.sku_id)!.push(r);
+  }
+  for (const [sku, recv] of unmetBySku) {
+    const donors = bySku.get(sku)!
+      .filter((d) => !d.flagged && L.onHand(d) > 0 && !unmet.has(key(d.store_id, sku)))
+      .sort((a, b) => (L.cover(b) ?? Infinity) - (L.cover(a) ?? Infinity) || a.store_id.localeCompare(b.store_id));
     for (const d of donors) {
-      if (want < MIN_STORE_MOVE) break;
+      // tiny needs (< 2) sell out before a transfer lands anyway
+      const open = recv.filter((r) => r.store_id !== d.store_id && L.need(r) >= MIN_STORE_MOVE);
+      if (!open.length) break;
+      const ordered = orderReceivers(d.store_id, open);
+      const first = ordered[0];
+      const want = L.need(first.r);
       const surplus = L.onHand(d) - Math.ceil(d.velocity * DONOR_KEEP);
       // Rule 4: a donor that could hand over the whole need but would drop under 30 days → reduced/blocked.
       const naive = Math.min(want, L.onHand(d));
       if (d.velocity > 0 && naive >= MIN_STORE_MOVE && (L.avail(d) - naive) / d.velocity < MIN_DONOR_COVER) {
         blocked.donor_cover_30++;
         if (surplus < MIN_STORE_MOVE && L.onHand(d) >= want)
-          flag('BLOCKED_DONOR_COVER', d.store_id, d.sku_id, `${d.store_id} holds ${L.onHand(d)} but giving ${want} to ${r.store_id} leaves ${R.days((L.avail(d) - want) / d.velocity)} cover (< ${MIN_DONOR_COVER}); blocked.`);
+          flag('BLOCKED_DONOR_COVER', d.store_id, sku, `${d.store_id} holds ${L.onHand(d)} but giving ${want} to ${first.r.store_id} leaves ${R.days((L.avail(d) - want) / d.velocity)} cover (< ${MIN_DONOR_COVER}); blocked.`);
       }
       if (surplus <= 0) continue;
       if (isProtected(d.store_id, d.style_id)) {
         blocked.flagship++;
-        flag('BLOCKED_FLAGSHIP', d.store_id, d.sku_id, `${d.store_id} has ${surplus} spare but ${d.style_id} is one of its top-20 protected styles; not moved to ${r.store_id}.`);
+        flag('BLOCKED_FLAGSHIP', d.store_id, sku, `${d.store_id} has ${surplus} spare but ${d.style_id} is one of its top-20 protected styles; not moved to ${first.r.store_id}.`);
         continue;
       }
-      let q = Math.min(want, surplus);
       // Rule 4: donor keeps ≥ 30 days of cover after the move.
-      const maxBy30 = d.velocity > 0 ? Math.floor(L.avail(d) - d.velocity * MIN_DONOR_COVER) : q;
-      if (maxBy30 < q) {
-        q = maxBy30;
-        if (q < MIN_STORE_MOVE) continue;
-      }
+      const maxBy30 = d.velocity > 0 ? Math.floor(L.avail(d) - d.velocity * MIN_DONOR_COVER) : surplus;
+      let spare = Math.min(surplus, maxBy30);
       const head = L.catHeadroom(d.store_id, d.category);
-      if (head < q) { blocked.min_display++; q = head; }
-      if (q < MIN_STORE_MOVE) continue;
-      if (!canReceive(r, q)) break;
-      const coverFrom = L.cover(d), coverTo = L.cover(r), qq = q;
-      emit({
-        type: 'STORE_TO_STORE', trigger: restockTrigger(r), sku: r.sku_id, from: d.store_id, to: r.store_id, qty: qq,
-        reason: ({ fromAfter }) => R.storeToStore({ from: d.store_id, to: r.store_id, fromCover: coverFrom, toCover: coverTo, qty: qq, fromAfter: fromAfter.cover_days }),
-        priority: ({ lead }) => restockPriority({ v: r.velocity, available: r.available, leadTime: lead, qty: qq, mrp: r.mrp }),
-      });
-      want = L.need(r);
+      if (head < spare) { blocked.min_display++; spare = head; }
+      for (const o of ordered) {
+        if (spare < MIN_STORE_MOVE) break;
+        const r = o.r;
+        const q = Math.min(spare, L.need(r));
+        if (q < MIN_STORE_MOVE) continue;
+        // Drop if a warehouse delivery would reach the receiver before (or when) these pieces would.
+        const inb = (P.inbound.get(sku) ?? []).find((x) => addDays(x.date, lt(WAREHOUSE_ID, r.store_id)) <= addDays(TODAY, o.days));
+        if (inb) { blocked.in_transit++; continue; }
+        if (!canReceive(r, q)) continue;
+        const coverFrom = L.cover(d), coverTo = L.cover(r);
+        const alternatives = ordered.filter((x) => x !== o).slice(0, 5).map(altOf);
+        const closer = ordered.find((x) => x !== o && (x.days < o.days || (x.days === o.days && (x.km ?? 0) < (o.km ?? 0))));
+        emit({
+          type: 'STORE_TO_STORE', trigger: restockTrigger(r), sku, from: d.store_id, to: r.store_id, qty: q,
+          geo: { distance_km: o.km, travel_days: o.days, alternatives },
+          reason: ({ fromAfter }) => R.storeToStore({
+            from: d.store_id, to: r.store_id, qty: q, fromCover: coverFrom, toCover: coverTo, fromAfter: fromAfter.cover_days, days: o.days,
+            jumped: o.jumped ? { store: o.jumped.r.store_id, cover: L.cover(o.jumped.r) } : null,
+            closer: closer ? { store: closer.r.store_id, days: closer.days } : null,
+            farther: !closer && alternatives.length ? { store: alternatives[0].store_id, days: alternatives[0].travel_days } : null,
+          }),
+          priority: ({ lead }) => restockPriority({ v: r.velocity, available: r.available, leadTime: lead, qty: q, mrp: r.mrp }),
+        });
+        spare -= q;
+      }
     }
-    if (L.need(r) >= MIN_STORE_MOVE && !moves.some((m) => m.to === r.store_id && m.sku_id === r.sku_id)) {
-      flag('NO_SOURCE', r.store_id, r.sku_id, `Needs ${L.need(r)} more (${R.rate(r.velocity)}/day) but no warehouse stock, inbound or safe donor.`);
+    for (const r of recv) {
+      if (L.need(r) >= MIN_STORE_MOVE && !moves.some((m) => m.to === r.store_id && m.sku_id === r.sku_id))
+        flag('NO_SOURCE', r.store_id, r.sku_id, `Needs ${L.need(r)} more (${R.rate(r.velocity)}/day) but no warehouse stock, inbound or safe donor.`);
     }
   }
 

@@ -35,6 +35,10 @@ export type Move = {
     min_display: boolean; capacity: boolean; flagship: boolean;
     in_transit: boolean; donor_cover_30: boolean;
   };
+  // #25 nearest store first. Store → store only; null / [] for warehouse moves and pull-backs.
+  distance_km: number | null;  // road km (straight line × 1.3 until a routing service is wired)
+  travel_days: number | null;  // 1 packing day + ceil(km / 350); equals lead_time_days
+  alternatives: { store_id: string; distance_km: number; travel_days: number }[];   // other candidate receivers, closest first, max 5
 };
 
 /** Found a problem, deliberately no move. */

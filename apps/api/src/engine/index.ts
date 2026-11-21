@@ -1,5 +1,5 @@
 import type { HistoryFile, MovesFile } from '@sm/contract';
-import { loadData, type Store } from './data';
+import { loadData, loadLocations, type Store } from './data';
 import { buildPositions } from './position';
 import { generateMoves } from './moves';
 import { validate } from './validate';
@@ -22,7 +22,7 @@ export const ENGINE_VERSION = '1.0';
 
 /** loadData → buildPositions → generateMoves → validate → summary. Throws (run FAILS) on any violation. */
 export function runEngine(input: EngineInput): EngineOutput {
-  const P = buildPositions(loadData(input.dataDir, input.extraStores));
+  const P = buildPositions(loadData(input.dataDir, input.extraStores), input.locations ?? loadLocations(input.dataDir));
   const gen = generateMoves(P);
   const checked = validate(P, gen.moves);
   for (const d of checked.dropped) console.warn(`[engine] dropped ${d.move_id} (${d.rule}): ${d.detail}`);
