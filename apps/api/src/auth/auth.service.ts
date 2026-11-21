@@ -5,7 +5,12 @@ import bcrypt from 'bcryptjs';
 export const COOKIE = 'sm_session';
 export const SESSION_MS = 12 * 60 * 60 * 1000;
 const WINDOW_MS = 60 * 1000;
-const MAX_FAILS = 5;
+const MAX_FAILS = 5; // per IP per minute
+// X-Forwarded-For is whatever the caller sends, so also cap failed tries across all IPs.
+const MAX_FAILS_GLOBAL = 30;
+const MAX_KEYS = 5000;
+export const MAX_EMAIL = 254;
+export const MAX_PASSWORD = 200;
 // Compared against when the email is unknown, so timing does not reveal which emails exist.
 const DUMMY_HASH = bcrypt.hashSync('not-a-real-password', 10);
 
@@ -34,6 +39,7 @@ export class AuthService implements OnModuleInit {
     ? Buffer.from(process.env.AUTH_SECRET)
     : sha(`${this.raw}|${process.env.DATABASE_URL ?? ''}`);
   private readonly fails = new Map<string, number[]>();
+  private globalFails: number[] = [];
 
   onModuleInit() {
     if (!this.enabled) this.log.log('Sign-in is OFF (APP_USERS not set): every route is open');
@@ -41,17 +47,26 @@ export class AuthService implements OnModuleInit {
     if (this.enabled && this.users.length === 0) this.log.warn('APP_USERS is set but has no valid email:bcryptHash entry');
   }
 
-  /** True when this IP has used up its failed tries for the last minute. */
+  /** True when this IP, or everyone together, has used up the failed tries for the last minute. */
   limited(ip: string): boolean {
     const now = Date.now();
+    this.globalFails = this.globalFails.filter((t) => now - t < WINDOW_MS);
     const recent = (this.fails.get(ip) ?? []).filter((t) => now - t < WINDOW_MS);
-    if (recent.length) this.fails.set(ip, recent);
-    else this.fails.delete(ip);
-    return recent.length >= MAX_FAILS;
+    return this.globalFails.length >= MAX_FAILS_GLOBAL || recent.length >= MAX_FAILS;
   }
 
   recordFail(ip: string) {
-    this.fails.set(ip, [...(this.fails.get(ip) ?? []), Date.now()]);
+    const now = Date.now();
+    this.globalFails.push(now);
+    const recent = (this.fails.get(ip) ?? []).filter((t) => now - t < WINDOW_MS);
+    // Drop IPs whose tries are all outside the window, then cap the map (Map keeps insertion order: oldest first).
+    for (const [k, ts] of this.fails) if (now - ts[ts.length - 1] >= WINDOW_MS) this.fails.delete(k);
+    this.fails.delete(ip);
+    this.fails.set(ip, [...recent, now]);
+    for (const k of this.fails.keys()) {
+      if (this.fails.size <= MAX_KEYS) break;
+      this.fails.delete(k);
+    }
   }
 
   /** Returns the normalised email when email and password match a configured user. */
