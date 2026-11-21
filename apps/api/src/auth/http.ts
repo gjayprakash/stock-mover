@@ -4,8 +4,6 @@ import type { Request, Response } from 'express';
 export const COOKIE = '__Host-sid';
 export const SESSION_MS = 12 * 60 * 60 * 1000;
 
-/** Sign-in is enforced only when AUTH_REQUIRED=true (#78 turns it on with the login screen). */
-export const authRequired = () => process.env.AUTH_REQUIRED === 'true';
 
 /** Render sits in front: the client is the first X-Forwarded-For entry. */
 export function clientIp(req: Request): string {

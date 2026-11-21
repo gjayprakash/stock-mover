@@ -7,7 +7,7 @@ import type { Me } from './types';
 import { readViewing, scopedUrl, writeViewing } from './viewing';
 
 /** loading → first GET /api/me in flight; off → no auth backend yet (everyone is the super admin, no sign-in). */
-type Status = 'loading' | 'off' | 'out' | 'in';
+type Status = 'loading' | 'out' | 'in';
 type AuthApi = {
   status: Status;
   /** Signed-in user; the local super admin when sign-in is off; null when signed out. */
@@ -24,7 +24,6 @@ type AuthApi = {
 const Ctx = createContext<AuthApi | null>(null);
 
 /** Before #76: approvals stay under the old "anon" key. */
-const LOCAL_ADMIN: Me = { id: 'anon', name: 'Super admin', email: '', role: 'super_admin', location_id: null };
 
 /** Only same-site paths: "/moves" yes, "//evil.com" or "https://..." no. */
 export function safeNext(next: string | null): string {
@@ -34,19 +33,16 @@ export function safeNext(next: string | null): string {
 const loginUrl = (next: string) => (next === '/' || next.startsWith('/login') ? '/login' : `/login?next=${encodeURIComponent(next)}`);
 const PUBLIC_API = ['/api/me', '/api/auth/', '/api/invites/', '/api/run'];
 
-type MeResult = { status: 'off' | 'out' } | { status: 'in'; me: Me };
+type MeResult = { status: 'out' } | { status: 'in'; me: Me };
 
 async function loadMe(): Promise<MeResult> {
   try {
     const r = await originalFetch('/api/me', { cache: 'no-store' });
-    if (r.status === 401) return { status: 'out' };
-    if (!r.ok) return { status: 'off' }; // 404 = no auth backend yet; anything else: behave as before
-    const j = (await r.json()) as Partial<Me> & { enabled?: boolean };
-    if (j.enabled === false) return { status: 'off' }; // the old #19 backend with sign-in not configured
-    if (!j.role) return { status: 'in', me: { ...LOCAL_ADMIN, id: j.email ?? 'anon', name: j.email ?? 'Super admin', email: j.email ?? '' } };
-    return { status: 'in', me: j as Me };
+    if (!r.ok) return { status: 'out' };
+    const j = (await r.json()) as Partial<Me>;
+    return j.role ? { status: 'in', me: j as Me } : { status: 'out' };
   } catch {
-    return { status: 'off' }; // API unreachable: screens fall back to sample data
+    return { status: 'out' };
   }
 }
 
@@ -92,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const apply = useCallback((r: MeResult) => {
     setStatus(r.status);
-    setMe(r.status === 'in' ? r.me : r.status === 'off' ? LOCAL_ADMIN : null);
+    setMe(r.status === 'in' ? r.me : null);
   }, []);
   const refresh = useCallback(() => loadMe().then(apply), [apply]);
   const signedOut = useCallback(() => { live.status = 'out'; setMe(null); setStatus('out'); }, []);
@@ -126,7 +122,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   let body: ReactNode;
   if (pathname === '/invite') body = <InvitePage />;
   else if (status === 'loading') body = <Loading />;
-  // While sign-in is not required ('off') the super admin can still sign in, e.g. to add store managers.
   else if (pathname === '/login') body = status === 'in' ? <Navigate to={safeNext(params.get('next'))} replace /> : <LoginPage />;
   else if (status === 'out') body = <Navigate to={loginUrl(pathname + search)} replace />;
   // A new user or a new Viewing choice remounts the data providers, so every screen re-fetches.

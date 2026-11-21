@@ -27,4 +27,4 @@ Put the dataset in `data/` (see `data/README.md`). Never commit the MeshAPI key.
 ## Sign-in
 1. Create the one super admin from your own machine (with `DATABASE_URL` in `.env`): `npm run seed:admin -- you@example.com "Your Name"`; it asks for the password.
 2. The super admin adds store managers in the app; each gets a one-time invite link to set a password.
-3. Set `AUTH_REQUIRED=true` on Render to make every `/api` route need sign-in. `/api/health`, `POST /api/run` and `/api/driver/*` never need a cookie.
+3. Sign-in is always on: every `/api` route needs a session, except `/api/health`, `POST /api/run` (its own secret) and the driver phone routes (`/api/driver/*`, device cookie).

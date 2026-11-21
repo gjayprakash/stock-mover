@@ -5,7 +5,7 @@ import type { Request } from 'express';
 /**
  * The data one request may see, from `req.user` (AuthGuard):
  * store_manager → always their own location_id (any `?location=` is ignored);
- * super_admin, or nobody while AUTH_REQUIRED is off → `?location=` (the Viewing picker) if given, else all.
+ * super_admin → `?location=` (the Viewing picker) if given, else all.
  */
 export function scopeOf(req: Request): Scope {
   const user = req.user;

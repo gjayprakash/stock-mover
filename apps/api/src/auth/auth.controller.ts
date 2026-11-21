@@ -1,6 +1,6 @@
 import { BadRequestException, Body, Controller, Get, HttpCode, HttpException, Post, Req, Res, UnauthorizedException } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { authRequired, clearSessionCookie, clientIp, COOKIE, readCookie, setSessionCookie } from './http';
+import { clearSessionCookie, clientIp, COOKIE, readCookie, setSessionCookie } from './http';
 import { LoginLimit } from './login-limit';
 import { dummyHash, hashPassword, passwordProblem, PASSWORD_MAX, verifyPassword } from './password';
 import { Public } from './public.decorator';
@@ -45,12 +45,11 @@ export class AuthController {
     clearSessionCookie(res);
   }
 
-  /** Signed in: the user (`enabled: true`). Signed out: 401, or `{ enabled: false }` while AUTH_REQUIRED is off. */
+  /** Signed in: the user. Signed out: 401. */
   @Get('me')
   me(@Req() req: Request) {
-    if (req.user) return { ...req.user, enabled: true };
-    if (authRequired()) throw new UnauthorizedException({ error: 'Sign in first' });
-    return { enabled: false, email: null };
+    if (!req.user) throw new UnauthorizedException({ error: 'Sign in first' });
+    return req.user;
   }
 
   @Post('invites/accept')
