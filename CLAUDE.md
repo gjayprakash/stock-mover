@@ -53,6 +53,7 @@ simple rates, mobile layout, settings pages, salesperson/roster/footfall analysi
 
 ## Decision log
 - (add: time, who, decision)
+- 2026-11-21, Asjad: sign-in (#19) is optional, off unless `APP_USERS` is set; with it unset the site is open exactly as before.
 - 2026-11-21, Jay: switched stack from Next.js/Vercel/no-DB to React Vite + NestJS + Neon Postgres on Render. Daily run = Render cron (to wire) hitting `/api/run`.
 - 2026-11-21, Jay: contract v2 in `packages/contract` (`@sm/contract`, types-only `index.d.ts` + samples). Adds run_id/status, needs_signoff, problems[], stores[], blocked, DATA_COUNT_MISMATCH flag, HistoryFile, RunRow, AiCall, BriefResponse. Engine lives in `apps/api/src/engine/`; `runEngine(input)` signature is the Jay-A/Jay-B contract.
 - 2026-11-21, Jay: daily run = `.github/workflows/daily-run.yml` at 00:30 UTC (06:00 IST) + manual dispatch; needs repo secret `CRON_SECRET` equal to Render's.

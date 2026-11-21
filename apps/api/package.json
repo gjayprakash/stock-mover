@@ -11,6 +11,7 @@
     "@nestjs/core": "^11.1.0",
     "@nestjs/platform-express": "^11.1.0",
     "@nestjs/serve-static": "^5.0.3",
+    "bcryptjs": "^3.0.3",
     "csv-parse": "^7.0.3",
     "exceljs": "^4.4.0",
     "openai": "^5.23.2",

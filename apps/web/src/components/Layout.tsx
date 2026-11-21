@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation, useSearchParams } from 'react-router-dom';
 import { useMovesFile } from '../data/useMovesFile';
+import { useAuth } from '../features/login/auth';
 import { dateLong, dateShort, timeShort } from '../lib/format';
 
 type NavItem = { to: string; label: string; icon: ReactNode; end?: boolean };
@@ -69,6 +70,18 @@ function RunCard() {
   );
 }
 
+/** Only when sign-in is on and someone is signed in. */
+function SignOut() {
+  const { email, signOut } = useAuth();
+  if (!email) return null;
+  return (
+    <div className="flex flex-col gap-1 px-3 pt-2 text-sm text-muted">
+      <span className="truncate" title={email}>{email}</span>
+      <button className="min-h-10 self-start bg-transparent p-0 font-bold text-cta" onClick={signOut}>Sign out</button>
+    </div>
+  );
+}
+
 function Sidebar() {
   const { data, isSample } = useMovesFile();
   return (
@@ -93,7 +106,7 @@ function Sidebar() {
           </NavLink>
         ))}
       </nav>
-      <div className="mt-auto"><RunCard /></div>
+      <div className="mt-auto"><RunCard /><SignOut /></div>
     </aside>
   );
 }
@@ -145,6 +158,7 @@ function TabBar() {
                 {n.label}
               </NavLink>
             ))}
+            <SignOut />
           </div>
         </>
       )}
