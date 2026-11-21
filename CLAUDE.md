@@ -56,6 +56,7 @@ simple rates, mobile layout, settings pages, salesperson/roster/footfall analysi
 - 2026-11-21, Jay: switched stack from Next.js/Vercel/no-DB to React Vite + NestJS + Neon Postgres on Render. Daily run = Render cron (to wire) hitting `/api/run`.
 - 2026-11-21, Jay: contract v2 in `packages/contract` (`@sm/contract`, types-only `index.d.ts` + samples). Adds run_id/status, needs_signoff, problems[], stores[], blocked, DATA_COUNT_MISMATCH flag, HistoryFile, RunRow, AiCall, BriefResponse. Engine lives in `apps/api/src/engine/`; `runEngine(input)` signature is the Jay-A/Jay-B contract.
 - 2026-11-21, Jay: daily run = `.github/workflows/daily-run.yml` at 00:30 UTC (06:00 IST) + manual dispatch; needs repo secret `CRON_SECRET` equal to Render's.
+- 2026-11-21, Asjad: store → store `lead_time_days` = `travel_days` = the `lead_times` tab route (same city 2 / same zone 4 / other zone 7, from `stores.city`/`zone`); distance only ranks receivers. Validator rejects any lead time below the tab. API re-runs the engine on boot when the latest list's `engine_version` ≠ `ENGINE_VERSION` (now 1.1): bump it with every engine change.
 
 ## Open questions: answered from `data/csv/` (2026-11-21, Asjad)
 - **Column names.** `rules`: `rule, detail` (8 rows of prose, no machine-readable parameters).
