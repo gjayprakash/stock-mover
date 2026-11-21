@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation, useSearchParams } from 'react-router-dom'
 import { useMovesFile } from '../data/useMovesFile';
 import { useAuth } from '../features/login/auth';
 import { dateLong, dateShort, timeShort } from '../lib/format';
+import manyavarLogo from '../assets/manyavar.png';
 
 type NavItem = { to: string; label: string; icon: ReactNode; end?: boolean };
 
@@ -34,16 +35,9 @@ const NAV: NavItem[] = [
   { to: '/add-store', label: 'Add store', icon: ICON.addStore },
 ];
 
+/** The Manyavar wordmark (cropped from the brand logo Asjad supplied). Intrinsic size 319 × 77. */
 function Logo({ small }: { small?: boolean }) {
-  return (
-    <div className="flex items-center gap-2.5">
-      <svg width={small ? 28 : 34} height={small ? 28 : 34} viewBox="0 0 34 34" aria-hidden="true">
-        <rect x="1" y="1" width="32" height="32" rx="8" fill="#511D00" />
-        <path d="M9 13h13m0 0-4-4m4 4-4 4M25 21H12m0 0 4-4m-4 4 4 4" fill="none" stroke="#F4A27C" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-      <span className={`font-heading text-ink ${small ? 'text-lg' : 'text-[22px]'}`}>Stock Mover</span>
-    </div>
-  );
+  return <img src={manyavarLogo} alt="Manyavar" width={319} height={77} className={`block w-auto ${small ? 'h-7' : 'h-10'}`} />;
 }
 
 function SampleBadge() {
