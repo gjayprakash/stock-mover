@@ -1,5 +1,5 @@
 import type { HistoryFile, MovesFile } from '@sm/contract';
-import { loadData } from './data';
+import { loadData, type Store } from './data';
 import { buildPositions } from './position';
 import { generateMoves } from './moves';
 import { validate } from './validate';
@@ -11,6 +11,8 @@ export type EngineInput = {
   dataDir: string; asOf: string; today: string; now: Date; runId: string;
   /** #20: lat/lng per store_id + WH-KOL, loaded from store_locations by RunsService. */
   locations?: Record<string, { lat: number; lng: number }>;
+  /** #21: stores added in the app (same columns as stores.csv). Pass to loadData(dataDir, extraStores). */
+  extraStores?: Store[];
 };
 export type EngineOutput = { moves: MovesFile; history: HistoryFile };
 
@@ -18,7 +20,7 @@ export const ENGINE_VERSION = '1.0';
 
 /** loadData → buildPositions → generateMoves → validate → summary. Throws (run FAILS) on any violation. */
 export function runEngine(input: EngineInput): EngineOutput {
-  const P = buildPositions(loadData(input.dataDir));
+  const P = buildPositions(loadData(input.dataDir, input.extraStores));
   const gen = generateMoves(P);
   const checked = validate(P, gen.moves);
   for (const d of checked.dropped) console.warn(`[engine] dropped ${d.move_id} (${d.rule}): ${d.detail}`);

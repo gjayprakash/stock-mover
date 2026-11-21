@@ -102,3 +102,12 @@ export type AiCall = {
 };
 
 export type BriefResponse = { text: string; numbers_found: number; numbers_total: number; generated_at: string; source: "AI" | "TEMPLATE" };
+
+// ---- Add store (#21) ----
+export type NewStoreRequest = {
+  store_id: string; city: string; tier: "S++" | "S+" | "A" | "B"; capacity: number; opened_on: string;
+  pin: string; address: string; lat: number; lng: number;
+};
+/** GET /api/geo?pin= ; zone null = state outside North/East/South (pick by hand). */
+export type GeoResult = { pin: string; place: string; city: string; state: string; zone: string | null; lat: number; lng: number };
+export type NearestLocation = { location_id: string; city: string; distance_km: number; travel_days: number };

@@ -6,6 +6,7 @@ import { HealthController } from './health.controller';
 import { RunsModule } from './runs/runs.module';
 import { AiModule } from './ai/ai.module';
 import { GeoModule } from './geo/geo.module';
+import { StoresModule } from './stores/stores.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { GeoModule } from './geo/geo.module';
     RunsModule,
     AiModule,
     GeoModule,
+    StoresModule,
   ],
   controllers: [HealthController],
 })
