@@ -86,7 +86,7 @@ export default function TodayPage() {
         title={`Your ${num(data.stores.length)} stores at a glance`}
         explainer="The bar shows how full each store is. Tap a store to see what goes in and out today."
       >
-        <StoreTiles stores={data.stores} />
+        <StoreTiles stores={data.stores} problems={data.problems} />
       </Section>
 
       <Section n={3} title="Not sure about something? Ask." explainer="Type a question in your own words. The answer uses today's real numbers.">
