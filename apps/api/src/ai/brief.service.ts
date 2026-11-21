@@ -7,6 +7,9 @@ import { AllowedSet } from './grounding';
 import { MeshClient, type ChatMessage } from './mesh.client';
 import { BRIEF_TASK, SYSTEM_RULES, correction } from './prompts';
 
+// A template brief (model off, down or ungrounded) is only kept this long, then the next request tries the model again.
+const TEMPLATE_TTL_MS = 5 * 60_000;
+
 const inr = (n: number) => '₹' + n.toLocaleString('en-IN');
 
 /** Deterministic brief from summary + problem titles; used when AI is off, down or ungrounded. */
@@ -38,17 +41,32 @@ export class BriefService implements OnModuleInit {
     return run ? this.forRun(run.moves) : null;
   }
 
-  /** One brief per run_id; concurrent callers share the same promise. */
+  /**
+   * One brief per run_id; concurrent callers share the same promise. An AI brief stays cached for the run.
+   * A template fallback is dropped after TEMPLATE_TTL_MS so a later request can still get an AI brief.
+   */
   forRun(m: MovesFile): Promise<BriefResponse> {
     const id = m.run.run_id;
-    let p = this.cache.get(id);
-    if (!p) {
-      p = this.generate(m);
-      this.cache.set(id, p);
-      p.catch(() => this.cache.delete(id));
-      if (this.cache.size > 5) this.cache.delete(this.cache.keys().next().value!);
-    }
+    const cached = this.cache.get(id);
+    if (cached) return cached;
+    const p = this.stored(m).then((b) => b ?? this.generate(m));
+    this.cache.set(id, p);
+    const drop = () => this.cache.get(id) === p && this.cache.delete(id);
+    p.then((b) => b.source === 'TEMPLATE' && setTimeout(drop, TEMPLATE_TTL_MS).unref(), drop);
+    if (this.cache.size > 5) this.cache.delete(this.cache.keys().next().value!);
     return p;
+  }
+
+  /** A brief already written for this run (e.g. before a restart), from the ai_calls log. No model call. */
+  private async stored(m: MovesFile): Promise<BriefResponse | null> {
+    try {
+      const row = await this.aiLog.latestShownBrief(m.run.run_id);
+      if (!row) return null;
+      return { text: row.output, numbers_found: row.numbers_found, numbers_total: row.numbers_total, generated_at: row.at, source: 'AI' };
+    } catch (e) {
+      this.log.warn(`could not read stored brief: ${(e as Error).message}`);
+      return null;
+    }
   }
 
   private async generate(m: MovesFile): Promise<BriefResponse> {
