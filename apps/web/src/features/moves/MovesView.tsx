@@ -1,11 +1,11 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Move, MovesFile } from '@sm/contract';
 import { Button, Card, Chip, EmptyState, inr } from './deps';
 import { applyFilters, EMPTY_FILTERS, type ApprovalStatus, type Filters } from './filters';
 import { MovesFilters } from './MovesFilters';
 import { MoveRow } from './MoveRow';
-import { MoveDetail } from './MoveDetail';
-import { AllMovesContext, AlternativesList, ClosestBanner } from './Distance';
+import { MovePanel } from './MovePanel';
+import { AllMovesContext, ClosestBanner } from './Distance';
 
 const PAGE = 50;
 
@@ -38,21 +38,24 @@ export function MovesView(p: MovesViewProps) {
     setSelected(new Set());
   }, [filterKey, file]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // In-app links to ?move=<id> (e.g. from the closer-stores note): jump to the page holding that row.
+  // ?move=<id> is the source of truth for the panel. Keep the table on the page that holds it.
   useEffect(() => {
     const i = filters.move ? rows.findIndex((m) => m.id === filters.move) : -1;
     if (i >= 0) setPage(Math.floor(i / PAGE));
   }, [filters.move]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Bring the expanded row into view once it is on screen (deep links land before the file loads).
+  // Bring the open row into view, but never for a row click: only for deep links (on load) and Prev/Next.
+  // block 'nearest' means no movement at all when the row is already visible.
+  const fromClick = useRef(false);
   const scrolledTo = useRef('');
   useEffect(() => {
     if (!filters.move) { scrolledTo.current = ''; return; }
+    if (fromClick.current) { fromClick.current = false; scrolledTo.current = filters.move; return; }
     if (scrolledTo.current === filters.move) return;
     const id = setTimeout(() => {
-      const el = document.getElementById(`move-${filters.move}`);
+      const el = document.getElementById(`row-${filters.move}`);
       if (!el) return;
-      (el.previousElementSibling ?? el).scrollIntoView({ block: 'start' });
+      el.scrollIntoView({ block: 'nearest' });
       scrolledTo.current = filters.move;
     }, 50);
     return () => clearTimeout(id);
@@ -79,7 +82,29 @@ export function MovesView(p: MovesViewProps) {
       else n.delete(id);
       return n;
     });
-  const expand = (id: string) => p.onFiltersChange({ ...filters, move: filters.move === id ? '' : id });
+  const openRow = (id: string) => {
+    fromClick.current = true;
+    p.onFiltersChange({ ...filters, move: filters.move === id ? '' : id });
+  };
+
+  // Panel: the open move, its place in the filtered + sorted list, Prev/Next across pages, close back to the row.
+  const openMove = filters.move ? rows.find((m) => m.id === filters.move) ?? file?.moves.find((m) => m.id === filters.move) : undefined;
+  const openIndex = openMove ? rows.findIndex((m) => m.id === openMove.id) : -1;
+  const goTo = (i: number) => p.onFiltersChange({ ...filters, move: rows[i].id });
+  const closePanel = useCallback(() => {
+    const id = filters.move;
+    p.onFiltersChange({ ...filters, move: '' });
+    setTimeout(() => document.getElementById(`row-${id}`)?.focus({ preventScroll: true }), 0);
+  }, [filters, p]);
+  useEffect(() => {
+    if (!openMove) return;
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      if (e.key === 'Escape' && !['INPUT', 'SELECT', 'TEXTAREA'].includes(t.tagName)) closePanel();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [openMove, closePanel]);
 
   const approveSelected = () => {
     const ok = chosen.filter((m) => !m.needs_signoff).map((m) => m.id);
@@ -95,6 +120,39 @@ export function MovesView(p: MovesViewProps) {
   };
 
   const nf = new Intl.NumberFormat('en-IN');
+  const showBulk = chosen.length > 0 || !!note || undoIds.length > 0;
+  const bulkBody = (
+    <>
+      <span className="text-base">
+            {chosen.length > 0 ? (
+              <>
+                <span className="font-bold">{chosen.length} selected</span> · {nf.format(chosen.reduce((s, m) => s + m.qty, 0))} pieces ·{' '}
+                {inr(chosen.reduce((s, m) => s + m.value_inr, 0))}
+              </>
+            ) : null}
+            {note && <span className="ml-2 font-semibold text-[#F4A27C]">{note}</span>}
+            {undoIds.length > 0 && (
+              <span className="ml-2" role="status">
+                Skipped {undoIds.length} {undoIds.length === 1 ? 'move' : 'moves'}.{' '}
+                <button type="button" className="font-semibold text-[#F4A27C] underline" onClick={() => { p.undo(undoIds); setUndoIds([]); }}>
+                  Undo
+                </button>
+              </span>
+            )}
+          </span>
+          {chosen.length > 0 && (
+            <span className="flex w-full gap-2.5 sm:w-auto">
+              <button type="button" onClick={skipSelected} className="h-12 flex-1 rounded-[10px] border-[1.5px] border-[#8A5A3C] px-4 font-semibold whitespace-nowrap sm:flex-none sm:px-5">
+                Skip selected
+              </button>
+              <button type="button" onClick={approveSelected} className="h-12 flex-1 rounded-[10px] bg-cta px-4 font-semibold whitespace-nowrap text-white sm:flex-none sm:px-6">
+                Approve selected
+              </button>
+            </span>
+          )}
+    </>
+  );
+
   const th = 'px-2.5 py-4 font-bold xl:px-3';
 
   return (
@@ -163,39 +221,17 @@ export function MovesView(p: MovesViewProps) {
                     <td colSpan={7} className="px-7 py-5"><div className="h-10 animate-pulse rounded-lg bg-tint" /></td>
                   </tr>
                 ))}
-              {pageRows.map((m) => {
-                const open = filters.move === m.id;
-                const status = p.statusOf(m.id);
-                return (
-                  <Fragment key={m.id}>
-                    <MoveRow
-                      move={m}
-                      status={status}
-                      selected={selected.has(m.id)}
-                      expanded={open}
-                      onSelect={(on) => toggle(m.id, on)}
-                      onToggle={() => expand(m.id)}
-                    />
-                    {open && (
-                      <tr id={`move-${m.id}`}>
-                        <td colSpan={7} className="p-0">
-                          {/* Below 1024 px the table scrolls sideways; pin the detail to the card's width so it never gets cut off. */}
-                          <div className="sticky left-0 w-[calc(100vw-2rem)] md:w-[calc(100vw-19rem)] lg:static lg:w-auto">
-                          <MoveDetail
-                            move={m}
-                            status={status}
-                            onApprove={() => { p.approveMoves([m.id]); toggle(m.id, false); }}
-                            onSkip={() => { skip([m.id]); toggle(m.id, false); }}
-                            onUndo={() => p.undo([m.id])}
-                            extra={<AlternativesList move={m} />}
-                          />
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                );
-              })}
+              {pageRows.map((m) => (
+                <MoveRow
+                  key={m.id}
+                  move={m}
+                  status={p.statusOf(m.id)}
+                  selected={selected.has(m.id)}
+                  open={filters.move === m.id}
+                  onSelect={(on) => toggle(m.id, on)}
+                  onToggle={() => openRow(m.id)}
+                />
+              ))}
             </tbody>
           </table>
         </div>
@@ -227,42 +263,36 @@ export function MovesView(p: MovesViewProps) {
       </Card>
       </AllMovesContext.Provider>
 
-      {(chosen.length > 0 || note || undoIds.length > 0) && (
-        <section className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-10 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-2xl bg-brown px-4 py-3 text-[#FFFBF2] shadow-[0_16px_40px_rgba(81,29,0,0.35)] md:bottom-6 md:px-6 md:py-4">
-          <span className="text-base">
-            {chosen.length > 0 ? (
-              <>
-                <span className="font-bold">{chosen.length} selected</span> · {nf.format(chosen.reduce((s, m) => s + m.qty, 0))} pieces ·{' '}
-                {inr(chosen.reduce((s, m) => s + m.value_inr, 0))}
-              </>
-            ) : null}
-            {note && <span className="ml-2 font-semibold text-[#F4A27C]">{note}</span>}
-            {undoIds.length > 0 && (
-              <span className="ml-2" role="status">
-                Skipped {undoIds.length} {undoIds.length === 1 ? 'move' : 'moves'}.{' '}
-                <button type="button" className="font-semibold text-[#F4A27C] underline" onClick={() => { p.undo(undoIds); setUndoIds([]); }}>
-                  Undo
-                </button>
-              </span>
-            )}
-          </span>
-          {chosen.length > 0 && (
-            <span className="flex w-full gap-2.5 sm:w-auto">
-              <button type="button" onClick={skipSelected} className="h-12 flex-1 rounded-[10px] border-[1.5px] border-[#8A5A3C] px-4 font-semibold whitespace-nowrap sm:flex-none sm:px-5">
-                Skip selected
-              </button>
-              <button type="button" onClick={approveSelected} className="h-12 flex-1 rounded-[10px] bg-cta px-4 font-semibold whitespace-nowrap text-white sm:flex-none sm:px-6">
-                Approve selected
-              </button>
-            </span>
-          )}
+      {showBulk && (
+        <section
+          className={`sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-10 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-2xl bg-brown px-4 py-3 text-[#FFFBF2] shadow-[0_16px_40px_rgba(81,29,0,0.35)] md:bottom-6 md:px-6 md:py-4 ${
+            openMove ? 'lg:mr-[496px]' : ''
+          }`}
+        >
+          {bulkBody}
         </section>
+      )}
+
+      {openMove && file && (
+        <MovePanel
+          move={openMove}
+          stores={file.stores}
+          position={openIndex >= 0 ? { index: openIndex, total: rows.length } : null}
+          status={p.statusOf(openMove.id)}
+          onApprove={() => { p.approveMoves([openMove.id]); toggle(openMove.id, false); }}
+          onSkip={() => { skip([openMove.id]); toggle(openMove.id, false); }}
+          onUndo={() => p.undo([openMove.id])}
+          onPrev={openIndex > 0 ? () => goTo(openIndex - 1) : null}
+          onNext={openIndex >= 0 && openIndex < rows.length - 1 ? () => goTo(openIndex + 1) : null}
+          onClose={closePanel}
+          bulk={showBulk ? <div className="flex flex-col gap-2 rounded-xl bg-brown px-3 py-2 text-[#FFFBF2] lg:hidden">{bulkBody}</div> : undefined}
+        />
       )}
     </div>
   );
 }
 
-/** Chips for deep-link filters (?store=, ?problem=, ?sku=, ?move=) so other screens can link in; each has a clear button. */
+/** Chips for deep-link filters (?store=, ?problem=, ?sku=) so other screens can link in; each has a clear button. */
 function ActiveFilters({ file, filters, onChange }: { file: MovesFile; filters: Filters; onChange: (f: Filters) => void }) {
   const chips: { key: keyof Filters; label: string }[] = [];
   if (filters.problem) {
@@ -274,7 +304,7 @@ function ActiveFilters({ file, filters, onChange }: { file: MovesFile; filters: 
     chips.push({ key: 'store', label: `Store ${st ? `${st.city} · ` : ''}${filters.store}` });
   }
   if (filters.sku) chips.push({ key: 'sku', label: `Product ${filters.sku}` });
-  if (filters.move) chips.push({ key: 'move', label: `Open: ${filters.move}` });
+  // ?move= is shown by the detail panel itself, so it gets no chip (a chip above the table would shift the page).
   if (!chips.length) return null;
   return (
     <div className="-mt-4 flex flex-wrap items-center gap-2" aria-label="Active filters">

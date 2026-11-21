@@ -6,13 +6,13 @@ import { Chip } from './deps';
 // #26 Nearest store first. All numbers come from the move (engine #25); older runs without the fields render nothing.
 
 const nf = new Intl.NumberFormat('en-IN');
-const dayWord = (n: number) => `${n} ${n === 1 ? 'day' : 'days'}`;
+export const dayWord = (n: number) => `${n} ${n === 1 ? 'day' : 'days'}`;
 /** Same-city stores share one map point in the data, so 0 km reads as "Same city". */
 export const kmDays = (km: number, d: number) =>
   `${Math.round(km) === 0 ? 'Same city' : `${nf.format(Math.round(km))} km`} · ${dayWord(d)}`;
 
 const alts = (m: Move) => m.alternatives ?? [];
-const hasDistance = (m: Move) => m.type === 'STORE_TO_STORE' && m.distance_km != null && m.travel_days != null;
+export const hasDistance = (m: Move) => m.type === 'STORE_TO_STORE' && m.distance_km != null && m.travel_days != null;
 
 /** Today's full move list, so a row can tell whether a closer store also gets this product today. */
 export const AllMovesContext = createContext<Move[]>([]);
@@ -86,7 +86,7 @@ export function AlternativesList({ move: m }: { move: Move }) {
   ].sort((a, b) => a.distance_km - b.distance_km || a.travel_days - b.travel_days || Number(b.chosen) - Number(a.chosen));
   return (
     <div className="flex flex-col gap-2 text-sm">
-      <p className="m-0 font-semibold">Stores that also need {m.sku_id}, closest first</p>
+      <p className="m-0 font-semibold">Stores that also need this product, closest first</p>
       {served.length > 0 && (
         <p className="m-0 rounded-lg bg-ok-bg px-3 py-2 text-[#123D2E]">
           {served.length === 1 ? `${served[0].store_id} is closer and also gets` : `${names(served)} are closer and also get`} {m.sku_id} today (
@@ -125,4 +125,13 @@ export function AlternativesList({ move: m }: { move: Move }) {
       </ol>
     </div>
   );
+}
+
+/** One plain sentence on how far the pieces travel: "PAT-01 is in the same city as PAT-03, 2 days away." */
+export function distanceSentence(m: Move): string | null {
+  if (!hasDistance(m)) return null;
+  const km = Math.round(m.distance_km!);
+  return km === 0
+    ? `${m.to} is in the same city as ${m.from}, ${dayWord(m.travel_days!)} away.`
+    : `${m.to} is ${nf.format(km)} km from ${m.from}, ${dayWord(m.travel_days!)} away.`;
 }
