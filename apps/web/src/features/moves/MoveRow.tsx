@@ -51,7 +51,7 @@ export function MoveRow({ move: m, status, selected, expanded, onSelect, onToggl
       <td className={`${td} min-w-[200px]`}>
         <div className="font-bold">{m.style_name}, {m.size}</div>
         <div className="mt-0.5 text-sm text-[#5E4E42]">{m.sku_id} · {inr(m.value_inr)}</div>
-        {m.needs_signoff && <div className="mt-2"><Chip tone="danger">Needs sign-off</Chip></div>}
+        {m.needs_signoff && <div className="mt-2"><Chip tone="orange">Needs sign-off</Chip></div>}
       </td>
       <td className={`${td} whitespace-nowrap`}>
         <div className={`mb-1 text-[13px] font-bold ${KIND_COLOR[m.type]}`}>
@@ -64,7 +64,7 @@ export function MoveRow({ move: m, status, selected, expanded, onSelect, onToggl
       <td className={`${td} whitespace-nowrap`}>{coverText(m)}</td>
       <td className={`${td} whitespace-nowrap`}>{dateShort(m.arrives_on)}</td>
       <td className="min-w-[260px] py-5 pl-3 pr-5 leading-normal text-[#2E221A] md:pr-7">
-        <ConfidenceDot basis={m.velocity_basis} />
+        <span className="mr-2 align-middle"><ConfidenceDot basis={m.velocity_basis} /></span>
         {m.reason}
       </td>
     </tr>

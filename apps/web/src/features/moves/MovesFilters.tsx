@@ -29,7 +29,7 @@ export function MovesFilters({ file, filters, onChange }: Props) {
   }, [q]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <Card className="flex flex-col gap-[18px] px-5 py-6 md:px-7">
+    <Card padded={false} className="flex flex-col gap-[18px] px-5 py-6 md:px-7">
       <div className="flex flex-wrap gap-2.5" role="group" aria-label="Kind of move">
         {chips.map(([k, label, n]) => {
           const on = filters.kind === k;

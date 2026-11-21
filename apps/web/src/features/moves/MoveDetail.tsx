@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Move, Side } from '@sm/contract';
-import { Button, days } from './deps';
+import { Button, days, inr } from './deps';
 import { MiniChart } from './MiniChart';
 import type { ApprovalStatus } from './filters';
 
@@ -57,7 +57,7 @@ export function MoveDetail({ move: m, status, onApprove, onSkip, onUndo, extra }
             </tbody>
           </table>
           <p className="mt-2 px-3 text-[13px] text-[#5E4E42]">
-            {m.qty} × ₹{new Intl.NumberFormat('en-IN').format(m.mrp)} MRP · {m.lead_time_days}-day lead time
+            {m.qty} × {inr(m.mrp)} MRP · {m.lead_time_days}-day lead time
             {m.stock_age_days != null && ` · oldest piece ${m.stock_age_days} days`}
             {m.velocity_basis !== 'own' && ` · sales rate from ${m.velocity_basis === 'peer' ? 'similar stores' : 'own + similar stores'}`}
           </p>
