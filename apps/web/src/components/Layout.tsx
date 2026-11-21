@@ -18,6 +18,8 @@ const ICON = {
   ai: I(<><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z" /><path d="M19 15l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z" /></>),
   run: I(<><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>),
   more: I(<><circle cx="5" cy="12" r="1.2" /><circle cx="12" cy="12" r="1.2" /><circle cx="19" cy="12" r="1.2" /></>),
+  addStock: I(<><path d="M3 8l9-5 9 5v8l-9 5-9-5z" /><path d="M12 9v6M9 12h6" /></>),
+  addStore: I(<><path d="M4 9l1.5-5h13L20 9M4 9v11h9M4 9h16v3" /><path d="M18 15v6M15 18h6" /></>),
 };
 
 const NAV: NavItem[] = [
@@ -27,6 +29,8 @@ const NAV: NavItem[] = [
   { to: '/ask', label: 'Ask', icon: ICON.ask },
   { to: '/ai', label: 'AI usage', icon: ICON.ai },
   { to: '/run', label: 'Daily run', icon: ICON.run },
+  { to: '/add-stock', label: 'Add stock', icon: ICON.addStock },
+  { to: '/add-store', label: 'Add store', icon: ICON.addStore },
 ];
 
 function Logo({ small }: { small?: boolean }) {
@@ -118,7 +122,7 @@ function TabBar() {
   const [more, setMore] = useState(false);
   const { pathname } = useLocation();
   useEffect(() => setMore(false), [pathname]);
-  const moreActive = pathname.startsWith('/ai') || pathname.startsWith('/run');
+  const moreActive = NAV.slice(4).some((n) => pathname.startsWith(n.to));
   const tab = (active: boolean) =>
     `flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-xs no-underline ${active ? 'font-bold text-cta' : 'font-medium text-[#4A3A2E]'}`;
   const pill = (active: boolean) => `flex h-8 w-14 items-center justify-center rounded-full ${active ? 'bg-cta-bg' : ''}`;
