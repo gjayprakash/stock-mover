@@ -4,6 +4,8 @@ import { buildPositions } from './position';
 import { generateMoves } from './moves';
 import { validate } from './validate';
 import { buildSummary, buildHistory, nextRunAt } from './summary';
+import { buildStores } from './stores';
+import { buildProblems } from './problems';
 
 // Contract between Jay-A (engine) and Jay-B (API). Do not change without telling the other lane.
 // Extensions must be additive (optional fields).
@@ -29,17 +31,21 @@ export function runEngine(input: EngineInput): EngineOutput {
       checked.violations.slice(0, 5).map((v) => `${v.move_id} ${v.rule} ${v.detail}`).join('; '));
   }
   const moves = checked.moves;
+  const summary = buildSummary(P, moves, checked.violations.length);
+  const stores = buildStores(P, moves);
+  const found = buildProblems(P, moves, stores);
+  summary.found.starved_bestseller = found.starved_bestseller;
   return {
     moves: {
       run: {
         run_id: input.runId, status: 'FINISHED', as_of: input.asOf,
         generated_at: input.now.toISOString(), next_run_at: nextRunAt(input.now), engine_version: ENGINE_VERSION,
       },
-      summary: buildSummary(P, moves, checked.violations.length),
+      summary,
       moves,
       flags: gen.flags,
-      problems: [],
-      stores: [],
+      problems: found.problems,
+      stores,
       blocked: gen.blocked,
     },
     history: buildHistory(P, moves),

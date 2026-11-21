@@ -25,3 +25,13 @@ export const REORDER_COVER = LOW_COVER_DISPLAY; // restock a store×SKU only whe
 export const KM_PER_DAY = 350;
 export const PACKING_DAYS = 1;
 export const ROAD_FACTOR = 1.3;
+// Problem detection (#7). All ASSUMPTIONS.
+export const PROBLEMS_SHOWN = 6;
+export const STARVED_SHELF_DROP = 0.4; // last-3-week shelf days fell ≥ 40% vs prior 9-week average
+export const STARVED_TOP_SHARE = 0.2; // style in top 20% of network velocity
+export const STARVED_INBOUND_DAYS = 7;
+export const SLOW_SHELF_DAYS_PER_STORE = 56;
+export const SLOW_BOTTOM_SHARE = 0.1;
+export const UNDER_STOCKED_FILL = 0.5;
+export const UNDER_STOCKED_SOLD_OUT = 10;
+export const LAUNCH_DAYS = 60;
