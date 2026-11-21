@@ -1,11 +1,12 @@
 import { ConflictException, Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { join } from 'path';
-import type { HistoryFile, MovesFile, RunRow } from '@sm/contract';
+import type { HistoryFile, MovesFile, RunRow, Scope } from '@sm/contract';
 import { DbService } from '../db/db.service';
 import { ENGINE_VERSION, runEngine } from '../engine';
 import { GeoService } from '../geo/geo.service';
 import { StoresService } from '../stores/stores.service';
 import { StockService } from '../stock/stock.service';
+import { scopeHistory, scopeMoves } from './scoped';
 
 export const AS_OF = '2026-10-31';
 export const TODAY = '2026-11-01';
@@ -129,8 +130,16 @@ export class RunsService implements OnApplicationBootstrap {
     }));
   }
 
-  /** Latest FINISHED run, cached in memory by run_id. */
-  async latest(): Promise<FinishedRun | null> {
+  /** Latest FINISHED run as `scope` may see it (moves, stores, problems, flags, history filtered; summary recomputed). */
+  async latest(scope: Scope): Promise<FinishedRun | null> {
+    const run = await this.latestAll();
+    if (!run || 'all' in scope) return run;
+    const moves = scopeMoves(run.moves, scope);
+    return { run_id: run.run_id, moves, history: scopeHistory(run.history, moves) };
+  }
+
+  /** Latest FINISHED run, unfiltered, cached in memory by run_id. */
+  private async latestAll(): Promise<FinishedRun | null> {
     if (!this.db.configured) return null;
     const [head] = await this.db.query<{ run_id: string }>(
       `select run_id from runs where status = 'FINISHED' order by finished_at desc limit 1`,

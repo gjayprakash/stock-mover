@@ -1,12 +1,14 @@
 import { BadRequestException, Body, Controller, HttpCode, Post, Res } from '@nestjs/common';
 import type { Response } from 'express';
-import type { AiCall } from '@sm/contract';
+import type { AiCall, Scope } from '@sm/contract';
+import { ReqScope } from '../auth/scope';
+import { scopeLocation } from '../runs/scoped';
 import { RunsService, TODAY } from '../runs/runs.service';
 import { AiLogService } from './ai-log.service';
 import { chatContext } from './context';
 import { AllowedSet, isForecastRequest } from './grounding';
 import { MeshClient, type ChatMessage } from './mesh.client';
-import { CHAT_RULES, SYSTEM_RULES, correction } from './prompts';
+import { CHAT_RULES, SYSTEM_RULES, correction, scopeRule } from './prompts';
 
 const MAX_QUESTION = 2000;
 const MAX_TURNS = 6;
@@ -30,7 +32,7 @@ export class ChatController {
 
   @Post()
   @HttpCode(200)
-  async chat(@Body() body: ChatBody, @Res() res: Response) {
+  async chat(@ReqScope() scope: Scope, @Body() body: ChatBody, @Res() res: Response) {
     const question = typeof body?.question === 'string' ? body.question.trim() : '';
     if (!question || question.length > MAX_QUESTION) {
       throw new BadRequestException({ error: `question must be 1-${MAX_QUESTION} characters` });
@@ -51,14 +53,15 @@ export class ChatController {
       res.end();
     };
 
-    const run = await this.runs.latest();
+    const run = await this.runs.latest(scope);
+    const loc = scopeLocation(scope);
     if (!run) {
       write('There is no run yet, so there is nothing to answer from.');
       return finish({ numbers_found: 0, numbers_total: 0, result: 'ERROR', held_reason: 'MODEL_ERROR' });
     }
     const m = run.moves;
     const started = Date.now();
-    const base = { run_id: m.run.run_id, job: 'ASK' as const, model: this.mesh.model, input_summary: question.slice(0, 300) };
+    const base = { run_id: m.run.run_id, job: 'ASK' as const, model: this.mesh.model, input_summary: ((loc ? `location ${loc}: ` : '') + question).slice(0, 300) };
     const log = (c: Omit<AiCall, 'id' | 'at' | 'run_id' | 'job' | 'model' | 'input_summary' | 'latency_ms'>) =>
       this.aiLog.add({ ...base, ...c, latency_ms: Date.now() - started });
 
@@ -80,7 +83,7 @@ export class ChatController {
     const ctx = chatContext(m, question);
     const allowed = new AllowedSet(ctx, [m.run.as_of, TODAY], m);
     const messages: ChatMessage[] = [
-      { role: 'system', content: `${SYSTEM_RULES}\n${CHAT_RULES}\n\nTODAY'S DATA (as of ${m.run.as_of}):\n${JSON.stringify(ctx)}` },
+      { role: 'system', content: `${SYSTEM_RULES}\n${CHAT_RULES}${loc ? '\n' + scopeRule(loc) : ''}\n\nTODAY'S DATA (as of ${m.run.as_of}):\n${JSON.stringify(ctx)}` },
       ...history,
       { role: 'user', content: question },
     ];

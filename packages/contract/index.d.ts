@@ -137,3 +137,7 @@ export type UserRow = Me & {
   mobile: string | null; status: "Active" | "Invite sent" | "Turned off";
   last_sign_in_at: string | null; created_at: string;
 };
+
+// ---- Store scoping (#77) ----
+/** What one request may see: everything (super admin, no Viewing pick) or one location (store manager, or the picker). */
+export type Scope = { all: true } | { locationId: string };

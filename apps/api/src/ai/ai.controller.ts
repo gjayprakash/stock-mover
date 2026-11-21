@@ -1,4 +1,6 @@
 import { Controller, Get, NotFoundException, Query } from '@nestjs/common';
+import type { Scope } from '@sm/contract';
+import { ReqScope } from '../auth/scope';
 import { AiLogService } from './ai-log.service';
 import { BriefService } from './brief.service';
 
@@ -10,14 +12,14 @@ export class AiController {
   ) {}
 
   @Get('brief')
-  async getBrief() {
-    const b = await this.brief.latest();
+  async getBrief(@ReqScope() scope: Scope) {
+    const b = await this.brief.latest(scope);
     if (!b) throw new NotFoundException({ error: 'no run yet' });
     return b;
   }
 
   @Get('ai/log')
-  log(@Query('run') run?: string) {
-    return this.aiLog.list(run || undefined);
+  log(@ReqScope() scope: Scope, @Query('run') run?: string) {
+    return this.aiLog.list(scope, run || undefined);
   }
 }

@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import type { AiCall } from '@sm/contract';
+import type { AiCall, Scope } from '@sm/contract';
+import { scopeLocation } from '../runs/scoped';
 import { DbService } from '../db/db.service';
 
 const RING = 200;
@@ -58,21 +59,24 @@ export class AiLogService implements OnModuleInit {
    * The latest AI brief already shown for this run, so a restart reuses it instead of asking the model again (#18).
    * Only SHOWN rows count: template fallbacks are logged as ERROR / HELD_BACK, so they never block a later AI brief.
    */
+  /** The whole-network brief only: one location's brief (#77) starts its input_summary with "location ". */
   async latestShownBrief(runId: string): Promise<AiCall | null> {
     const real = (c: Pick<AiCall, 'model' | 'output'>) => !!c.output && !!c.model && c.model !== 'template';
     if (!this.db.configured) {
-      return this.memory.find((c) => c.run_id === runId && c.job === 'BRIEF' && c.result === 'SHOWN' && real(c)) ?? null;
+      return this.memory.find((c) => c.run_id === runId && c.job === 'BRIEF' && c.result === 'SHOWN' && real(c) && !c.input_summary.startsWith('location ')) ?? null;
     }
     const rows = await this.db.query<AiCall & { at: Date }>(
       `select * from ai_calls
         where run_id = $1 and job = 'BRIEF' and result = 'SHOWN' and output <> '' and model not in ('', 'template')
+          and input_summary not like 'location %'
         order by at desc limit 1`,
       [runId],
     );
     return rows[0] ? { ...rows[0], at: rows[0].at.toISOString() } : null;
   }
 
-  async list(runId?: string) {
+  /** AI calls, newest first. A location scope sees only the calls made for that location (input_summary "location X: …"). */
+  async list(scope: Scope, runId?: string) {
     let calls: AiCall[];
     if (!this.db.configured) {
       calls = this.memory.filter((c) => !runId || c.run_id === runId);
@@ -87,6 +91,8 @@ export class AiLogService implements OnModuleInit {
         return c;
       });
     }
+    const loc = scopeLocation(scope);
+    if (loc) calls = calls.filter((c) => c.input_summary.startsWith(`location ${loc}: `));
     const held = calls.filter((c) => c.result === 'HELD_BACK');
     const reasons = new Map<string, number>();
     held.forEach((c) => c.held_reason && reasons.set(c.held_reason, (reasons.get(c.held_reason) ?? 0) + 1));
