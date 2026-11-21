@@ -3,20 +3,24 @@ import { Button } from '../../components/Button';
 import { useApprovals } from '../../data/approvals';
 import { inr, pieces, storeLabel } from '../../lib/format';
 import { fixTotals } from './derive';
+import { problemStatus } from './status';
 
 /** Brown fix card: what we send, Approve all, then one-by-one sign-off for big moves. */
 export function FixCard({ problem, moves, stores }: { problem: Problem; moves: Move[]; stores: StoreSummary[] }) {
-  const { approveProblem, approveMoves, statusOf, problemStatusOf } = useApprovals();
-
+  const api = useApprovals();
+  const { approveProblem, approveMoves, statusOf, undo } = api;
   const t = fixTotals(moves);
-  const approved = problemStatusOf(problem.id) === 'approved';
+  const status = problemStatus(problem, moves, api);
+  const approved = status === 'approved';
   const pending = t.signoff.filter((m) => statusOf(m.id) !== 'approved');
   const normal = t.entries - t.signoff.length;
+  const approvedCount = moves.filter((m) => statusOf(m.id) === 'approved').length;
   // Approving the last big entry by hand also marks the problem approved.
   const approveOne = (id: string) => {
     approveMoves([id]);
     if (!approved && pending.length === 1 && pending[0].id === id) approveProblem(problem, moves);
   };
+  const undoAll = () => undo([problem.id, ...problem.move_ids]);
 
   if (t.entries === 0) {
     return (
@@ -32,7 +36,7 @@ export function FixCard({ problem, moves, stores }: { problem: Problem; moves: M
     <div className="flex flex-col gap-3.5 rounded-[20px] bg-brown p-6 text-page shadow-card md:p-8">
       <div className="text-[15px] text-tint">Our fix</div>
       <div className="font-heading text-[28px] leading-tight md:text-[30px]">
-        Send {pieces(t.units)} to {t.stores} {t.stores === 1 ? 'store' : 'stores'}
+        Send {pieces(t.units)} to {t.stores === 1 ? storeLabel(moves[0].to, stores) : `${t.stores} stores`}
       </div>
       <div className="text-[15px] leading-relaxed text-tint">
         {t.entries} {t.entries === 1 ? 'entry' : 'entries'} · {inr(t.value)} at tag price ·{' '}
@@ -41,13 +45,20 @@ export function FixCard({ problem, moves, stores }: { problem: Problem; moves: M
           : `${t.signoff.length} big ${t.signoff.length === 1 ? 'entry needs' : 'entries need'} a separate sign-off`}
       </div>
 
-      {!approved && normal === 0 ? null : !approved ? (
+      {status === 'skipped' ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-tint px-4 py-3 text-brown">
+          <span className="font-bold">Skipped. Nothing from this problem will be sent.</span>
+          <Button size="sm" variant="outline" onClick={undoAll}>Undo</Button>
+        </div>
+      ) : !approved && normal === 0 ? null : !approved ? (
         <Button full onClick={() => approveProblem(problem, moves)}>
           {normal === t.entries ? `Approve all ${t.entries} ${t.entries === 1 ? 'entry' : 'entries'}` : `Approve ${normal} of ${t.entries} entries`}
         </Button>
       ) : (
         <div className="flex min-h-12 items-center justify-center rounded-xl bg-ok-bg px-4 text-center font-bold text-[#1D5B45]">
-          {pending.length ? `Approved ${normal}. ${pending.length} still ${pending.length === 1 ? 'needs' : 'need'} sign-off.` : 'Approved.'}
+          {pending.length
+            ? `Approved ${approvedCount} of ${t.entries}. ${pending.length} still ${pending.length === 1 ? 'needs' : 'need'} sign-off.`
+            : `Approved all ${approvedCount} ${approvedCount === 1 ? 'entry' : 'entries'}.`}
         </div>
       )}
 
@@ -64,6 +75,8 @@ export function FixCard({ problem, moves, stores }: { problem: Problem; moves: M
                 </div>
                 {done ? (
                   <span className="text-sm font-bold text-ok">Approved</span>
+                ) : status === 'skipped' ? (
+                  <span className="text-sm font-bold text-muted">Skipped</span>
                 ) : (
                   <Button size="sm" onClick={() => approveOne(m.id)}>Approve</Button>
                 )}
