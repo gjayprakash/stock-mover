@@ -15,6 +15,16 @@ export function Hero({ file }: { file: MovesFile }) {
   const statuses = file.problems.map((p) => problemStatus(p, byId, ap));
   const approved = statuses.filter((s) => s === 'approved').length;
   const decided = statuses.filter(Boolean).length;
+  // "Mark as seen" (problem with no moves) is stored as approved; count it apart in the summary line.
+  const seen = file.problems.filter((p, i) => statuses[i] === 'approved' && p.move_ids.length === 0).length;
+  const summary = [
+    [approved - seen, 'approved'],
+    [seen, 'seen'],
+    [decided - approved, 'skipped'],
+  ]
+    .filter(([n]) => (n as number) > 0)
+    .map(([n, label]) => `${num(n as number)} ${label}`)
+    .join(', ');
   const allDone = total > 0 && decided === total;
   const atRisk = file.stores.reduce((s, x) => s + (x.at_risk_week_inr || 0), 0);
   const pct = total ? Math.round((approved / total) * 100) : 0;
@@ -50,7 +60,7 @@ export function Hero({ file }: { file: MovesFile }) {
             <>
               <div className="font-heading text-[28px]">All fixes decided</div>
               <div className="text-sm text-page/80">
-                {num(approved)} approved, {num(decided - approved)} skipped
+                {summary}
               </div>
               <Button className="mt-2" onClick={() => downloadApprovedCsv(file, ap.state)} disabled={ap.counts.approved === 0}>
                 Download approved list (CSV)

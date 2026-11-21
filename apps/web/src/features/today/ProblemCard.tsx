@@ -85,7 +85,10 @@ export function ProblemCard({ problem, moves, large }: Props) {
         {large ? `Most urgent · ${problem.tag}` : problem.tag}
       </span>
       <h3 className={`m-0 font-heading font-normal text-ink ${large ? 'text-2xl md:text-[28px]' : 'text-xl md:text-[22px]'}`}>
-        <Link to={href} className="text-ink no-underline hover:underline">{problem.title}</Link>
+        {/* Every title links to its problem page; the underline makes that visible without hovering. */}
+        <Link to={href} className="text-ink underline decoration-line decoration-2 underline-offset-4 hover:text-cta hover:decoration-cta">
+          {problem.title}
+        </Link>
       </h3>
       <Block label="What we saw" text={problem.seen} />
       <Block label="Our fix" text={problem.fix} />

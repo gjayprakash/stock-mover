@@ -11,7 +11,8 @@ import { dateShort, num, timeShort } from '../lib/format';
 import { AskBox } from '../features/today/AskBox';
 import { Hero } from '../features/today/Hero';
 import { ProblemCard } from '../features/today/ProblemCard';
-import { StoreTiles } from '../features/today/StoreTiles';
+import { StoreTiles, storesToWatch } from '../features/today/StoreTiles';
+import { useIsPhone } from '../features/today/useIsPhone';
 
 /** Daily run is expected every 24 h; older than this and the list is stale. */
 const STALE_MS = 30 * 60 * 60 * 1000;
@@ -53,9 +54,11 @@ function Loading() {
 
 export default function TodayPage() {
   const { data, isSample } = useMovesFile();
+  const isPhone = useIsPhone();
   if (!data) return <Loading />;
 
   const [first, ...rest] = [...data.problems].sort((a, b) => a.rank - b.rank);
+  const watchCount = storesToWatch(data.stores, data.problems).length;
 
   return (
     <div className="flex flex-col gap-10 md:gap-14">
@@ -83,7 +86,11 @@ export default function TodayPage() {
 
       <Section
         n={2}
-        title={`Your ${num(data.stores.length)} stores at a glance`}
+        title={
+          isPhone
+            ? `${num(watchCount)} ${watchCount === 1 ? 'store' : 'stores'} to watch`
+            : `Your ${num(data.stores.length)} stores at a glance`
+        }
         explainer="The bar shows how full each store is. Tap a store to see what goes in and out today."
       >
         <StoreTiles stores={data.stores} problems={data.problems} />
