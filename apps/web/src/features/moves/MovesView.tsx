@@ -3,7 +3,7 @@ import type { Move, MovesFile } from '@sm/contract';
 import { Button, Card, Chip, EmptyState, inr } from './deps';
 import { applyFilters, EMPTY_FILTERS, type ApprovalStatus, type Filters } from './filters';
 import { MovesFilters } from './MovesFilters';
-import { MoveRow } from './MoveRow';
+import { MoveRow, PIN } from './MoveRow';
 import { MovePanel } from './MovePanel';
 import { AllMovesContext, ClosestBanner } from './Distance';
 
@@ -190,7 +190,7 @@ export function MovesView(p: MovesViewProps) {
           <table className="w-full min-w-[860px] border-collapse text-[15px] lg:min-w-0">
             <thead>
               <tr className="bg-page text-left text-sm text-[#4A3A2E]">
-                <th className="w-11 py-4 pr-2 pl-5 xl:pl-7">
+                <th className={`${PIN} max-lg:left-0 max-lg:w-12 max-lg:max-w-12 max-lg:min-w-12 w-11 py-4 pr-2 pl-5 xl:pl-7`}>
                   <input
                     type="checkbox"
                     aria-label="Select all on this page"
@@ -206,7 +206,7 @@ export function MovesView(p: MovesViewProps) {
                     className="h-5 w-5 accent-[#C7400E]"
                   />
                 </th>
-                <th className={th}>Product</th>
+                <th className={`${th} ${PIN} max-lg:left-12 max-lg:shadow-[6px_0_8px_-6px_rgba(81,29,0,0.22)]`}>Product</th>
                 <th className={th}>From, to</th>
                 <th className={th}>Pieces</th>
                 <th className={th}>Days of stock</th>
