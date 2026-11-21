@@ -17,13 +17,13 @@ const CHECKS: [keyof Move['checks'], string][] = [
   ['donor_cover_30', 'A sending store keeps at least 30 days of stock'],
 ];
 
-/** Sales rate in plain words: "about 2.7 a week", "less than 1 a month". */
+/** Sales rate in plain words, always per week: "about 2.7 a week", "less than 1 a week". */
 function rate(v: number): string {
+  // One unit everywhere: pieces a week. Anything that sells shows at least "less than 1 a week", never 0.
   const week = v * 7;
   if (week >= 10) return `about ${Math.round(week)} a week`;
-  if (week >= 1) return `about ${week.toFixed(1).replace(/\.0$/, '')} a week`;
-  const month = v * 30;
-  return month >= 1 ? `about ${month.toFixed(1).replace(/\.0$/, '')} a month` : 'less than 1 a month';
+  if (week >= 0.95) return `about ${week.toFixed(1).replace(/\.0$/, '')} a week`;
+  return 'less than 1 a week';
 }
 const lasts = (d: number | null) => (d == null ? null : Math.round(d));
 /** "about 45 days", or "more than a year" for very slow stock. */
@@ -163,11 +163,13 @@ export function MovePanel(p: MovePanelProps) {
             {p.status === 'skipped' && <Chip>Skipped</Chip>}
           </div>
         </div>
+        {/* Sheet (under 1024 px): a visible text button. Side panel: a compact ×. */}
+        <Button variant="outline" size="sm" onClick={p.onClose} className="shrink-0 lg:hidden">Close</Button>
         <button
           type="button"
           onClick={p.onClose}
           aria-label="Close move details"
-          className="-mt-1 -mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-2xl leading-none text-brown hover:bg-tint"
+          className="-mt-1 -mr-2 hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl text-2xl leading-none text-brown hover:bg-tint lg:flex"
         >
           ×
         </button>
@@ -225,7 +227,7 @@ export function MovePanel(p: MovePanelProps) {
         </Section>
 
         <Section title={`Sold each week at ${title(chartStore)}, last 12 weeks`}>
-          <WeeklySales move={m} storeName={title(chartStore)} />
+          <WeeklySales move={m} storeName={title(chartStore)} openedOn={p.stores.find((s) => s.store_id === chartStore)?.opened_on} />
         </Section>
       </div>
 

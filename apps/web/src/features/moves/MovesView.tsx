@@ -156,7 +156,12 @@ export function MovesView(p: MovesViewProps) {
   const th = 'px-2.5 py-4 font-bold xl:px-3';
 
   return (
-    <div className="flex flex-col gap-8">
+    // One move list for the row chips AND the panel (the panel sits outside the table), so both say the same thing.
+    <AllMovesContext.Provider value={file?.moves ?? []}>
+    {/* From 1872 px, line the page up with the left of the content area (keeping a 32 px gutter after the sidebar) so the
+        480 px panel never covers it. Applied whether or not the panel is open, so opening it moves nothing.
+        'left' (not transform) keeps the fixed panel fixed to the window. */}
+    <div className="relative flex flex-col gap-8 min-[1872px]:left-[calc((1120px+240px-100vw)/2+32px)]">
       <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
         <div className="flex flex-col gap-2">
           <h1 className="m-0 font-heading text-[34px] font-normal leading-tight md:text-[42px]">
@@ -183,7 +188,6 @@ export function MovesView(p: MovesViewProps) {
 
       {file && <ClosestBanner file={file} />}
 
-      <AllMovesContext.Provider value={file?.moves ?? []}>
       <Card padded={false} className="overflow-hidden">
         <div className="relative overflow-x-auto">
           {/* Phone and tablet: the table scrolls inside the card. From 1024 px it fits: columns share the width. */}
@@ -261,7 +265,6 @@ export function MovesView(p: MovesViewProps) {
           </div>
         )}
       </Card>
-      </AllMovesContext.Provider>
 
       {showBulk && (
         <section
@@ -280,15 +283,16 @@ export function MovesView(p: MovesViewProps) {
           position={openIndex >= 0 ? { index: openIndex, total: rows.length } : null}
           status={p.statusOf(openMove.id)}
           onApprove={() => { p.approveMoves([openMove.id]); toggle(openMove.id, false); }}
-          onSkip={() => { skip([openMove.id]); toggle(openMove.id, false); }}
+          onSkip={() => { p.skipMoves([openMove.id]); toggle(openMove.id, false); }}
           onUndo={() => p.undo([openMove.id])}
           onPrev={openIndex > 0 ? () => goTo(openIndex - 1) : null}
           onNext={openIndex >= 0 && openIndex < rows.length - 1 ? () => goTo(openIndex + 1) : null}
           onClose={closePanel}
-          bulk={showBulk ? <div className="flex flex-col gap-2 rounded-xl bg-brown px-3 py-2 text-[#FFFBF2] lg:hidden">{bulkBody}</div> : undefined}
+          bulk={chosen.length > 0 ? <div className="flex flex-col gap-2 rounded-xl bg-brown px-3 py-2 text-[#FFFBF2] lg:hidden">{bulkBody}</div> : undefined}
         />
       )}
     </div>
+    </AllMovesContext.Provider>
   );
 }
 
