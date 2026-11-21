@@ -3,9 +3,6 @@ import type { Request } from 'express';
 import { WAREHOUSE_ID } from '../engine/params';
 import { RequestsService, type Actor } from './requests.service';
 
-// Sign-in off (AUTH_REQUIRED unset): the demo acts as this store's manager unless the page sends ?store=.
-const DEMO_STORE = 'KNP-03';
-
 /** Store manager → own store always. Super admin → the Viewing store (?store= / ?location= / body.to_location), else WH-KOL. */
 function actor(req: Request, picked?: unknown): Actor {
   const u = req.user;
@@ -14,7 +11,7 @@ function actor(req: Request, picked?: unknown): Actor {
     return { id: u.id, role: u.role, location: u.location_id };
   }
   const q = [req.query.store, req.query.location, picked].find((x) => typeof x === 'string' && x.trim());
-  const location = typeof q === 'string' ? q.trim().toUpperCase() : u ? WAREHOUSE_ID : DEMO_STORE;
+  const location = typeof q === 'string' ? q.trim().toUpperCase() : WAREHOUSE_ID;
   return { id: u?.id ?? null, role: u?.role ?? null, location };
 }
 

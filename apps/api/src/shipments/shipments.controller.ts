@@ -5,7 +5,7 @@ import { DriverDeviceGuard } from '../drivers/driver-device.guard';
 import { storeOf } from '../drivers/drivers.controller';
 import { ShipmentsService } from './shipments.service';
 
-/** Store manager (scoped to their store; KNP-03 when sign-in is off). */
+/** Store manager (scoped to their store) or super admin (the Viewing store). */
 @Controller('shipments')
 export class ShipmentsController {
   constructor(private readonly shipments: ShipmentsService) {}

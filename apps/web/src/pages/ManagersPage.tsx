@@ -63,12 +63,7 @@ export default function ManagersPage() {
           Each manager sees only their own store: its stock, its requests and its shipments. You see all {all.length} locations.
         </p>
       </div>
-      {status === 'off' && (
-        <Banner title="Sign-in is not required yet." action={<Link to="/login?next=%2Fmanagers" className="font-bold text-cta">Sign in</Link>}>
-          Sign in as the super admin to add store managers.
-        </Banner>
-      )}
-      {isMock && <Banner tone="warn">Sign-in is not switched on yet, so managers added here are kept on this page only until it reloads.</Banner>}
+      {isMock && <Banner tone="warn">The users service could not be reached, so managers added here are kept on this page only until it reloads.</Banner>}
 
       <Card className="flex flex-col gap-6">
         <div>

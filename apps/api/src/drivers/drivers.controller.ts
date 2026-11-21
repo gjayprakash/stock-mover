@@ -1,19 +1,15 @@
 import { Body, Controller, ForbiddenException, Get, HttpCode, HttpException, Param, Patch, Post, Req, Res, UseGuards } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { authRequired, clientIp, isHttps } from '../auth/http';
+import { clientIp, isHttps } from '../auth/http';
 import { Public } from '../auth/public.decorator';
 import { scopeOf } from '../auth/scope';
 import { DriverDeviceGuard, setDriverCookie } from './driver-device.guard';
 import { DriversService } from './drivers.service';
 
-/** Store used when sign-in is off (live demo without AUTH_REQUIRED). */
-const DEMO_STORE = 'KNP-03';
-
-/** The manager's store (#77 scope: own store, or the super admin's Viewing pick). With sign-in off, the demo store. */
+/** The manager's store (#77 scope: own store, or the super admin's Viewing pick). */
 export function storeOf(req: Request): string {
   const scope = scopeOf(req);
   if ('locationId' in scope) return scope.locationId;
-  if (!authRequired()) return DEMO_STORE;
   throw new ForbiddenException({ error: 'Pick a store to manage its drivers' });
 }
 

@@ -31,7 +31,7 @@ import { ShipmentsModule } from './shipments/shipments.module';
     DriversModule, // drivers + phone pairing (#81)
     RequestsModule, // requests between stores (#79)
     ShipmentsModule, // shipments, driver trips, pings (#82)
-    AuthModule, // users + sessions; routes need sign-in only when AUTH_REQUIRED=true
+    AuthModule, // users + sessions; every route except @Public() ones needs sign-in
   ],
   controllers: [HealthController],
 })

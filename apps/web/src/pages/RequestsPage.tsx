@@ -28,11 +28,11 @@ export default function RequestsPage() {
     (id: string) => (id === 'WH-KOL' ? 'Warehouse WH-KOL' : `${stores.find((s) => s.store_id === id)?.city ?? ''} ${id}`.trim()),
     [stores],
   );
-  // A store manager sees their own store only. Anyone else (super admin, or sign-in off) picks the Viewing store.
+  // A store manager sees their own store only. The super admin picks the Viewing store.
   const superAdmin = me?.role === 'super_admin';
   const fixed = superAdmin ? null : me?.store_id ?? null;
   const { viewing, setViewing } = useAuth();
-  const store = fixed ?? params.get('store') ?? viewing ?? (me && !superAdmin ? 'KNP-03' : '');
+  const store = fixed ?? params.get('store') ?? viewing ?? '';
 
   const products = useMemo<Product[]>(() => {
     const seen = new Map<string, Product>();
