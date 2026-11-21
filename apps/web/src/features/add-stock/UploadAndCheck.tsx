@@ -8,7 +8,7 @@ import { Section } from '../../components/Section';
 import { num, pieces, storeLabel } from '../../lib/format';
 import { checkFile, commit, downloadErrors, type FakeCtx } from './api';
 import { prepareCsv } from './csvParse';
-import { capacityText } from './notes';
+import { NoBreak, capacityText } from './notes';
 import { MAX_ROWS, STOCK_COLUMNS, columnName, sentence, type StockCheckResult } from './types';
 
 type State =
@@ -117,7 +117,7 @@ export function UploadAndCheck({ ctx, nextRun }: { ctx: FakeCtx; nextRun: string
           <Card className="flex flex-col gap-3 border-l-4 border-danger">
             <h3 className="m-0 font-heading text-2xl font-normal text-danger">We could not read this file</h3>
             <p className="m-0 text-[17px] leading-normal">
-              <span className="font-bold break-all">{state.fileName}</span>: {state.message}
+              <span className="font-bold break-all">{state.fileName}</span>: <NoBreak text={state.message} />
             </p>
             <p className="m-0 text-muted">
               Nothing was added.
@@ -132,7 +132,7 @@ export function UploadAndCheck({ ctx, nextRun }: { ctx: FakeCtx; nextRun: string
 
         {state.step === 'error' && (
           <Card className="flex flex-col gap-3 border-l-4 border-danger">
-            <p className="m-0 text-[17px]">{state.message} Nothing was added.</p>
+            <p className="m-0 text-[17px]"><NoBreak text={state.message} /> Nothing was added.</p>
             <div><Button variant="outline" onClick={reset}>Try again</Button></div>
           </Card>
         )}
@@ -205,7 +205,7 @@ function Checked({
               {r.by_location.map((l, i) => (
                 <span key={l.location_id}>
                   {i > 0 && (i === r.by_location.length - 1 ? ' and ' : ', ')}
-                  <span className="font-semibold">{num(l.pieces)}</span> to {storeLabel(l.location_id, stores)}
+                  <span className="font-semibold">{num(l.pieces)}</span> to <NoBreak text={storeLabel(l.location_id, stores)} />
                 </span>
               ))}
               .{full.length === 0 && r.by_location.some((l) => l.location_id !== 'WH-KOL') && ' Every store has room.'}
@@ -213,7 +213,7 @@ function Checked({
             {full.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {full.map((l) => (
-                  <Chip key={l.location_id} tone="warn" className="whitespace-normal">{capacityText(l.location_id, r.warnings, stores)}</Chip>
+                  <Chip key={l.location_id} tone="warn" className="whitespace-normal"><NoBreak text={capacityText(l.location_id, r.warnings, stores)} /></Chip>
                 ))}
               </div>
             )}
@@ -224,14 +224,14 @@ function Checked({
         {r.warnings.some((w) => w.row > 0) && (
           <ul className="m-0 flex list-none flex-col gap-1 p-0 text-[15px] text-[#6B4100]">
             {r.warnings.filter((w) => w.row > 0).map((w, i) => (
-              <li key={i}><span className="font-semibold">Row {w.row}:</span> {sentence(w.message, w.fix)}</li>
+              <li key={i}><span className="font-semibold">Row {w.row}:</span> <NoBreak text={sentence(w.message, w.fix)} /></li>
             ))}
           </ul>
         )}
         {r.new_skus.length > 0 && (
           <div className="rounded-xl bg-tint px-4 py-3 text-[15px] leading-snug">
             <span className="font-semibold">{r.new_skus.length === 1 ? '1 new product' : `${num(r.new_skus.length)} new products`} will be created:</span>{' '}
-            {r.new_skus.join(', ')}. A product code we do not know yet is added to the catalogue with the name, category and tag price from your file.
+            {r.new_skus.map((s, i) => <span key={s}>{i > 0 && ', '}<span className="whitespace-nowrap">{s}</span></span>)}. A product code we do not know yet is added to the catalogue with the name, category and tag price from your file.
           </div>
         )}
       </div>
@@ -240,8 +240,8 @@ function Checked({
           <div className="w-[90px] shrink-0 text-[15px] font-bold text-[#8A2C07]">Row {e.row}</div>
           <div className="min-w-0 flex-1 basis-64">
             <div className="text-sm font-semibold text-muted">{columnName(e.column)}</div>
-            <div className="font-semibold">{sentence(e.message)}</div>
-            <div className="mt-0.5 text-[15px] text-muted">{e.fix}</div>
+            <div className="font-semibold"><NoBreak text={sentence(e.message)} /></div>
+            <div className="mt-0.5 text-[15px] text-muted"><NoBreak text={e.fix} /></div>
           </div>
           {e.column === 'location_id' && (
             <Link to="/add-store" className={linkCls}>Add this store</Link>

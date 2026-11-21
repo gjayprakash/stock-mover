@@ -5,7 +5,7 @@ import { Card } from '../../components/Card';
 import { Chip } from '../../components/Chip';
 import { dateLong, pieces, storeLabel } from '../../lib/format';
 import { checkRow, commit, type FakeCtx } from './api';
-import { capacityText, oldDateText } from './notes';
+import { NoBreak, capacityText, oldDateText } from './notes';
 import { beforeCount, sentence, type StockCheckResult, type StockRowInput } from './types';
 
 type Field = 'location_id' | 'sku_id' | 'qty' | 'received_on';
@@ -85,7 +85,7 @@ export function TypeInForm({ ctx, nextRun }: { ctx: FakeCtx; nextRun: string }) 
   const err = (f: Field) =>
     errors[f] ? (
       <p id={`${f}-err`} className="m-0 text-sm font-semibold text-danger">
-        {errors[f]}
+        <NoBreak text={errors[f]!} />
         {f === 'location_id' && <> <Link to="/add-store" className="text-cta underline">Add this store</Link></>}
       </p>
     ) : null;
@@ -104,7 +104,8 @@ export function TypeInForm({ ctx, nextRun }: { ctx: FakeCtx; nextRun: string }) 
       </div>
       <Card>
         <form onSubmit={check} noValidate className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-[minmax(230px,1.4fr)_minmax(180px,1.2fr)_minmax(140px,0.9fr)_minmax(170px,1fr)]">
-          <div className="flex min-w-0 flex-col gap-1.5">
+          {/* Full row below xl: at two columns (768–1279 px) half a row is too narrow for "Warehouse · WH-KOL". */}
+          <div className="flex min-w-0 flex-col gap-1.5 sm:col-span-2 xl:col-span-1">
             <label htmlFor="as-loc" className="text-sm font-semibold">Where it arrived</label>
             <select id="as-loc" value={loc} onChange={(e) => edit(setLoc)(e.target.value)} className={`${inputCls} pr-8`} aria-describedby={errors.location_id ? 'location_id-err' : undefined}>
               {locations.map((id) => <option key={id} value={id}>{storeLabel(id, ctx.stores)}</option>)}
@@ -127,7 +128,7 @@ export function TypeInForm({ ctx, nextRun }: { ctx: FakeCtx; nextRun: string }) 
             {err('received_on')}
           </div>
           {!checked && !errors.received_on && beforeCount(date, ctx.asOf) && (
-            <p className="m-0 text-sm font-semibold text-warn sm:col-span-2 xl:col-span-4" role="status">{oldDateText(ctx.asOf)}</p>
+            <p className="m-0 text-sm font-semibold text-warn sm:col-span-2 xl:col-span-4" role="status"><NoBreak text={oldDateText(ctx.asOf)} /></p>
           )}
           <div className="sm:col-span-2 xl:col-span-4">
             {!checked && (
@@ -142,18 +143,18 @@ export function TypeInForm({ ctx, nextRun }: { ctx: FakeCtx; nextRun: string }) 
           <div className="mt-5 flex flex-col gap-3 rounded-xl bg-page p-4 md:p-5" role="status">
             <div className="font-semibold text-ok">Checked. Nothing is saved yet.</div>
             <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[15px]">
-              <dt className="text-muted">Where</dt><dd className="m-0 font-semibold">{storeLabel(checked.input.location_id, ctx.stores)}</dd>
-              <dt className="text-muted">Product</dt><dd className="m-0 font-semibold">{checked.input.sku_id}{name ? ` · ${name}` : ''}</dd>
+              <dt className="text-muted">Where</dt><dd className="m-0 font-semibold"><NoBreak text={storeLabel(checked.input.location_id, ctx.stores)} /></dd>
+              <dt className="text-muted">Product</dt><dd className="m-0 font-semibold"><span className="whitespace-nowrap">{checked.input.sku_id}</span>{name ? ` · ${name}` : ''}</dd>
               <dt className="text-muted">Pieces</dt><dd className="m-0 font-semibold">{pieces(checked.result.pieces)}</dd>
-              <dt className="text-muted">Received</dt><dd className="m-0 font-semibold">{dateLong(checked.input.received_on)}</dd>
+              <dt className="text-muted">Received</dt><dd className="m-0 font-semibold whitespace-nowrap">{dateLong(checked.input.received_on)}</dd>
             </dl>
             {isNew && <div className="text-[15px]">This product code is new, so a new product will be created.</div>}
             {full.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {full.map((l) => <Chip key={l.location_id} tone="warn" className="whitespace-normal">{capacityText(l.location_id, checked.result.warnings, ctx.stores)}</Chip>)}
+                {full.map((l) => <Chip key={l.location_id} tone="warn" className="whitespace-normal"><NoBreak text={capacityText(l.location_id, checked.result.warnings, ctx.stores)} /></Chip>)}
               </div>
             )}
-            {otherWarnings.map((w, i) => <div key={i} className="text-[15px] text-[#6B4100]">{sentence(w.message, w.fix)}</div>)}
+            {otherWarnings.map((w, i) => <div key={i} className="text-[15px] text-[#6B4100]"><NoBreak text={sentence(w.message, w.fix)} /></div>)}
             <div className="flex flex-wrap items-center gap-3">
               <Button onClick={add} disabled={busy} className="max-md:w-full">{busy ? 'Adding…' : 'Add this item'}</Button>
               <Button variant="ghost" onClick={() => setChecked(null)} disabled={busy} className="max-md:w-full">Change it</Button>
@@ -161,8 +162,8 @@ export function TypeInForm({ ctx, nextRun }: { ctx: FakeCtx; nextRun: string }) 
             <div className="text-sm text-muted">Goes into the next daily run, {nextRun}.</div>
           </div>
         )}
-        {errors.form && <p className="mt-4 mb-0 font-semibold text-danger" role="alert">{errors.form}</p>}
-        {done && <p className="mt-4 mb-0 rounded-xl bg-ok-bg px-4 py-3 font-semibold text-ok" role="status">{done}</p>}
+        {errors.form && <p className="mt-4 mb-0 font-semibold text-danger" role="alert"><NoBreak text={errors.form} /></p>}
+        {done && <p className="mt-4 mb-0 rounded-xl bg-ok-bg px-4 py-3 font-semibold text-ok" role="status"><NoBreak text={done} /></p>}
       </Card>
     </section>
   );
