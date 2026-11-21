@@ -9,8 +9,15 @@ export const MAX_ROWS = 5000;
 export const MAX_QTY = 10000;
 export const MAX_AGE_DAYS = 60;
 
-/** The 3 example rows in the sample file (real SKUs). Ignored if left in an upload. */
+/** The 3 example rows in the sample file (real SKUs). Ignored if left in an upload.
+ *  Dated after the as-of date (2026-10-31), so they would also pass the received_on check. */
 export const SAMPLE_ROWS: string[][] = [
+  ['WH-KOL', 'KUR-02-M', 'Mustard Embroidered Yoke Kurta Set', 'M', 'Kurta Set', '6299', '24', '2026-11-01'],
+  ['LKO-01', 'SHW-01-L', 'Wine Velvet Embroidered Sherwani', 'L', 'Sherwani', '24599', '3', '2026-11-01'],
+  ['PAT-02', 'MOJ-01-9', 'Peach Leather Mojari', '9', 'Mojari', '2199', '6', '2026-11-02'],
+];
+/** Example rows of the sample file before the dates moved past the as-of date; still ignored so an old download gives 0 rows. */
+const OLD_SAMPLE_ROWS: string[][] = [
   ['WH-KOL', 'KUR-02-M', 'Mustard Embroidered Yoke Kurta Set', 'M', 'Kurta Set', '6299', '24', '2026-10-30'],
   ['LKO-01', 'SHW-01-L', 'Wine Velvet Embroidered Sherwani', 'L', 'Sherwani', '24599', '3', '2026-10-30'],
   ['PAT-02', 'MOJ-01-9', 'Peach Leather Mojari', '9', 'Mojari', '2199', '6', '2026-10-29'],
@@ -20,7 +27,8 @@ export type CatalogItem = { sku_id: string; style_id: string; style_name: string
 export type CheckContext = {
   locations: Map<string, { capacity: number | null; stock_now: number }>; // stores + WH-KOL (capacity null)
   items: Map<string, CatalogItem>;
-  today: string; // YYYY-MM-DD, real date: received_on may not be after it
+  asOf: string; // YYYY-MM-DD, date of the stock count: received_on must be after it (else it is already counted)
+  today: string; // YYYY-MM-DD, server's date in India: received_on may not be after it
 };
 export type GoodRow = { row: number; location_id: string; sku_id: string; qty: number; received_on: string; newItem: CatalogItem | null };
 export type CheckOutcome = {
@@ -39,7 +47,10 @@ export function checkHeader(header: string[]): string | null {
       ? `Column ${i + 1} should be "${COLUMNS[i]}" but it is missing${h[i] ? ` (found "${h[i]}")` : ''}. Use the sample file's header.`
       : `Column ${i + 1} should be "${COLUMNS[i]}" but it is "${h[i] ?? ''}" ("${COLUMNS[i]}" is in column ${at + 1}). Do not reorder columns.`;
   }
-  if (h.length > COLUMNS.length && h.slice(COLUMNS.length).some((x) => x)) return `Column ${COLUMNS.length + 1} "${h[COLUMNS.length]}" is extra. Remove it.`;
+  // A trailing "error" column (from the rows-to-fix download) is allowed and ignored.
+  const extra = h.slice(COLUMNS.length);
+  if (extra[0]?.toLowerCase() === 'error' && !extra.slice(1).some((x) => x)) return null;
+  if (h.length > COLUMNS.length && extra.some((x) => x)) return `Column ${COLUMNS.length + 1} "${h[COLUMNS.length]}" is extra. Remove it.`;
   return null;
 }
 
@@ -47,6 +58,9 @@ const SKU = /^([A-Z]{2,4}-\d{2})-([A-Z0-9]{1,4})$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const addDays = (iso: string, n: number) => new Date(Date.parse(iso + 'T00:00:00Z') + n * 86_400_000).toISOString().slice(0, 10);
 const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/** 2026-10-31 → "31 Oct 2026" */
+const human = (iso: string) => `${Number(iso.slice(8, 10))} ${MONTHS[Number(iso.slice(5, 7)) - 1]} ${iso.slice(0, 4)}`;
 
 /** Row-level checks on data rows (header already checked). `firstRow` = file line of rows[0]. */
 export function checkRows(rows: string[][], ctx: CheckContext, firstRow = 2): CheckOutcome {
@@ -54,7 +68,7 @@ export function checkRows(rows: string[][], ctx: CheckContext, firstRow = 2): Ch
   const warnings: StockRowError[] = [];
   const failed: CheckOutcome['failed'] = [];
   const good: GoodRow[] = [];
-  const isSample = (r: string[]) => SAMPLE_ROWS.some((s) => s.every((v, i) => (r[i] ?? '').trim() === v));
+  const isSample = (r: string[]) => [...SAMPLE_ROWS, ...OLD_SAMPLE_ROWS].some((s) => s.every((v, i) => (r[i] ?? '').trim() === v));
   let total = 0;
   rows.forEach((cells, idx) => {
     const row = firstRow + idx;
@@ -90,7 +104,8 @@ export function checkRows(rows: string[][], ctx: CheckContext, firstRow = 2): Ch
     if (!/^\d+$/.test(r.qty) || qty < 1 || qty > MAX_QTY) err('qty', `Pieces "${r.qty}" is not a whole number from 1 to ${MAX_QTY.toLocaleString('en-IN')}`, 'Write the number of pieces, e.g. 12.');
     if (!DATE.test(r.received_on) || Number.isNaN(Date.parse(r.received_on + 'T00:00:00Z')) || addDays(r.received_on, 0) !== r.received_on)
       err('received_on', `Date "${r.received_on}" is not YYYY-MM-DD`, 'Write the date like 2026-11-02.');
-    else if (r.received_on > ctx.today) err('received_on', `Date ${r.received_on} is in the future`, `Use a date on or before ${ctx.today}.`);
+    else if (r.received_on <= ctx.asOf) err('received_on', `Received on or before ${human(ctx.asOf)}: already in the stock count`, 'Use a date after it.');
+    else if (r.received_on > ctx.today) err('received_on', `Date ${r.received_on} is after today (${human(ctx.today)})`, `Use a date from ${human(addDays(ctx.asOf, 1))} to ${human(ctx.today)}.`);
     else if (r.received_on < addDays(ctx.today, -MAX_AGE_DAYS)) err('received_on', `Date ${r.received_on} is more than ${MAX_AGE_DAYS} days ago`, 'Older stock is already in the count; leave it out.');
 
     if (rowErrors.length) {

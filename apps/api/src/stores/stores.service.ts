@@ -73,10 +73,25 @@ export class StoresService implements OnModuleInit {
       .map((r) => ({ location_id: r.location_id, city: this.cityOf(r.location_id), distance_km: r.distance_km, travel_days: r.travel_days }));
   }
 
+  /** Next free CITY-NN. A city that already has a store keeps its prefix (Bengaluru → BLR, Lucknow → LKO).
+   *  A new city gets the first 3 letters, or, if another city already uses those, the first letter + 2 later
+   *  letters in order (e.g. a new "Mysore" would skip MYS and take MYO). */
   nextCode(city: string): string {
-    const prefix = city.replace(/[^a-z]/gi, '').slice(0, 3).toUpperCase();
-    if (prefix.length < 3) throw new BadRequestException({ errors: [{ field: 'city', message: 'city needs at least 3 letters' }] });
-    const used = this.allStores()
+    const letters = city.replace(/[^a-z]/gi, '').toUpperCase();
+    if (letters.length < 3) throw new BadRequestException({ errors: [{ field: 'city', message: 'city needs at least 3 letters' }] });
+    const stores = this.allStores();
+    const prefixOf = (id: string) => id.slice(0, id.indexOf('-'));
+    const key = (c: string) => c.replace(/[^a-z]/gi, '').toUpperCase();
+    let prefix = stores.find((s) => key(s.city) === letters && CODE.test(s.store_id))?.store_id.slice(0, 3);
+    if (!prefix) {
+      const taken = new Set([...stores.map((s) => prefixOf(s.store_id)), prefixOf(WAREHOUSE.id)]);
+      const candidates: string[] = [];
+      for (let j = 1; j < letters.length; j++)
+        for (let k = j + 1; k < letters.length; k++) candidates.push(letters[0] + letters[j] + letters[k]);
+      prefix = candidates.find((p) => !taken.has(p));
+      if (!prefix) throw new BadRequestException({ errors: [{ field: 'city', message: 'No free code for this city; type one in' }] });
+    }
+    const used = stores
       .map((s) => s.store_id)
       .filter((id) => id.startsWith(prefix + '-'))
       .map((id) => Number(id.slice(4)));
