@@ -30,7 +30,6 @@ const tally = (mvs: Move[]): Tally => ({
 function completeLists(m: MovesFile) {
   const signoff = m.moves.filter((mv) => mv.needs_signoff);
   const types = [...new Set(m.moves.map((mv) => mv.type))];
-  const locations = [...new Set([...m.stores.map((s) => s.store_id), ...m.moves.flatMap((mv) => [mv.from, mv.to])])];
   // One short row per move (column names given once, style names once per style) so every
   // "which / list / when" question is answered from all moves, not a top-N slice (#18).
   const cols = ['id', 'type', 'trigger', 'from', 'to', 'sku', 'pieces', 'value_inr', 'arrives_on', 'needs_signoff'];
@@ -50,16 +49,60 @@ function completeLists(m: MovesFile) {
     totals_by_trigger: Object.fromEntries(
       [...new Set(m.moves.map((mv) => mv.trigger))].map((t) => [t, tally(m.moves.filter((mv) => mv.trigger === t))]),
     ),
-    store_flows: locations.map((id) => {
-      const inc = m.moves.filter((mv) => mv.to === id);
-      const out = m.moves.filter((mv) => mv.from === id);
-      return {
-        store: id,
-        in_moves: inc.length, in_pieces: tally(inc).pieces,
-        out_moves: out.length, out_pieces: tally(out).pieces,
-      };
-    }),
+    store_flows: {
+      note: 'per place, already added up: in_from = [source, moves, pieces], out_to = [destination, moves, pieces], biggest first; copy these, never add moves up yourself',
+      list: storeFlows(m).map((f) => ({
+        store: f.store,
+        in_moves: f.in_moves, in_pieces: f.in_pieces, in_from: f.in_from.map((p) => [p.place, p.moves, p.pieces]),
+        in_by_category: f.in_by_category, arrive_between: f.arrive_between,
+        out_moves: f.out_moves, out_pieces: f.out_pieces, out_to: f.out_to.map((p) => [p.place, p.moves, p.pieces]),
+        out_by_category: f.out_by_category,
+      })),
+    },
   };
+}
+
+export type PlaceShare = { place: string; moves: number; pieces: number };
+export type StoreFlow = {
+  store: string;
+  in_moves: number; in_pieces: number; in_from: PlaceShare[]; in_by_category: Record<string, number>;
+  arrive_between: [string, string] | null;
+  out_moves: number; out_pieces: number; out_to: PlaceShare[]; out_by_category: Record<string, number>;
+};
+
+/**
+ * Incoming / outgoing totals per store and WH-KOL, broken down by source / destination and category (#18).
+ * The adding is done here, so the model copies sums instead of adding 31 moves itself (it dropped one).
+ * Also used by the grounding check to verify that a listed breakdown is complete.
+ */
+export function storeFlows(m: MovesFile): StoreFlow[] {
+  const ids = [...new Set([...m.stores.map((s) => s.store_id), ...m.moves.flatMap((mv) => [mv.from, mv.to])])];
+  const share = (mvs: Move[], key: 'from' | 'to'): PlaceShare[] => {
+    const by = new Map<string, PlaceShare>();
+    for (const mv of mvs) {
+      const p = by.get(mv[key]) ?? { place: mv[key], moves: 0, pieces: 0 };
+      p.moves++;
+      p.pieces += mv.qty;
+      by.set(mv[key], p);
+    }
+    return [...by.values()].sort((a, b) => b.pieces - a.pieces || a.place.localeCompare(b.place));
+  };
+  const byCat = (mvs: Move[]) => {
+    const out: Record<string, number> = {};
+    for (const mv of mvs) out[mv.category] = (out[mv.category] ?? 0) + mv.qty;
+    return out;
+  };
+  return ids.map((id) => {
+    const inc = m.moves.filter((mv) => mv.to === id);
+    const out = m.moves.filter((mv) => mv.from === id);
+    const dates = inc.map((mv) => mv.arrives_on).sort();
+    return {
+      store: id,
+      in_moves: inc.length, in_pieces: tally(inc).pieces, in_from: share(inc, 'from'), in_by_category: byCat(inc),
+      arrive_between: dates.length ? [dates[0], dates[dates.length - 1]] : null,
+      out_moves: out.length, out_pieces: tally(out).pieces, out_to: share(out, 'to'), out_by_category: byCat(out),
+    };
+  });
 }
 
 /** Chat input: run + summary + problems + blocked + complete lists/totals + only the moves/stores/flags the question names. */

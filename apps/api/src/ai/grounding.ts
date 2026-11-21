@@ -3,6 +3,7 @@
 // rounding of an allowed number, or the sum/difference of two allowed numbers (ASSUMPTION, issue #10).
 
 import type { Move, MoveType, MovesFile, StoreSummary } from '@sm/contract';
+import { storeFlows, type PlaceShare, type StoreFlow } from './context';
 
 const MONTHS =['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 const MON = '(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\\.?';
@@ -74,9 +75,25 @@ class NumberSet {
 // What a line says about a move's direction, checked against the move's `type`.
 const TYPE_CLAIMS: [MoveType, RegExp][] = [
   ['PULL_BACK', /\b(back to (the )?(warehouse|WH-KOL)|pull[- ]?backs?|return(s|ed|ing)? (\w+ )?to (the )?(warehouse|WH-KOL)|to the warehouse)\b/i],
-  ['WH_TO_STORE', /\bfrom (the )?(warehouse|WH-KOL)\b/i],
+  ['WH_TO_STORE', /\b(from (the )?(warehouse|WH-KOL)|warehouse[- ]to[- ]stores?)\b/i],
   ['STORE_TO_STORE', /\b(store[- ]to[- ]store|between (two )?stores|from one store to another)\b/i],
 ];
+// Plain words for messages that go back to the model (it must not echo internal codes).
+const TYPE_WORDS: Record<MoveType, string> = {
+  PULL_BACK: 'back to the warehouse', WH_TO_STORE: 'warehouse to store', STORE_TO_STORE: 'store to store',
+};
+
+/** Numbers around each mention of `place`: from the previous place code to the next one (dates and codes removed). */
+function placeWindows(text: string, place: string): number[][] {
+  const hits = [...text.matchAll(CODE)];
+  return hits.flatMap((h, i) => {
+    if (h[0] !== place) return [];
+    const start = i > 0 ? hits[i - 1].index! + hits[i - 1][0].length : 0;
+    const end = i + 1 < hits.length ? hits[i + 1].index! : text.length;
+    return [numbersIn(datesIn(text.slice(start, h.index!) + ' ' + text.slice(h.index! + h[0].length, end)).rest)];
+  });
+}
+
 const typeClaim = (s: string): MoveType | null => {
   const hits = TYPE_CLAIMS.filter(([, re]) => re.test(s)).map(([t]) => t);
   return hits.length === 1 ? hits[0] : null;
@@ -112,6 +129,7 @@ export class AllowedSet {
   private readonly moves = new Map<string, Move>();
   private readonly stores = new Map<string, StoreSummary>();
   private readonly cache = new Map<string, NumberSet>();
+  private flows?: Map<string, StoreFlow>;
 
   constructor(context: unknown, private readonly extraDates: string[] = [], private readonly file?: MovesFile) {
     this.global = new NumberSet(true, context, extraDates);
@@ -132,16 +150,59 @@ export class AllowedSet {
     return this.cache.get(k)!;
   }
 
+  private flowMap() {
+    if (!this.flows) this.flows = new Map(storeFlows(this.file!).map((f) => [f.store, f]));
+    return this.flows;
+  }
+
   private storeSet(id: string) {
     const k = `s:${id}`;
     if (!this.cache.has(k)) {
       const mvs = this.file!.moves.filter((x) => x.from === id || x.to === id);
-      const inc = mvs.filter((x) => x.to === id);
-      const out = mvs.filter((x) => x.from === id);
-      const flow = [inc.length, inc.reduce((t, x) => t + x.qty, 0), out.length, out.reduce((t, x) => t + x.qty, 0)];
-      this.cache.set(k, new NumberSet(false, this.stores.get(id) ?? null, flow, mvs.map((x) => x.arrives_on), this.runTotals));
+      // Its own summary, its in/out totals and breakdowns (so "LKO-02: 4 pieces to MZF-01" passes), its moves' dates.
+      this.cache.set(k, new NumberSet(false, this.stores.get(id) ?? null, this.flowMap().get(id) ?? null, mvs.map((x) => x.arrives_on), this.runTotals));
     }
     return this.cache.get(k)!;
+  }
+
+  /**
+   * Completeness of a store breakdown (#18: MZF-01 got 128 pieces from 5 places, the answer listed 4 adding to 124).
+   * If the answer states one place's incoming (or outgoing) total and lists at least 2 of its sources (destinations),
+   * each listed place must carry its own pieces, and the listed places must add up to the total
+   * (or the rest must be stated as "other").
+   */
+  private breakdownCheck(answer: string): { total: number; missing: string[] } {
+    const flows = this.flowMap();
+    const places = [...new Set(answer.match(CODE) ?? [])].filter((c) => flows.has(c));
+    const nums = new Set(numbersIn(datesIn(answer).rest));
+    let best: { subject: string; dir: 'in' | 'out'; parts: PlaceShare[]; sum: number; named: PlaceShare[] } | null = null;
+    for (const subject of places) {
+      const f = flows.get(subject)!;
+      for (const dir of ['in', 'out'] as const) {
+        const parts = dir === 'in' ? f.in_from : f.out_to;
+        const sum = dir === 'in' ? f.in_pieces : f.out_pieces;
+        const named = parts.filter((p) => p.place !== subject && places.includes(p.place));
+        if (parts.length < 2 || named.length < 2 || !nums.has(sum)) continue;
+        if (!best || named.length > best.named.length) best = { subject, dir, parts, sum, named };
+      }
+    }
+    if (!best) return { total: 0, missing: [] };
+    const { subject, dir, parts, sum, named } = best;
+    const missing: string[] = [];
+    const arrow = (p: PlaceShare) => (dir === 'in' ? `${p.place} → ${subject}` : `${subject} → ${p.place}`);
+    for (const p of named) {
+      if (!placeWindows(answer, p.place).some((w) => w.includes(p.pieces))) missing.push(`${arrow(p)} is ${p.pieces} pieces`);
+    }
+    const listed = named.reduce((t, p) => t + p.pieces, 0);
+    const others = /\bother/i.test(answer) && nums.has(sum - listed);
+    if (listed !== sum && !others) {
+      const absent = parts.filter((p) => !named.includes(p));
+      missing.push(
+        `${subject} ${dir === 'in' ? 'receives' : 'sends'} ${sum} pieces but the listed ${dir === 'in' ? 'sources' : 'destinations'} ` +
+          `add up to ${listed}; missing: ${absent.map((p) => `${p.place} ${p.pieces} pieces`).join(', ')}`,
+      );
+    }
+    return { total: named.length + 1, missing };
   }
 
   check(answer: string): GroundingResult {
@@ -168,7 +229,7 @@ export class AllowedSet {
         const said = claim ?? listClaim;
         if (said) {
           total++;
-          if (said !== mv.type) missing.push(`${mv.id} is ${mv.type}, not ${said}`);
+          if (said !== mv.type) missing.push(`${mv.id} goes ${TYPE_WORDS[mv.type]}, not ${TYPE_WORDS[said]}`);
         }
       } else {
         if (ids.length === 0) listClaim = claim;
@@ -186,6 +247,12 @@ export class AllowedSet {
         total++;
         if (!set.hasNumber(n)) missing.push(`${n}${about}`);
       }
+    }
+    if (this.file) {
+      // Lines that name a move are already checked against that move; a breakdown is about places only.
+      const b = this.breakdownCheck(answer.split('\n').filter((l) => !/\bM\d{4}\b/.test(l)).join('\n'));
+      total += b.total;
+      missing.push(...b.missing);
     }
     return { found: total - missing.length, total, missing, ok: missing.length === 0 };
   }
