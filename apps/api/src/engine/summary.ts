@@ -2,19 +2,21 @@ import type { Move, MovesFile, MoveType, HistoryFile } from '@sm/contract';
 import type { Positions } from './position';
 import { AGE_COVER, AGE_DAYS, BASIS_BLENDED_DAYS, MIN_NEED_VELOCITY } from './params';
 import { key } from './clean';
+import { buildStores, isStoreAtRisk } from './stores';
 
 export function buildSummary(P: Positions, moves: Move[], violations: number): MovesFile['summary'] {
   const by_type: Record<MoveType, number> = { WH_TO_STORE: 0, STORE_TO_STORE: 0, PULL_BACK: 0 };
   for (const m of moves) by_type[m.type]++;
   const rows = [...P.rows.values()];
-  const atRisk = new Set(rows.filter((p) => p.velocity > 0 && p.velocity >= MIN_NEED_VELOCITY && (p.cover_days ?? Infinity) < 7).map((p) => p.store_id));
+  // Counted from the store rows so it ties out with the store pages (sold-out sellers, or not NORMAL).
+  const stores_at_risk = buildStores(P, moves).filter(isStoreAtRisk).length;
 
   let over = 0, belowMin = 0;
   for (const st of P.c.stores) {
     const s = P.byStore.get(st.store_id)!;
-    // stock_now on the raw count (Σ max(on_hand,0) + in transit), as the store reports it
-    const raw = rows.filter((p) => p.store_id === st.store_id).reduce((a, p) => a + p.on_hand + p.in_transit, 0);
-    if (raw > s.capacity) over++;
+    // Same stock as stores[].stock_now and the capacity rule: a count flagged as wrong is not real stock
+    // (it is counted under data_flags instead).
+    if (s.store_units + s.store_in_transit > s.capacity) over++;
     for (const [cat, min] of Object.entries(s.min_display)) if ((s.cat_units[cat] ?? 0) < min) belowMin++;
   }
   return {
@@ -22,7 +24,7 @@ export function buildSummary(P: Positions, moves: Move[], violations: number): M
     units: moves.reduce((a, m) => a + m.qty, 0),
     value_inr: moves.reduce((a, m) => a + m.value_inr, 0),
     by_type,
-    stores_at_risk: atRisk.size,
+    stores_at_risk,
     violations,
     found: {
       // sells ≥ 1 piece per 45 days by the peer prior, yet 0 sold because it was barely on the shelf
