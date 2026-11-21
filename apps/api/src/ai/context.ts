@@ -173,7 +173,7 @@ export function chatContext(m: MovesFile, question: string, about: About = recog
       ? `full detail for ${moves.length} of ${pool.length} moves that match the question; move_index has all ${m.moves.length}`
       : `full detail for all ${moves.length} moves that match the question; move_index has all ${m.moves.length}`
     : `full detail for the top ${moves.length} of ${m.moves.length} moves by priority; move_index has all ${m.moves.length}`;
-  return {
+  return plainWords(m, {
     ...(isEmpty(about) ? {} : { focus: focusOn(m, about) }),
     run: { run_id: m.run.run_id, as_of: m.run.as_of, generated_at: m.run.generated_at, next_run_at: m.run.next_run_at },
     summary: m.summary,
@@ -184,5 +184,60 @@ export function chatContext(m: MovesFile, question: string, about: About = recog
     ...completeLists(m),
     moves_note,
     moves,
+  });
+}
+
+// Plain words for every engine code the model is likely to print (#13). Same wording as the UI (apps/web lib/format.ts,
+// ConfidenceDot) and the engine's flag notes. Move kinds keep the wording the type check in grounding.ts recognises.
+const LABELS: Record<string, string> = {
+  // move kinds
+  WH_TO_STORE: 'Warehouse to store', STORE_TO_STORE: 'Store to store', PULL_BACK: 'Back to warehouse',
+  // triggers
+  LOW_COVER: 'Low stock', STOCKOUT: 'Sold out', UNDER_STOCKED: 'Under-stocked store', MIN_DISPLAY: 'Below minimum display',
+  AGEING: 'Ageing stock', OVER_CAPACITY: 'Store too full',
+  // store status
+  TOO_FULL: 'Too full', RUNNING_EMPTY: 'Running empty', NORMAL: 'Normal',
+  // flag kinds
+  WAIT_FOR_INBOUND: 'Waiting for a delivery already on its way to the warehouse',
+  COVERED_BY_TRANSIT: 'Covered: stock already on its way to this store',
+  BLOCKED_FLAGSHIP: "Blocked: one of a flagship's protected top-20 styles",
+  BLOCKED_DONOR_COVER: 'Blocked: the giving store would drop under 30 days of stock',
+  NO_SOURCE: 'No store or warehouse can spare it',
+  DATA_COUNT_MISMATCH: 'Stock count looks wrong',
+  // problem kinds
+  STARVED_BESTSELLER: 'Best-seller running out', DATA_FLAG: 'Stock count looks wrong', UNDER_STOCKED_STORE: 'Store running empty',
+  NEW_STORE: 'New store', TRULY_SLOW: 'Slow seller', LAUNCH_RAMP: 'New launch picking up',
+};
+const BASIS: Record<string, string> = {
+  own: "Based on this store's own sales", blended: 'Based on own + similar stores', peer: 'Based on similar stores (little own data)',
+};
+
+/**
+ * Replace engine codes (values and object keys) with plain labels, and give every product code its name
+ * ("Ivory Chikankari Kurta Set (M)") next to it, so answers never print NORMAL, WAIT_FOR_INBOUND or a bare SKU.
+ * Numbers, ids and dates are untouched, so the number checks see the same values.
+ */
+function plainWords<T>(m: MovesFile, ctx: T): T {
+  const styles = new Map(m.moves.map((mv) => [mv.style_id, mv.style_name]));
+  const nameOf = (code: string): string | null => {
+    if (styles.has(code)) return styles.get(code)!;
+    const cut = code.lastIndexOf('-');
+    const style = cut > 0 ? code.slice(0, cut) : '';
+    return styles.has(style) ? `${styles.get(style)} (${code.slice(cut + 1)})` : null;
   };
+  const walk = (v: unknown, key = ''): unknown => {
+    if (typeof v === 'string') return key === 'velocity_basis' ? BASIS[v] ?? v : LABELS[v] ?? v;
+    if (Array.isArray(v)) return v.map((x) => walk(x));
+    if (!v || typeof v !== 'object') return v;
+    const out: Record<string, unknown> = {};
+    for (const [k, x] of Object.entries(v)) {
+      out[LABELS[k] ?? k] = walk(x, k);
+      if ((k === 'sku_id' || k === 'sku' || k === 'product') && typeof x === 'string' && !('style_name' in v)) {
+        const n = nameOf(x);
+        if (n) out.product_name = n;
+      }
+    }
+    return out;
+  };
+  return walk(ctx) as T;
 }
