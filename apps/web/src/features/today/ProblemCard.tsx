@@ -5,6 +5,7 @@ import { Button } from '../../components/Button';
 import { Chip } from '../../components/Chip';
 import { WeeklyChart } from '../../components/WeeklyChart';
 import { useApprovals } from '../../data/approvals';
+import { movesById, problemStatus } from './problemStatus';
 
 type Props = { problem: Problem; moves: Move[]; large?: boolean };
 
@@ -23,15 +24,16 @@ function Block({ label, text }: { label: string; text: string }) {
 /** One problem: tag, title, What we saw, Our fix, Approve (orange) + Skip (outline). */
 export function ProblemCard({ problem, moves, large }: Props) {
   const ap = useApprovals();
-  const status = ap.problemStatusOf(problem.id);
   const [undoIds, setUndoIds] = useState<string[] | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
 
-  const byId = new Map(moves.map((m) => [m.id, m]));
+  const byId = movesById(moves);
+  const status = problemStatus(problem, byId, ap);
   const pending = problem.move_ids.filter((id) => byId.get(id)?.needs_signoff && ap.statusOf(id) !== 'approved');
   const href = `/problems/${encodeURIComponent(problem.id)}`;
   const entries = problem.move_ids.length;
+  const noMoves = entries === 0;
 
   const approve = () => { ap.approveProblem(problem, moves); };
   const skip = () => {
@@ -53,7 +55,7 @@ export function ProblemCard({ problem, moves, large }: Props) {
           Review {pending.length} {pending.length === 1 ? 'entry' : 'entries'}
         </Link>
       )}
-      {status === 'approved' && <Chip tone="ok">Approved</Chip>}
+      {status === 'approved' && <Chip tone="ok">{noMoves ? 'Seen' : 'Approved'}</Chip>}
       {status === 'skipped' && (
         <>
           <Chip tone="neutral">Skipped</Chip>
@@ -66,7 +68,8 @@ export function ProblemCard({ problem, moves, large }: Props) {
       )}
       {!status && (
         <>
-          <Button onClick={approve}>Approve this fix</Button>
+          {/* Nothing moves for a recount / data-check problem: record it as seen (decided), not "approved". */}
+          <Button onClick={approve}>{noMoves ? 'Mark as seen' : 'Approve this fix'}</Button>
           <Button variant="outline" onClick={skip}>Skip</Button>
         </>
       )}

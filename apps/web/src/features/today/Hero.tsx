@@ -3,6 +3,7 @@ import { Button } from '../../components/Button';
 import { useApprovals } from '../../data/approvals';
 import { downloadApprovedCsv } from '../../lib/csv';
 import { inr, num } from '../../lib/format';
+import { movesById, problemStatus } from './problemStatus';
 import { useBrief } from './useBrief';
 
 /** Brown hero: "We found N stock problems today." + brief + progress (x of N fixes approved). */
@@ -10,8 +11,10 @@ export function Hero({ file }: { file: MovesFile }) {
   const ap = useApprovals();
   const brief = useBrief(file.run.run_id);
   const total = file.problems.length;
-  const approved = file.problems.filter((p) => ap.problemStatusOf(p.id) === 'approved').length;
-  const decided = file.problems.filter((p) => ap.problemStatusOf(p.id)).length;
+  const byId = movesById(file.moves);
+  const statuses = file.problems.map((p) => problemStatus(p, byId, ap));
+  const approved = statuses.filter((s) => s === 'approved').length;
+  const decided = statuses.filter(Boolean).length;
   const allDone = total > 0 && decided === total;
   const atRisk = file.stores.reduce((s, x) => s + (x.at_risk_week_inr || 0), 0);
   const pct = total ? Math.round((approved / total) * 100) : 0;
@@ -24,15 +27,20 @@ export function Hero({ file }: { file: MovesFile }) {
             ? 'No stock problems today.'
             : `We found ${num(total)} stock ${total === 1 ? 'problem' : 'problems'} today.`}
         </h1>
-        {brief ? (
-          <p className="m-0 max-w-2xl text-[17px] leading-relaxed whitespace-pre-line text-page/90">{brief.text}</p>
-        ) : (
-          total > 0 && (
-            <p className="m-0 max-w-2xl text-[17px] leading-relaxed text-page/85">
-              Each one is explained in plain words, with a fix ready to approve.
-              {atRisk > 0 && ` About ${inr(atRisk)} of sales are at risk this week where good sellers ran out.`}
-            </p>
-          )
+        {total > 0 && (
+          <p className="m-0 max-w-2xl text-[17px] leading-relaxed text-page/85">
+            Each one is explained in plain words, with a fix ready to approve.
+          </p>
+        )}
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <span className="font-heading text-[28px] leading-none text-[#F4A27C] md:text-[32px]">{inr(atRisk)}</span>
+          <span className="text-[15px] text-page/85">of sales at risk this week in stores where good sellers ran out</span>
+        </div>
+        {brief && (
+          <div className="max-w-2xl rounded-xl bg-white/10 px-4 py-3">
+            <div className="text-[13px] font-bold tracking-[0.8px] text-page/70 uppercase">Morning brief</div>
+            <p className="m-0 mt-1 text-[15px] leading-relaxed whitespace-pre-line text-page/95">{brief.text}</p>
+          </div>
         )}
       </div>
       {total > 0 && (
