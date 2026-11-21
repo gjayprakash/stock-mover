@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import type { Move, MovesFile } from '@sm/contract';
-import { Button, Card, inr } from './deps';
+import { Button, Card, Chip, EmptyState, inr } from './deps';
 import { applyFilters, EMPTY_FILTERS, type ApprovalStatus, type Filters } from './filters';
 import { MovesFilters } from './MovesFilters';
 import { MoveRow } from './MoveRow';
@@ -73,7 +73,7 @@ export function MovesView(p: MovesViewProps) {
   const th = 'px-3 py-4 font-bold';
 
   return (
-    <div className="mx-auto flex max-w-[1240px] flex-col gap-8 px-4 pb-32 pt-8 md:px-8 md:pt-10">
+    <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
         <div className="flex flex-col gap-2">
           <h1 className="m-0 font-heading text-[34px] font-normal leading-tight md:text-[42px]">
@@ -96,17 +96,9 @@ export function MovesView(p: MovesViewProps) {
 
       {file && <MovesFilters file={file} filters={filters} onChange={(f) => { setNote(''); p.onFiltersChange(f); }} />}
 
-      {filters.problem && file && (
-        <div className="flex flex-wrap items-center gap-3 rounded-xl bg-tint px-6 py-3 text-[15px]">
-          Showing the moves for problem {filters.problem}
-          {file.problems.find((x) => x.id === filters.problem)?.title ? `: ${file.problems.find((x) => x.id === filters.problem)!.title}` : ''}
-          <button type="button" className="font-semibold text-cta underline" onClick={() => p.onFiltersChange({ ...filters, problem: '', move: '' })}>
-            Show all
-          </button>
-        </div>
-      )}
+      {file && <ActiveFilters file={file} filters={filters} onChange={p.onFiltersChange} />}
 
-      <Card className="overflow-hidden">
+      <Card padded={false} className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[980px] border-collapse text-[15px]">
             <thead>
@@ -176,9 +168,11 @@ export function MovesView(p: MovesViewProps) {
         </div>
 
         {file && rows.length === 0 && (
-          <div className="flex flex-col items-center gap-4 px-6 py-14 text-center">
-            <p className="m-0 text-lg font-semibold">Nothing matches these filters</p>
-            <Button variant="outline" onClick={() => p.onFiltersChange(EMPTY_FILTERS)}>Clear filters</Button>
+          <div className="p-5 md:p-7">
+            <EmptyState
+              title="Nothing matches these filters"
+              action={<Button variant="outline" onClick={() => p.onFiltersChange(EMPTY_FILTERS)}>Clear filters</Button>}
+            />
           </div>
         )}
 
@@ -221,6 +215,44 @@ export function MovesView(p: MovesViewProps) {
             </span>
           )}
         </section>
+      )}
+    </div>
+  );
+}
+
+/** Chips for deep-link filters (?store=, ?problem=, ?sku=, ?move=) so other screens can link in; each has a clear button. */
+function ActiveFilters({ file, filters, onChange }: { file: MovesFile; filters: Filters; onChange: (f: Filters) => void }) {
+  const chips: { key: keyof Filters; label: string }[] = [];
+  if (filters.problem) {
+    const pr = file.problems.find((x) => x.id === filters.problem);
+    chips.push({ key: 'problem', label: `Problem ${filters.problem}${pr ? `: ${pr.title}` : ''}` });
+  }
+  if (filters.store) {
+    const st = file.stores.find((x) => x.store_id === filters.store);
+    chips.push({ key: 'store', label: `Store ${st ? `${st.city} · ` : ''}${filters.store}` });
+  }
+  if (filters.sku) chips.push({ key: 'sku', label: `Product ${filters.sku}` });
+  if (filters.move) chips.push({ key: 'move', label: `Open: ${filters.move}` });
+  if (!chips.length) return null;
+  return (
+    <div className="-mt-4 flex flex-wrap items-center gap-2" aria-label="Active filters">
+      {chips.map((c) => (
+        <Chip key={c.key} tone="brown" className="max-w-full">
+          <span className="truncate">{c.label}</span>
+          <button
+            type="button"
+            aria-label={`Clear ${c.label}`}
+            onClick={() => onChange({ ...filters, [c.key]: '', ...(c.key === 'move' ? {} : { move: '' }) })}
+            className="-mr-1 ml-1 rounded-full px-1.5 leading-none hover:bg-white/20"
+          >
+            ×
+          </button>
+        </Chip>
+      ))}
+      {chips.length > 1 && (
+        <button type="button" className="text-sm font-semibold text-cta underline" onClick={() => onChange(EMPTY_FILTERS)}>
+          Clear all
+        </button>
       )}
     </div>
   );

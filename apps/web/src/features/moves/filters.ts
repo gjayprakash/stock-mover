@@ -1,13 +1,13 @@
 import type { Move, MoveType, MovesFile } from '@sm/contract';
 
 export type Kind = 'all' | MoveType;
-export type Filters = { kind: Kind; store: string; q: string; signoff: boolean; problem: string; move: string };
+export type Filters = { kind: Kind; store: string; q: string; signoff: boolean; problem: string; sku: string; move: string };
 export type ApprovalStatus = 'approved' | 'skipped' | undefined;
 
 const KINDS: MoveType[] = ['WH_TO_STORE', 'STORE_TO_STORE', 'PULL_BACK'];
 export const URL_KIND: Record<MoveType, string> = { WH_TO_STORE: 'wh', STORE_TO_STORE: 'ss', PULL_BACK: 'pb' };
 
-/** URL <-> filters. Keys: ?kind=wh|ss|pb&store=&q=&signoff=1&problem=&move= */
+/** URL <-> filters. Keys: ?kind=wh|ss|pb&store=&q=&signoff=1&problem=&sku=&move= (deep links from other screens). */
 export function readFilters(p: URLSearchParams): Filters {
   const k = p.get('kind');
   const kind = (KINDS.find((t) => URL_KIND[t] === k || t === k) ?? 'all') as Kind;
@@ -17,6 +17,7 @@ export function readFilters(p: URLSearchParams): Filters {
     q: p.get('q') ?? '',
     signoff: p.get('signoff') === '1',
     problem: p.get('problem') ?? '',
+    sku: p.get('sku') ?? '',
     move: p.get('move') ?? '',
   };
 }
@@ -28,11 +29,12 @@ export function writeFilters(f: Filters): URLSearchParams {
   if (f.q) p.set('q', f.q);
   if (f.signoff) p.set('signoff', '1');
   if (f.problem) p.set('problem', f.problem);
+  if (f.sku) p.set('sku', f.sku);
   if (f.move) p.set('move', f.move);
   return p;
 }
 
-export const EMPTY_FILTERS: Filters = { kind: 'all', store: '', q: '', signoff: false, problem: '', move: '' };
+export const EMPTY_FILTERS: Filters = { kind: 'all', store: '', q: '', signoff: false, problem: '', sku: '', move: '' };
 
 /** Sorted by priority desc, then filtered. All client-side. */
 export function applyFilters(file: MovesFile, f: Filters): Move[] {
@@ -45,6 +47,7 @@ export function applyFilters(file: MovesFile, f: Filters): Move[] {
       if (f.store && m.from !== f.store && m.to !== f.store) return false;
       if (f.signoff && !m.needs_signoff) return false;
       if (inProblem && !inProblem.has(m.id)) return false;
+      if (f.sku && m.sku_id !== f.sku) return false;
       if (q) {
         const hay = [m.style_name, m.sku_id, m.style_id, m.size, m.category, m.from, m.to, city.get(m.from) ?? '', city.get(m.to) ?? '', m.id]
           .join(' ')
