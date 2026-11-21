@@ -3,7 +3,7 @@
 // rounding of an allowed number, or the sum/difference of two allowed numbers (ASSUMPTION, issue #10).
 
 import type { Move, MoveType, MovesFile, StoreSummary } from '@sm/contract';
-import { storeFlows, type PlaceShare, type StoreFlow } from './context';
+import { focusOn, storeFlows, type PlaceShare, type StoreFlow } from './context';
 import type { About } from './entities';
 
 const MONTHS =['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
@@ -131,6 +131,9 @@ export class AllowedSet {
   private readonly stores = new Map<string, StoreSummary>();
   private readonly cache = new Map<string, NumberSet>();
   private flows?: Map<string, StoreFlow>;
+  // #13: what the focus section gave the model for each tagged / recognised entity (record, problem, flags...).
+  private readonly focus = new Map<string, unknown>();
+  private readonly soleFocus: string | null = null;
 
   constructor(
     context: unknown,
@@ -145,15 +148,34 @@ export class AllowedSet {
     this.runTotals = file
       ? [file.summary, file.blocked, file.run.as_of, extraDates,
           [...new Set(file.moves.map((x) => x.type))].map((t) => tally(file.moves.filter((x) => x.type === t))),
-          [...new Set(file.moves.map((x) => x.trigger))].map((t) => tally(file.moves.filter((x) => x.trigger === t))),
+          // Per trigger only the count: its pieces / value are rarely quoted on a one-entity line and too easily collide.
+          [...new Set(file.moves.map((x) => x.trigger))].map((t) => file.moves.filter((x) => x.trigger === t).length),
           tally(file.moves.filter((x) => x.needs_signoff))]
       : [];
+    if (file && ask) {
+      const f = focusOn(file, ask.about);
+      f.moves.forEach((e) => this.focus.set(e.move.id, e));
+      f.stores.forEach((e, i) => this.focus.set(ask.about.stores[i], e));
+      f.products.forEach((e) => this.focus.set(e.product, e));
+      if (this.focus.size === 1) this.soleFocus = [...this.focus.keys()][0];
+    }
   }
 
-  private moveSet(mv: Move) {
-    const k = `m:${mv.id}`;
-    if (!this.cache.has(k)) this.cache.set(k, new NumberSet(false, mv, this.runTotals));
+  /** A cached NumberSet (no sums) for a key, built from the given values plus run totals. */
+  private setOf(k: string, values: () => unknown[]) {
+    if (!this.cache.has(k)) this.cache.set(k, new NumberSet(false, ...values(), this.runTotals));
     return this.cache.get(k)!;
+  }
+
+  /** A store's own data: summary, in/out totals and breakdowns, its moves' dates, and its focus entry if any. */
+  private storeValues(id: string): unknown[] {
+    const mvs = this.file!.moves.filter((x) => x.from === id || x.to === id);
+    return [this.stores.get(id) ?? null, this.flowMap().get(id) ?? null, mvs.map((x) => x.arrives_on), this.focus.get(id) ?? null];
+  }
+
+  /** A move's own data; for a focus move also its problem and the flags shown with it. */
+  private moveSet(mv: Move) {
+    return this.setOf(`m:${mv.id}`, () => [mv, this.focus.get(mv.id) ?? null]);
   }
 
   private flowMap() {
@@ -161,14 +183,13 @@ export class AllowedSet {
     return this.flows;
   }
 
+  /**
+   * A store line's allowed numbers (breakdowns let "LKO-02: 4 pieces to MZF-01" pass). With exactly one focus
+   * entity, its data counts too, so a number that belongs to the focus is not failed on another entity's line.
+   */
   private storeSet(id: string) {
-    const k = `s:${id}`;
-    if (!this.cache.has(k)) {
-      const mvs = this.file!.moves.filter((x) => x.from === id || x.to === id);
-      // Its own summary, its in/out totals and breakdowns (so "LKO-02: 4 pieces to MZF-01" passes), its moves' dates.
-      this.cache.set(k, new NumberSet(false, this.stores.get(id) ?? null, this.flowMap().get(id) ?? null, mvs.map((x) => x.arrives_on), this.runTotals));
-    }
-    return this.cache.get(k)!;
+    const sole = this.soleFocus && this.soleFocus !== id ? this.soleFocus : null;
+    return this.setOf(`s:${id}|${sole ?? ''}`, () => [...this.storeValues(id), sole ? this.focus.get(sole) : null]);
   }
 
   /**
@@ -215,8 +236,10 @@ export class AllowedSet {
     const missing: string[] = [];
     let total = 0;
     let listClaim: MoveType | null = null;   // set by a heading line ("these go back to the warehouse:")
+    let heading: Move | null = null;          // focus move named by an earlier line ("For move M0165, …:")
     for (const seg of this.file ? segments(answer) : [answer]) {
       const ids = [...new Set(seg.match(MOVE_ID) ?? [])].filter((id) => this.moves.has(id));
+      if (ids.length) heading = ids.length === 1 && this.focus.has(ids[0]) ? this.moves.get(ids[0])! : null;
       const codes = [...new Set(seg.match(CODE) ?? [])];
       const storeCodes = codes.filter((c) => c === 'WH-KOL' || this.stores.has(c));
       const claim = typeClaim(seg);
@@ -247,7 +270,14 @@ export class AllowedSet {
         }
       } else {
         if (ids.length === 0) listClaim = claim;
-        if (this.file && ids.length === 0 && !namesProblem && storeCodes.length === 1 && codes.length === 1 && storeCodes[0] !== 'WH-KOL') {
+        // A line under a focus move's heading is about that move: its own data, plus any store the move does not touch.
+        const own = heading ? new Set([heading.from, heading.to, heading.sku_id, heading.style_id]) : null;
+        const extra = own ? codes.filter((c) => !own.has(c)) : [];
+        if (heading && ids.length === 0 && extra.every((c) => this.stores.has(c) || c === 'WH-KOL')) {
+          const mv = heading;
+          set = this.setOf(`h:${mv.id}|${extra.join(',')}`, () => [mv, this.focus.get(mv.id), ...extra.flatMap((c) => this.storeValues(c))]);
+          about = ` for ${mv.id}`;
+        } else if (this.file && ids.length === 0 && !namesProblem && storeCodes.length === 1 && codes.length === 1 && storeCodes[0] !== 'WH-KOL') {
           set = this.storeSet(storeCodes[0]);
           about = ` for ${storeCodes[0]}`;
         }

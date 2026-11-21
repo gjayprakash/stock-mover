@@ -113,7 +113,8 @@ export class ChatController {
       }
       const usage = { tokens_in: tokensIn, tokens_out: tokensOut };
       if (!g.ok) {
-        const text = `That is not in today's data. What it does have: ${m.summary.moves} moves on today's list (as of ${m.run.as_of}). Try one of the questions below, or tag a store, product or move.`;
+        // Held back is not "not in the data" (that reply is for questions nothing maps to, #13).
+        const text = 'The answer had a number that could not be checked against today\'s list, so it is not shown. Try one of the questions below.';
         await log({ ...usage, output: out.text, numbers_found: g.found, numbers_total: g.total, result: 'HELD_BACK', held_reason: 'UNGROUNDED_NUMBER' });
         return finishAbout({ numbers_found: g.found, numbers_total: g.total, result: 'HELD_BACK', held_reason: 'UNGROUNDED_NUMBER', text }, true);
       }
