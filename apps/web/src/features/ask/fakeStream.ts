@@ -41,7 +41,11 @@ export function fakeChatResponse(question: string, m: MovesFile, tags?: ChatTags
       text: `That is not in today's data. What it does have: ${m.summary.moves} moves on today's list (as of ${m.run.as_of}). Try naming a store, SKU or style.`,
     };
   } else if (move) {
-    text = `${move.id} sends ${move.qty} pieces of ${move.sku_id} from ${move.from} to ${move.to}. ${move.reason}`;
+    // Markdown the way the real model writes it: bold labels, bullets, numbered steps.
+    text = `**Move**: ${move.id} sends ${move.qty} pieces of ${move.sku_id} from ${move.from} to ${move.to}.\n` +
+      `**Reason for Move**: ${move.reason}\n\n` +
+      `**What changes**:\n- ${move.from} gives the pieces\n- ${move.to} receives them on ${move.arrives_on}\n\n` +
+      `**Next steps**:\n1. Check the move on All moves\n2. Approve it if it looks right`;
     final = { numbers_found: 1, numbers_total: 1, result: 'SHOWN', about };
   } else if (store) {
     const ids = m.moves.filter((mv) => mv.to === store.store_id || mv.from === store.store_id).map((mv) => mv.id);
