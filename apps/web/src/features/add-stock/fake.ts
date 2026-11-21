@@ -1,6 +1,7 @@
 // DEV ONLY. A stand-in for the #23 Add stock API so every screen state can be walked in the browser
 // before the real endpoints exist. api.ts only imports this behind `import.meta.env.DEV`, so it is
 // left out of the production bundle. Delete once #23 is live.
+import { dateLong } from '../../lib/format';
 import { parseCsv, saveText, toCsvLine } from './csvParse';
 import { STOCK_COLUMNS, type StockCheckResult, type StockRowError, type StockRowInput } from './types';
 import type { FakeCtx } from './api';
@@ -58,6 +59,8 @@ function checkRows(ctx: FakeCtx, rows: string[][], firstRowNo: number, sampleLin
     else if (!cat.has(sku) && (!name || !category || !mrp)) e = err('style_name', `${sku} is a new product, so its name, category and tag price are needed.`, 'Fill in columns 3, 5 and 6.');
     else if (!Number.isInteger(n) || n < 1 || n > 10000) e = err('qty', `Pieces says "${qtyRaw}". It must be a whole number from 1 to 10,000.`, 'Type the number of pieces in column 7.');
     else if (Number.isNaN(age)) e = err('received_on', `Date ${date || '(blank)'} is in the wrong format.`, 'Write it as year-month-day in column 8.');
+    // Same rule and words as apps/api/src/stock/check.ts: on or before the count date is already counted.
+    else if (date <= ctx.asOf) e = err('received_on', `Received on or before ${dateLong(ctx.asOf)}: already in the stock count`, 'Use a date after it.');
     else if (age < 0) e = err('received_on', `Date ${date} is in the future.`, 'Use the day the pieces actually arrived.');
     else if (age > 60) e = err('received_on', `Date ${date} is more than 60 days ago.`, 'Only stock received in the last 60 days can be added here.');
     if (e) { errors.push(e); bad.push({ cells, error: `${e.message} ${e.fix}` }); return; }

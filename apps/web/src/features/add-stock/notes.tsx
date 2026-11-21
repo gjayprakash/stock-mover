@@ -2,20 +2,12 @@ import type { StoreSummary } from '@sm/contract';
 import { dateLong, num, storeLabel } from '../../lib/format';
 import type { StockRowError } from './types';
 
-/** Amber note: rows received on or before the stock count date are probably counted already. Warns, never blocks. */
-export function EarlyNote({ rows, asOf }: { rows?: number[]; asOf: string }) {
-  const shown = rows?.slice(0, 20) ?? [];
-  const more = (rows?.length ?? 0) - shown.length;
-  return (
-    <div className="rounded-xl border border-warn/30 bg-warn-bg px-4 py-3 text-[15px] leading-snug text-[#6B4100]" role="status">
-      {rows && (
-        <span className="font-semibold">
-          {rows.length === 1 ? 'Row' : 'Rows'} {shown.join(', ')}{more > 0 ? ` and ${num(more)} more` : ''}:{' '}
-        </span>
-      )}
-      Received on or before {dateLong(asOf)}: this stock is probably already in the count. Add it only if you are sure it was not counted.
-    </div>
-  );
+/**
+ * Same words as the server's received_on error (apps/api/src/stock/check.ts), shown in the form
+ * before the check so the user can fix the date first. The server refuses such rows.
+ */
+export function oldDateText(asOf: string): string {
+  return `Received on or before ${dateLong(asOf)}: already in the stock count. Use a date after it.`;
 }
 
 /**

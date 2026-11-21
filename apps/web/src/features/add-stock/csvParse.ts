@@ -34,23 +34,15 @@ export function toCsvLine(cells: (string | number)[]): string {
 
 /**
  * Reads a CSV upload on the client before it is sent. Drops a trailing "error" column (the
- * "rows to fix" download adds it) so that file can go straight back in, and lists the data rows
- * (file line numbers) received on or before the stock count date. Sample example rows are skipped.
+ * "rows to fix" download adds it) so that file can go straight back in. Blank lines are kept so
+ * row numbers still match the server's.
  */
-export function prepareCsv(text: string, asOf: string, sampleText: string | null) {
+export function prepareCsv(text: string) {
   const rows = parseCsv(text, true);
   const header = rows[0] ?? [];
   const stripped = header.length === 9 && (header[8] ?? '').trim().toLowerCase() === 'error';
   const clean = stripped ? rows.map((r) => r.slice(0, 8)) : rows;
-  const key = (r: string[]) => toCsvLine(r.map((c) => (c ?? '').trim()));
-  const samples = new Set(sampleText ? parseCsv(sampleText).slice(1).map(key) : []);
-  const early: number[] = [];
-  clean.slice(1).forEach((r, i) => {
-    if (samples.has(key(r))) return;
-    const d = (r[7] ?? '').trim();
-    if (/^\d{4}-\d{2}-\d{2}$/.test(d) && d <= asOf) early.push(i + 2);
-  });
-  return { text: stripped ? clean.map(toCsvLine).join('\n') + '\n' : text, stripped, early };
+  return { text: stripped ? clean.map(toCsvLine).join('\n') + '\n' : text, stripped };
 }
 
 export function saveText(name: string, text: string) {
