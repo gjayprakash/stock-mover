@@ -41,10 +41,11 @@ export function storeDistance(from: string, to: string, locations: Locations | n
 }
 
 /**
- * Days for a move from → to (store_id or WH-KOL). Warehouse lanes: lead_times by zone (3 / 4 / 6).
- * Store → store: travel days from distance when both stores have a location, else the lead_times route.
+ * Days for a move from → to (store_id or WH-KOL), always the lead_times tab (rule 5).
+ * Warehouse lanes: by the store's zone. Store → store: same city / same zone other city / different zone,
+ * from stores.city and stores.zone. Distance (storeDistance) only ranks receivers; it never sets the lead time.
  */
-export function leadTime(from: string, to: string, stores: Map<string, Store>, lt: LeadTimes, locations: Locations | null = null): number {
+export function leadTime(from: string, to: string, stores: Map<string, Store>, lt: LeadTimes): number {
   const dest = stores.get(to);
   if (!dest) throw new Error(`engine: unknown destination ${to}`);
   if (from === WAREHOUSE_ID) {
@@ -54,8 +55,6 @@ export function leadTime(from: string, to: string, stores: Map<string, Store>, l
   }
   const src = stores.get(from);
   if (!src) throw new Error(`engine: unknown source ${from}`);
-  const dist = storeDistance(from, to, locations);
-  if (dist) return dist.days;
   if (src.city === dest.city) return lt.sameCity;
   if (src.zone === dest.zone) return lt.sameZone;
   return lt.otherZone;

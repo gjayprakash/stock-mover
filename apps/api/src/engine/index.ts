@@ -21,7 +21,8 @@ export type EngineInput = {
 };
 export type EngineOutput = { moves: MovesFile; history: HistoryFile };
 
-export const ENGINE_VERSION = '1.0';
+// Bump on any engine change that alters the move list: RunsService re-runs on boot when the latest list has another version.
+export const ENGINE_VERSION = '1.1';
 
 /** loadData → buildPositions → generateMoves → validate → summary. Throws (run FAILS) on any violation. */
 export function runEngine(input: EngineInput): EngineOutput {

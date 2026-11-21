@@ -80,19 +80,21 @@ export function generateMoves(P: Positions): GenerateResult {
     flagSeen.add(k);
     flags.push({ kind, store_id, sku_id, note });
   };
-  const lt = (from: string, to: string) => leadTime(from, to, c.storeById, c.leadTimes, c.locations);
+  const lt = (from: string, to: string) => leadTime(from, to, c.storeById, c.leadTimes);
 
-  type Ranked = { r: Position; km: number | null; days: number; jumped?: Ranked };
+  // days = lead_times tab (what the move takes, rule 5); near = distance-based days, used only to rank by closeness.
+  type Ranked = { r: Position; km: number | null; days: number; near: number; jumped?: Ranked };
   const altOf = (x: Ranked) => ({ store_id: x.r.store_id, distance_km: x.km ?? 0, travel_days: x.days });
   /**
-   * Receivers for pieces leaving `from`, nearest first (#25): travel days, km, lowest cover, higher velocity.
+   * Receivers for pieces leaving `from`, nearest first (#25): distance days, km, lowest cover, higher velocity.
    * Guard: a fully-out store (cover 0, velocity > 0) jumps ahead of a closer store with ≥ JUMP_AHEAD_MIN_COVER days.
    */
   const orderReceivers = (from: string, list: Position[]): Ranked[] => {
     const rest: Ranked[] = list.map((r) => {
       const d = storeDistance(from, r.store_id, c.locations);
-      return { r, km: d?.km ?? null, days: lt(from, r.store_id) };
-    }).sort((a, b) => a.days - b.days || (a.km ?? 0) - (b.km ?? 0) || (L.cover(a.r) ?? 0) - (L.cover(b.r) ?? 0) ||
+      const days = lt(from, r.store_id);
+      return { r, km: d?.km ?? null, days, near: d?.days ?? days };
+    }).sort((a, b) => a.near - b.near || (a.km ?? 0) - (b.km ?? 0) || (L.cover(a.r) ?? 0) - (L.cover(b.r) ?? 0) ||
       b.r.velocity - a.r.velocity || a.r.store_id.localeCompare(b.r.store_id));
     const out: Ranked[] = [];
     const fullyOut = (x: Ranked) => L.avail(x.r) <= 0 && x.r.velocity > 0;
@@ -123,7 +125,8 @@ export function generateMoves(P: Positions): GenerateResult {
 
   const side = (loc: string, p: Position | null, sku: string): Side => {
     if (loc === WAREHOUSE_ID) return { on_hand: L.whLeft(sku) + L.get(L.whIn, sku), in_transit: 0, velocity: 0, cover_days: null };
-    if (!p) return { on_hand: 0, in_transit: 0, velocity: 0, cover_days: null };
+    // No position row (store never held this SKU, e.g. a min-display top-up): pieces planned in still count.
+    if (!p) return { on_hand: 0, in_transit: L.get(L.inQ, key(loc, sku)), velocity: 0, cover_days: null };
     const k = key(p.store_id, p.sku_id);
     const cover = round(p.velocity, 3) > 0 ? L.cover(p) : null; // shown velocity 0 → "no sales", not 21,000 days
     return {
@@ -401,7 +404,7 @@ export function generateMoves(P: Positions): GenerateResult {
         if (!canReceive(r, q)) continue;
         const coverFrom = L.cover(d), coverTo = L.cover(r);
         const alternatives = ordered.filter((x) => x !== o).slice(0, 5).map(altOf);
-        const closer = ordered.find((x) => x !== o && (x.days < o.days || (x.days === o.days && (x.km ?? 0) < (o.km ?? 0))));
+        const closer = ordered.find((x) => x !== o && (x.near < o.near || (x.near === o.near && (x.km ?? 0) < (o.km ?? 0))));
         emit({
           type: 'STORE_TO_STORE', trigger: restockTrigger(r), sku, from: d.store_id, to: r.store_id, qty: q,
           geo: { distance_km: o.km, travel_days: o.days, alternatives },

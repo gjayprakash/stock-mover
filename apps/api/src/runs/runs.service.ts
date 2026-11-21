@@ -2,7 +2,7 @@ import { ConflictException, Injectable, Logger, OnApplicationBootstrap } from '@
 import { join } from 'path';
 import type { HistoryFile, MovesFile, RunRow } from '@sm/contract';
 import { DbService } from '../db/db.service';
-import { runEngine } from '../engine';
+import { ENGINE_VERSION, runEngine } from '../engine';
 import { GeoService } from '../geo/geo.service';
 import { StoresService } from '../stores/stores.service';
 import { StockService } from '../stock/stock.service';
@@ -45,8 +45,12 @@ export class RunsService implements OnApplicationBootstrap {
     await this.db.query(
       `update runs set status = 'FAILED', finished_at = now(), error = 'interrupted by restart' where status = 'RUNNING'`,
     );
-    const [done] = await this.db.query(`select 1 from runs where status = 'FINISHED' limit 1`);
-    if (!done) await this.start('boot');
+    // Run on boot when there is no list yet, or the latest list came from an older engine (a fix was deployed).
+    const [last] = await this.db.query<{ engine_version: string | null }>(
+      `select moves_json->'run'->>'engine_version' as engine_version from runs
+        where status = 'FINISHED' order by started_at desc limit 1`,
+    );
+    if (!last || last.engine_version !== ENGINE_VERSION) await this.start('boot');
   }
 
   /** Inserts a RUNNING row and runs the engine in the background. Returns the new run_id. */

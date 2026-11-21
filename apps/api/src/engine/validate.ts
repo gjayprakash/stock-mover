@@ -7,7 +7,7 @@ import { MIN_DONOR_COVER, TODAY, WAREHOUSE_ID } from './params';
 import { addDays } from './dates';
 
 export type Rule =
-  | 'min_display' | 'capacity' | 'flagship' | 'in_transit' | 'donor_cover_30' | 'source_qty' | 'arrival_reason' | 'data_flag';
+  | 'min_display' | 'capacity' | 'flagship' | 'in_transit' | 'donor_cover_30' | 'source_qty' | 'lead_time' | 'arrival_reason' | 'data_flag';
 export type Violation = { move_id: string; rule: Rule; detail: string };
 export type ValidateResult = { moves: Move[]; dropped: Violation[]; violations: Violation[] };
 
@@ -72,13 +72,15 @@ export function findViolations(P: Positions, moves: Move[]): Violation[] {
       }
     }
 
-    // 7 · arrival = today + lead time, reason present
+    // 7 · rule 5: lead time = lead_times tab for the route (never faster), arrival = today + lead time, reason present
     if (fromStore || toStore) {
-      const lead = toStore ? leadTime(m.from, m.to, c.storeById, c.leadTimes, c.locations) : leadTime(WAREHOUSE_ID, m.from, c.storeById, c.leadTimes);
-      if (m.lead_time_days !== lead || m.arrives_on !== addDays(TODAY, lead)) v(m, 'arrival_reason', `lead ${m.lead_time_days}/${m.arrives_on}, expected ${lead}/${addDays(TODAY, lead)}`);
+      const lead = toStore ? leadTime(m.from, m.to, c.storeById, c.leadTimes) : leadTime(WAREHOUSE_ID, m.from, c.storeById, c.leadTimes);
+      if (m.lead_time_days < lead) v(m, 'lead_time', `lead ${m.lead_time_days} days is below the lead_times tab (${lead}) for ${m.from} → ${m.to}`);
+      else if (m.lead_time_days !== lead || m.arrives_on !== addDays(TODAY, lead)) v(m, 'arrival_reason', `lead ${m.lead_time_days}/${m.arrives_on}, expected ${lead}/${addDays(TODAY, lead)}`);
       if (m.type === 'STORE_TO_STORE') {
+        if (m.travel_days !== m.lead_time_days) v(m, 'arrival_reason', `travel ${m.travel_days} d ≠ lead ${m.lead_time_days} d`);
         const dist = storeDistance(m.from, m.to, c.locations);
-        if (dist && (m.travel_days !== dist.days || m.distance_km !== dist.km)) v(m, 'arrival_reason', `travel ${m.travel_days} d / ${m.distance_km} km, expected ${dist.days} / ${dist.km}`);
+        if (dist && m.distance_km !== dist.km) v(m, 'arrival_reason', `distance ${m.distance_km} km, expected ${dist.km}`);
       }
     }
     if (!m.reason || !m.reason.trim()) v(m, 'arrival_reason', 'no reason line');

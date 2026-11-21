@@ -37,7 +37,7 @@ export type Move = {
   };
   // #25 nearest store first. Store → store only; null / [] for warehouse moves and pull-backs.
   distance_km: number | null;  // road km (straight line × 1.3 until a routing service is wired)
-  travel_days: number | null;  // 1 packing day + ceil(km / 350); equals lead_time_days
+  travel_days: number | null;  // lead_times tab for the route (same city / same zone / other zone); equals lead_time_days
   alternatives: { store_id: string; distance_km: number; travel_days: number }[];   // other candidate receivers, closest first, max 5
 };
 
