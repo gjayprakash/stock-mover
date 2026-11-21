@@ -26,6 +26,16 @@ export function shelfWindow(launch: string, opened: string) {
   return { days: n, label };
 }
 
+/**
+ * STOCKOUT vs LOW_COVER, on the shelf window: never in stock, or out more than STOCKOUT_DAYS / WINDOW_DAYS
+ * (14 of 84) of the days it could have been on the shelf. Used by the move trigger and the reason line alike.
+ */
+export function wasStockout(instockDays: number, launch: string, opened: string) {
+  const w = shelfWindow(launch, opened);
+  const out = Math.max(0, w.days - Math.round(instockDays));
+  return instockDays <= 0 || out * WINDOW_DAYS > STOCKOUT_DAYS * w.days;
+}
+
 export function whLowCover(p: { v: number; basis: Basis; available: number; coverBefore: number | null; qty: number; coverAfter: number | null; arrives: string }) {
   const s = sells(p.v, p.basis, 'Sells');
   return `${s[0].toUpperCase()}${s.slice(1)}, ${p.available} left = ${days(p.coverBefore)} cover; +${p.qty} from WH takes it to ${days(p.coverAfter)} (arrives ${shortDate(p.arrives)}).`;
@@ -38,7 +48,7 @@ export function stockout(p: {
   const w = shelfWindow(p.launch, p.opened);
   const out = Math.max(0, w.days - Math.round(p.instockDays));
   // Barely out once the window starts at launch/opening: the low-cover line is the true story.
-  if (p.instockDays > 0 && out * WINDOW_DAYS <= STOCKOUT_DAYS * w.days) {
+  if (!wasStockout(p.instockDays, p.launch, p.opened)) {
     return whLowCover({ v: p.v, basis: p.basis, available: p.available, coverBefore: p.coverBefore, qty: p.qty, coverAfter: p.coverAfter, arrives: p.arrives });
   }
   const restock = `restock ${p.qty} from ${p.from} by ${shortDate(p.arrives)}.`;
