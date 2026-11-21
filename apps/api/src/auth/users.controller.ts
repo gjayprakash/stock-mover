@@ -24,8 +24,8 @@ export class UsersController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: Record<string, unknown>) {
-    return this.users.update(id, body ?? {});
+  update(@Param('id') id: string, @Body() body: Record<string, unknown>, @Req() req: Request) {
+    return this.users.update(id, body ?? {}, req.user!.id);
   }
 
   @Post(':id/invite')

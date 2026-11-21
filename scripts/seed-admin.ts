@@ -1,4 +1,4 @@
-// Creates the one super admin. Usage: npm run seed:admin -- <email> "<name>"
+// Creates a super admin (the first one; more can be added on the People screen). Usage: npm run seed:admin -- <email> "<name>"
 // The password is read from a hidden prompt (or stdin when piped), never from argv.
 import { createInterface } from 'node:readline';
 import pg from 'pg';
@@ -42,8 +42,9 @@ const db = new pg.Client({ connectionString: process.env.DATABASE_URL });
 await db.connect();
 try {
   await db.query(AUTH_SCHEMA);
-  const { rowCount } = await db.query(`select 1 from users where role = 'super_admin'`);
-  if (rowCount) fail('A super admin already exists. Nothing changed.');
+  // Idempotent by email: one email, one role. More super admins can also be added on the People screen.
+  const { rows } = await db.query<{ role: string }>(`select role from users where email = $1`, [email]);
+  if (rows[0]) fail(`That email is already a ${rows[0].role === 'super_admin' ? 'super admin' : 'store manager'}. Nothing changed.`);
 
   const password = await ask('Password: ');
   const problem = passwordProblem(password);
@@ -56,7 +57,7 @@ try {
   console.log(`Super admin created: ${email}`);
 } catch (e) {
   const err = e as { code?: string; message?: string };
-  fail(err.code === '23505' ? 'A super admin or that email already exists. Nothing changed.' : `Failed: ${err.message}`);
+  fail(err.code === '23505' ? 'That email already has a user. Nothing changed.' : `Failed: ${err.message}`);
 } finally {
   await db.end();
 }
