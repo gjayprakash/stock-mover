@@ -109,7 +109,8 @@ export function followUps(
   const storeIds = new Set([WAREHOUSE, ...m.stores.map((s) => s.store_id)]);
   const skuIds = new Set(m.moves.flatMap((mv) => [mv.sku_id, mv.style_id]));
   const inAnswer = [...new Set(o.answer.match(/\b(?:M\d{4}|[A-Z]{2,4}-\d{2}(?:-[A-Z0-9]+)?|WH-KOL)\b/g) ?? [])];
-  const moves = [...new Set([...about.moves, ...inAnswer.filter((x) => moveIds.has(x))])];
+  // From the answer only its first move: a long list would otherwise fill every slot with "Why is M000x moving?".
+  const moves = [...new Set([...about.moves, ...inAnswer.filter((x) => moveIds.has(x)).slice(0, 1)])];
   // The warehouse is on most moves: only when the question named it.
   const stores = [...new Set([...about.stores, ...inAnswer.filter((x) => storeIds.has(x) && x !== WAREHOUSE)])];
   const skus = [...new Set([...about.skus, ...inAnswer.filter((x) => skuIds.has(x) && !storeIds.has(x))])];
