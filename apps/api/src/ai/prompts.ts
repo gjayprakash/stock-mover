@@ -24,3 +24,8 @@ export const BRIEF_TASK =
 export const correction = (missing: string[]) =>
   `These numbers, dates or claims do not match the data: ${missing.join('; ')}. ` +
   'Rewrite the answer using only numbers and dates that appear in the data, and on a line about one move or one store use only that move\'s or store\'s own numbers.';
+
+/** Added when the data is one location's view (#77): the model sees nothing else and must say so. */
+export const scopeRule = (loc: string) =>
+  `This data covers only ${loc}: its own moves, store row and problems. You can only see ${loc}. ` +
+  `If asked about any other store, city or the whole network, say you can only see ${loc} and answer only what the data shows for ${loc}.`;
