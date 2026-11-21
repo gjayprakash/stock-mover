@@ -6,7 +6,7 @@ import { timeShort } from '../../lib/format';
 
 export const JOB_LABEL: Record<AiCall['job'], string> = { BRIEF: 'Briefing', ASK: 'Ask', DATA_FLAG: 'Data check' };
 export const HELD_LABEL: Record<NonNullable<AiCall['held_reason']>, string> = {
-  UNGROUNDED_NUMBER: 'a number was not in the list',
+  UNGROUNDED_NUMBER: 'a number could not be checked',
   FORECAST_REQUEST: 'asked for a forecast',
   OUT_OF_SCOPE: 'question outside stock moves',
   MODEL_ERROR: 'AI service error',
@@ -17,8 +17,12 @@ const RESULT: Record<AiCall['result'], [string, ChipTone]> = {
   ERROR: ['Error', 'neutral'],
 };
 
+/** Ask v2: what kind of answer it was (older rows and briefs have no mode). */
+const MODE_LABEL: Record<NonNullable<AiCall['mode']>, string> = { DATA: '', GENERAL: 'general', MIXED: 'data + general' };
+
 function checked(c: AiCall) {
   if (c.result === 'ERROR') return 'failed';
+  if (c.mode === 'GENERAL' && c.numbers_total === 0) return 'general, not checked';
   if (c.held_reason === 'FORECAST_REQUEST') return 'forecast asked';
   return `${c.numbers_found} of ${c.numbers_total}`;
 }
@@ -49,7 +53,10 @@ export function CallsTable({ calls }: { calls: AiCall[] }) {
                 <Fragment key={c.id}>
                   <tr className="cursor-pointer border-t border-line hover:bg-page" onClick={toggle}>
                     <td className="py-4 pr-3 pl-6 whitespace-nowrap">{timeShort(c.at)}</td>
-                    <td className="px-3 py-4 font-semibold whitespace-nowrap">{JOB_LABEL[c.job]}</td>
+                    <td className="px-3 py-4 font-semibold whitespace-nowrap">
+                      {JOB_LABEL[c.job]}
+                      {c.mode && MODE_LABEL[c.mode] && <span className="block text-[13px] font-normal text-muted">{MODE_LABEL[c.mode]}</span>}
+                    </td>
                     <td className="px-3 py-4">
                       {/* The real toggle: keyboard reachable, aria-expanded kept in sync. Row click is a mouse shortcut. */}
                       <button

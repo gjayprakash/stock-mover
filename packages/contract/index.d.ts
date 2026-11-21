@@ -103,6 +103,8 @@ export type AiCall = {
   numbers_found: number; numbers_total: number; result: "SHOWN" | "HELD_BACK" | "ERROR";
   held_reason?: "UNGROUNDED_NUMBER" | "FORECAST_REQUEST" | "OUT_OF_SCOPE" | "MODEL_ERROR";
   model: string; tokens_in?: number; tokens_out?: number; latency_ms: number;
+  /** Ask v2: DATA = checked against our data; GENERAL = general knowledge, labelled, no figures about our data; MIXED = both. Absent on older rows and briefs. */
+  mode?: "DATA" | "GENERAL" | "MIXED";
 };
 
 export type BriefResponse = { text: string; numbers_found: number; numbers_total: number; generated_at: string; source: "AI" | "TEMPLATE" };

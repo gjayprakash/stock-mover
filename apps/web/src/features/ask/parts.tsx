@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import type { MovesFile } from '@sm/contract';
-import type { ChatFinal } from './chatClient';
+import type { ChatFinal, ChatStep } from './chatClient';
 
 /** Up to 4 "Try asking" questions built from today's moves file (names only, no numbers). */
 export function suggestions(m: MovesFile | null): string[] {
@@ -86,23 +86,119 @@ export function AnswerText({ text, m }: { text: string; m: MovesFile | null }) {
   );
 }
 
-/** Small line under each AI answer, straight from the backend's grounding result. */
+const WIDER = ['HISTORY', 'RUNS', 'RULES'];
+/** "today's list", or "your data" when the answer also used history, past runs or the rules. */
+const sourceWords = (f: ChatFinal) => (f.kinds?.some((k) => WIDER.includes(k)) ? 'your data' : "today's list");
+export const GENERAL_LABEL = 'General answer. Not checked against your data.';
+
+/** Small line under each AI answer, straight from the backend's check result. */
 export function StatusLine({ final }: { final: ChatFinal | null }) {
   if (!final) return <p className="m-0 text-[13px] font-semibold text-danger">Not answered</p>;
   const counted = final.numbers_total > 0 ? `${final.numbers_found} of ${final.numbers_total} numbers checked` : '';
   let text: string;
-  let ok = false;
+  let tone = 'text-danger';
   if (final.result === 'SHOWN') {
-    ok = true;
-    text = counted ? `${counted} against today's list` : "No numbers in this answer. Uses only today's list";
+    tone = 'text-ok';
+    if (final.mode === 'GENERAL') {
+      text = GENERAL_LABEL;
+      tone = 'text-muted';
+    } else if (final.mode === 'MIXED') {
+      text = counted ? `${counted} against ${sourceWords(final)}. The general part is not checked.` : 'No numbers about your data. The general part is not checked.';
+    } else {
+      text = counted ? `${counted} against ${sourceWords(final)}` : `No numbers in this answer. Uses only ${sourceWords(final)}`;
+    }
   } else if (final.held_reason === 'FORECAST_REQUEST') {
     text = `Forecast not given${counted ? `. ${counted}` : ''}`;
   } else if (final.result === 'HELD_BACK') {
-    text = `Not in today's data. The first answer used a number we could not check, so it was held back${counted ? ` (${counted})` : ''}`;
+    text = `Held back. The answer used a number we could not check${counted ? ` (${counted})` : ''}`;
   } else {
     text = 'Not answered';
   }
-  return <p className={`m-0 text-[13px] font-semibold ${ok ? 'text-ok' : 'text-danger'}`}>{text}</p>;
+  return <p className={`m-0 text-[13px] font-semibold ${tone}`}>{text}</p>;
+}
+
+/** The "In general:" heading a mixed answer uses (server: GENERAL_LINE in apps/api/src/ai/prompts.ts). */
+const GENERAL_LINE = /^\s*\**\s*in general\s*:?\s*\**\s*:?/im;
+
+/** Answer text; a general answer carries its label, and a mixed answer's general part sits in its own labelled box. */
+export function AnswerBody({ text, final, m }: { text: string; final: ChatFinal | null; m: MovesFile | null }) {
+  const shown = final?.result === 'SHOWN';
+  if (shown && final?.mode === 'GENERAL') {
+    return (
+      <div className="flex flex-col gap-2">
+        <span className="self-start rounded-full bg-white/70 px-2.5 py-0.5 text-[12px] font-bold tracking-wide text-muted uppercase">General answer</span>
+        <AnswerText text={text} m={m} />
+      </div>
+    );
+  }
+  const at = shown && final?.mode === 'MIXED' ? GENERAL_LINE.exec(text) : null;
+  if (!at) return <AnswerText text={text} m={m} />;
+  const general = text.slice(at.index + at[0].length).replace(/^\s*\n/, '');
+  return (
+    <div className="flex flex-col gap-3">
+      <AnswerText text={text.slice(0, at.index).trimEnd()} m={m} />
+      <div className="rounded-xl border border-dashed border-[#D9C49C] bg-white/60 px-4 py-3">
+        <div className="mb-1 text-[13px] font-semibold text-muted">{GENERAL_LABEL}</div>
+        <AnswerText text={general.trim()} m={m} />
+      </div>
+    </div>
+  );
+}
+
+function StepIcon({ status }: { status: ChatStep['status'] }) {
+  if (status === 'start') {
+    return <span aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-[#D9C49C] border-t-cta" />;
+  }
+  const ok = status === 'done';
+  return (
+    <span aria-hidden="true" className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white ${ok ? 'bg-ok' : 'bg-danger'}`}>
+      {ok ? '✓' : '✕'}
+    </span>
+  );
+}
+
+function StepList({ steps }: { steps: ChatStep[] }) {
+  return (
+    <ol className="m-0 flex list-none flex-col gap-2 p-0">
+      {steps.map((s) => (
+        <li key={s.id} className="relative flex gap-2.5">
+          <StepIcon status={s.status} />
+          <div className="min-w-0 text-sm leading-snug">
+            <span className={`font-semibold ${s.status === 'failed' ? 'text-danger' : 'text-ink'}`}>{s.label}</span>
+            <span className="sr-only">{s.status === 'start' ? ' (working)' : s.status === 'done' ? ' (done)' : ' (failed)'}</span>
+            {s.detail && <div className="text-muted [overflow-wrap:anywhere]">{s.detail}</div>}
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/**
+ * What the server is doing for this answer: its own pipeline stages, reported as they happen (not the model's
+ * reasoning). Live while the answer is being prepared, then folded under the answer.
+ */
+export function Steps({ steps, live }: { steps: ChatStep[]; live: boolean }) {
+  if (!steps.length) return null;
+  if (live) {
+    return (
+      <div className="rounded-xl bg-white/70 px-4 py-3" aria-live="polite">
+        <div className="mb-2 text-[12px] font-bold tracking-wide text-muted uppercase">Steps</div>
+        <StepList steps={steps} />
+      </div>
+    );
+  }
+  const failed = steps.filter((s) => s.status === 'failed').length;
+  return (
+    <details className="group rounded-xl text-sm">
+      <summary className="inline-flex min-h-9 cursor-pointer list-none items-center gap-1.5 rounded-lg px-1 font-semibold text-muted hover:text-brown [&::-webkit-details-marker]:hidden">
+        <span aria-hidden="true" className="transition-transform group-open:rotate-90">›</span>
+        How Ask worked this out
+        <span className="font-normal">· {steps.length} steps{failed ? ` · ${failed} did not pass` : ''}</span>
+      </summary>
+      <div className="mt-1 rounded-xl bg-white/70 px-4 py-3"><StepList steps={steps} /></div>
+    </details>
+  );
 }
 
 export function TypingDots() {

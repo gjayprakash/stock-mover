@@ -20,9 +20,18 @@ const RULE_NUMBERS = [30, 20, 100000, 60, 12, 5]; // cover days, top-20, sign-of
 
 export type GroundingResult = { found: number; total: number; missing: string[]; ok: boolean };
 
+/**
+ * Ask v2: a wider data source (12-week history, past runs, rules). For a line it applies to, it returns the numbers
+ * and dates that line may also use (only the named entity's / week's own values); null when the line is not about it.
+ * Its values never go into the whole-context set, so lines about today's list are checked exactly as before.
+ * `only`: on such a line the loose whole-context rule (any number in the context, or a sum of two) no longer applies;
+ * the line may use the source's values plus, if it names one move or one store, that entity's own data.
+ */
+export type LineSource = { lineSet(line: string): { set: NumberSet; only: boolean } | null };
+
 const md = (m: number, d: number) => `${m}-${d}`;
 
-function datesIn(text: string): { keys: string[]; rest: string } {
+export function datesIn(text: string): { keys: string[]; rest: string } {
   const keys: string[] = [];
   let rest = text.replace(ISO_DATE, (_, _y, m, d) => (keys.push(md(+m, +d)), ' '));
   rest = rest.replace(DAY_MON, (_, d, mon) => (keys.push(md(MONTHS.indexOf(mon.slice(0, 3).toLowerCase()) + 1, +d)), ' '));
@@ -30,18 +39,26 @@ function datesIn(text: string): { keys: string[]; rest: string } {
   return { keys, rest };
 }
 
-function numbersIn(text: string): number[] {
+export function numbersIn(text: string): number[] {
   return (text.replace(CODES, ' ').match(NUMBER) ?? []).map((n) => Number(n.replace(/,/g, '')));
 }
 
 /** Numbers and dates that may be quoted. `derived` also accepts the sum/difference of two members. */
-class NumberSet {
+export class NumberSet {
   readonly nums = new Set<number>();
   readonly dates = new Set<string>();
 
   constructor(private readonly derived: boolean, ...values: unknown[]) {
     RULE_NUMBERS.forEach((n) => this.addNumber(n));
     values.forEach((v) => this.walk(v));
+  }
+
+  /** A set holding only these values: no rule numbers (for history and run figures, which belong to one entity). */
+  static plain(...values: unknown[]): NumberSet {
+    const s = new NumberSet(false);
+    s.nums.clear();
+    values.forEach((v) => s.walk(v));
+    return s;
   }
 
   private addNumber(n: number) {
@@ -73,6 +90,8 @@ class NumberSet {
   }
 }
 
+const NO_NUMBERS = NumberSet.plain();
+
 // What a line says about a move's direction, checked against the move's `type`.
 const TYPE_CLAIMS: [MoveType, RegExp][] = [
   ['PULL_BACK', /\b(back to (the )?(warehouse|WH-KOL)|pull[- ]?backs?|return(s|ed|ing)? (\w+ )?to (the )?(warehouse|WH-KOL)|to the warehouse)\b/i],
@@ -99,8 +118,8 @@ const typeClaim = (s: string): MoveType | null => {
   const hits = TYPE_CLAIMS.filter(([, re]) => re.test(s)).map(([t]) => t);
   return hits.length === 1 ? hits[0] : null;
 };
-const MOVE_ID = /\bM\d{4}\b/g;
-const CODE = /\b(?:[A-Z]{2,4}-\d{2}(?:-[A-Z0-9]+)?|WH-KOL)\b/g;
+export const MOVE_ID = /\bM\d{4}\b/g;
+export const CODE = /\b(?:[A-Z]{2,4}-\d{2}(?:-[A-Z0-9]+)?|WH-KOL)\b/g;
 const LIST_MARKER = /^\s*(?:\d{1,3}[.)]|[-*•])\s+/;
 
 /**
@@ -140,8 +159,11 @@ export class AllowedSet {
     private readonly extraDates: string[] = [],
     private readonly file?: MovesFile,
     private readonly ask?: { question: string; about: About },
+    private readonly wider: LineSource[] = [],
+    /** Exact numbers only (no sums): for figures in a general answer, where the model had no data to quote. */
+    exact = false,
   ) {
-    this.global = new NumberSet(true, context, extraDates);
+    this.global = new NumberSet(!exact, context, extraDates);
     file?.moves.forEach((mv) => this.moves.set(mv.id, mv));
     file?.stores.forEach((s) => this.stores.set(s.store_id, s));
     const tally = (mvs: Move[]) => [mvs.length, mvs.reduce((t, x) => t + x.qty, 0), mvs.reduce((t, x) => t + x.value_inr, 0)];
@@ -283,13 +305,17 @@ export class AllowedSet {
         }
       }
       const { keys, rest } = datesIn(seg);
+      // Ask v2: history / runs / rules values this line may also use (none unless the question needed that source).
+      const hits = this.wider.map((w) => w.lineSet(seg)).filter((x): x is { set: NumberSet; only: boolean } => !!x);
+      const more = hits.map((x) => x.set);
+      if (set === this.global && hits.some((x) => x.only)) set = NO_NUMBERS;
       for (const k of keys) {
         total++;
-        if (!set.dates.has(k)) missing.push(`date ${k}${about}`);
+        if (!set.dates.has(k) && !more.some((x) => x.dates.has(k))) missing.push(`date ${k}${about}`);
       }
       for (const n of numbersIn(rest)) {
         total++;
-        if (!set.hasNumber(n)) missing.push(`${n}${about}`);
+        if (!set.hasNumber(n) && !more.some((x) => x.hasNumber(n))) missing.push(`${n}${about}`);
       }
     }
     if (this.file && this.ask) {
