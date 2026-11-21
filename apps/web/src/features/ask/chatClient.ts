@@ -9,7 +9,15 @@ export type ChatFinal = {
   held_reason?: AiCall['held_reason'];
   /** When present it REPLACES everything streamed before. */
   text?: string;
+  /** What the server understood the question to be about (newer servers only). */
+  about?: About;
+  /** 0 to 4 questions to ask next (newer servers only). */
+  suggestions?: string[];
 };
+
+/** Exact ids the user tagged; sent as `tags` (at most 5 in total). */
+export type ChatTags = { stores?: string[]; skus?: string[]; moves?: string[] };
+export type About = { stores: string[]; skus: string[]; moves: string[] };
 
 export type Turn = { role: 'user' | 'assistant'; content: string };
 
@@ -31,7 +39,7 @@ function visibleText(buf: string): string {
 export type AskResult = { text: string; final: ChatFinal | null; practice: boolean };
 
 /**
- * POST /api/chat {question, history} and stream the answer.
+ * POST /api/chat {question, history, tags?} and stream the answer.
  * Body: text/plain chunks, then "\n" + one JSON line (ChatFinal).
  * Dev only: if the API is not running, a fake stream built from the moves file stands in.
  */
@@ -40,7 +48,9 @@ export async function askChat(
   history: Turn[],
   onText: (text: string) => void,
   movesFile: MovesFile | null,
+  tags?: ChatTags,
 ): Promise<AskResult> {
+  const hasTags = !!tags && Object.values(tags).some((v) => v && v.length > 0);
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   let practice = false;
@@ -50,7 +60,7 @@ export async function askChat(
       res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question, history: history.slice(-MAX_TURNS) }),
+        body: JSON.stringify({ question, history: history.slice(-MAX_TURNS), ...(hasTags ? { tags } : {}) }),
         signal: ctrl.signal,
       });
     } catch {
@@ -59,7 +69,7 @@ export async function askChat(
     const unreachable = !res || res.status === 404 || res.status >= 500 || !res.body;
     if (unreachable && import.meta.env.DEV && movesFile) {
       const { fakeChatResponse } = await import('./fakeStream');
-      res = fakeChatResponse(question, movesFile);
+      res = fakeChatResponse(question, movesFile, hasTags ? tags : undefined);
       practice = true;
     }
     if (!res || !res.ok || !res.body) return { text: UNAVAILABLE, final: null, practice };
