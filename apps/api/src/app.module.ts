@@ -4,6 +4,7 @@ import { join } from 'path';
 import { DbModule } from './db/db.module';
 import { HealthController } from './health.controller';
 import { RunsModule } from './runs/runs.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { RunsModule } from './runs/runs.module';
     }),
     DbModule,
     RunsModule,
+    AiModule,
   ],
   controllers: [HealthController],
 })
