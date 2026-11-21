@@ -3,7 +3,11 @@ import type { HistoryFile, MovesFile } from '@sm/contract';
 
 // Contract between Jay-A (engine) and Jay-B (API). Do not change without telling the other lane.
 // Extensions must be additive (optional fields).
-export type EngineInput = { dataDir: string; asOf: string; today: string; now: Date; runId: string };
+export type EngineInput = {
+  dataDir: string; asOf: string; today: string; now: Date; runId: string;
+  /** #20: lat/lng per store_id + WH-KOL, loaded from store_locations by RunsService. */
+  locations?: Record<string, { lat: number; lng: number }>;
+};
 export type EngineOutput = { moves: MovesFile; history: HistoryFile };
 
 const sample = <T>(file: string): T => JSON.parse(readFileSync(require.resolve(`@sm/contract/${file}`), 'utf8')) as T;

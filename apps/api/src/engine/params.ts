@@ -21,3 +21,7 @@ export const MIN_PULL_BACK = 3; // pull back fewer pieces than this only for ove
 export const STOCKOUT_DAYS = 14; // out of stock more than this many of the last 84 days → STOCKOUT trigger
 export const REPLENISH_CYCLE_DAYS = 7; // weekly Monday top-up (rules.csv); used for units at risk
 export const REORDER_COVER = LOW_COVER_DISPLAY; // restock a store×SKU only when cover drops under this, then fill to TARGET_COVER
+// Distances / travel days (#20). Straight-line km × ROAD_FACTOR; days = PACKING_DAYS + ceil(km / KM_PER_DAY).
+export const KM_PER_DAY = 350;
+export const PACKING_DAYS = 1;
+export const ROAD_FACTOR = 1.3;
