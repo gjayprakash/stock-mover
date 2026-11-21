@@ -18,6 +18,7 @@ const RESULT: Record<AiCall['result'], [string, ChipTone]> = {
 };
 
 function checked(c: AiCall) {
+  if (c.result === 'ERROR') return 'failed';
   if (c.held_reason === 'FORECAST_REQUEST') return 'forecast asked';
   return `${c.numbers_found} of ${c.numbers_total}`;
 }
@@ -42,28 +43,40 @@ export function CallsTable({ calls }: { calls: AiCall[] }) {
             {calls.map((c) => {
               const isOpen = open === c.id;
               const [label, tone] = RESULT[c.result];
+              const toggle = () => setOpen(isOpen ? null : c.id);
+              const panelId = `ai-call-${c.id}`;
               return (
                 <Fragment key={c.id}>
-                  <tr
-                    className="cursor-pointer border-t border-line hover:bg-page"
-                    onClick={() => setOpen(isOpen ? null : c.id)}
-                    aria-expanded={isOpen}
-                  >
+                  <tr className="cursor-pointer border-t border-line hover:bg-page" onClick={toggle}>
                     <td className="py-4 pr-3 pl-6 whitespace-nowrap">{timeShort(c.at)}</td>
                     <td className="px-3 py-4 font-semibold whitespace-nowrap">{JOB_LABEL[c.job]}</td>
-                    <td className="px-3 py-4">{c.input_summary}</td>
+                    <td className="px-3 py-4">
+                      {/* The real toggle: keyboard reachable, aria-expanded kept in sync. Row click is a mouse shortcut. */}
+                      <button
+                        type="button"
+                        className="flex items-start gap-2 rounded text-left focus-visible:outline-2 focus-visible:outline-cta"
+                        aria-expanded={isOpen}
+                        aria-controls={panelId}
+                        onClick={(e) => { e.stopPropagation(); toggle(); }}
+                      >
+                        <span aria-hidden="true" className={`mt-0.5 text-muted transition-transform ${isOpen ? 'rotate-90' : ''}`}>›</span>
+                        <span>{c.input_summary}</span>
+                      </button>
+                    </td>
                     <td className="px-3 py-4 whitespace-nowrap">{checked(c)}</td>
                     <td className="py-4 pr-6 pl-3"><Chip tone={tone}>{label}</Chip></td>
                   </tr>
                   {isOpen && (
-                    <tr className="bg-page">
+                    <tr className="bg-page" id={panelId}>
                       <td colSpan={5} className="px-6 pb-5 pt-1 text-[15px] leading-relaxed">
                         {/* Sticky + capped width so the text stays readable when the table scrolls sideways on a phone. */}
                         <div className="sticky left-6 max-w-[calc(100vw-5rem)] md:max-w-none">
                           <div className="font-semibold text-muted">Full answer</div>
                           <p className="mt-1 whitespace-pre-wrap">{c.output || '(no text)'}</p>
                           {c.held_reason && (
-                            <p className="mt-2 font-semibold text-danger">Held back: {HELD_LABEL[c.held_reason]}</p>
+                            <p className="mt-2 font-semibold text-danger">
+                              {c.result === 'ERROR' ? 'Failed' : 'Held back'}: {HELD_LABEL[c.held_reason]}
+                            </p>
                           )}
                         </div>
                       </td>

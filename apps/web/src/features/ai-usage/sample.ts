@@ -11,19 +11,30 @@ export type AiLog = { calls: AiCall[]; totals: AiLogTotals };
 export const NUMBER_RE = /(?<![\w-])\d(?:[\d,]*\d)?(?:\.\d+)?/g;
 const countNumbers = (s: string) => (s.match(NUMBER_RE) ?? []).length;
 
-/** Mirrors the backend totals so sample tiles use the same maths as real ones. */
-export function totalsOf(calls: AiCall[]): AiLogTotals {
+/** What the tiles show. Counted here from `calls` (not the backend totals, which count failed calls too). */
+export type Activity = AiLogTotals & { failed: number; latest_brief_at: string | null };
+
+/** The backend returns at most this many calls (ai-log.service.ts `limit 500`). */
+export const LOG_LIMIT = 500;
+
+/** Tile figures from one list of calls. Briefings and questions count only calls that did not fail. */
+export function activityOf(calls: AiCall[]): Activity {
+  const ok = calls.filter((c) => c.result !== 'ERROR');
   const held = calls.filter((c) => c.result === 'HELD_BACK');
   const reasons = new Map<string, number>();
   held.forEach((c) => c.held_reason && reasons.set(c.held_reason, (reasons.get(c.held_reason) ?? 0) + 1));
   const top = [...reasons.entries()].sort((a, b) => b[1] - a[1])[0];
+  const briefs = ok.filter((c) => c.job === 'BRIEF');
+  const latest = briefs.reduce<string | null>((m, c) => (!m || c.at > m ? c.at : m), null);
   return {
-    briefs: calls.filter((c) => c.job === 'BRIEF').length,
-    questions: calls.filter((c) => c.job === 'ASK').length,
-    numbers_found: calls.reduce((t, c) => t + c.numbers_found, 0),
-    numbers_total: calls.reduce((t, c) => t + c.numbers_total, 0),
+    briefs: briefs.length,
+    questions: ok.filter((c) => c.job === 'ASK').length,
+    numbers_found: ok.reduce((t, c) => t + c.numbers_found, 0),
+    numbers_total: ok.reduce((t, c) => t + c.numbers_total, 0),
     held_back: held.length,
     top_held_reason: (top?.[0] as AiCall['held_reason']) ?? null,
+    failed: calls.length - ok.length,
+    latest_brief_at: latest,
   };
 }
 
@@ -45,6 +56,9 @@ export function sampleCalls(file: MovesFile): AiCall[] {
 
   const calls: AiCall[] = [];
   const brief = file.problems.slice(0, 3).map((p) => p.title).join(' ');
+  calls.push(row(0, 'BRIEF', "Write today's morning briefing", '', {
+    numbers_found: 0, numbers_total: 0, result: 'ERROR', held_reason: 'MODEL_ERROR',
+  }));
   if (brief) calls.push(row(1, 'BRIEF', "Write today's morning briefing", brief));
   file.moves.slice(0, 3).forEach((m, i) =>
     calls.push(row(190 + i * 11, 'ASK', `Why move ${m.sku_id} to ${m.to}?`, m.reason)),
