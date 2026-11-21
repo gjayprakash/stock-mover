@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { safeNext, useAuth } from './auth';
+import { DEMO_LOGINS, type DemoLogin } from './demoLogins';
 
 type Errors = { email?: string; password?: string; form?: string };
 
@@ -25,8 +26,19 @@ export function LoginForm() {
     if (errors.form === WRONG) passwordRef.current?.focus();
   }, [errors]);
 
-  async function submit(e: FormEvent) {
+  function submit(e: FormEvent) {
     e.preventDefault();
+    void signIn(email, password);
+  }
+
+  /** "Use this login" on a demo row: fill both fields, then sign in exactly as the form would. */
+  function pickDemo(d: DemoLogin) {
+    setEmail(d.email);
+    setPassword(d.password);
+    void signIn(d.email, d.password);
+  }
+
+  async function signIn(email: string, password: string) {
     if (busy) return;
     const v: Errors = {};
     if (!email.trim()) v.email = 'Enter your work email';
@@ -59,6 +71,7 @@ export function LoginForm() {
   }
 
   return (
+    <>
     <form onSubmit={submit} noValidate className="flex w-full max-w-[400px] flex-col gap-5">
       <h1 className="m-0 font-heading text-[32px] leading-tight font-normal text-brown">Sign in</h1>
 
@@ -109,5 +122,33 @@ export function LoginForm() {
         {errors.form}
       </p>
     </form>
+
+    {DEMO_LOGINS.length > 0 && (
+      <section aria-labelledby="demo-logins" className="flex w-full max-w-[400px] flex-col gap-3 rounded-2xl border border-line bg-white p-4">
+        <h2 id="demo-logins" className="m-0 text-sm font-bold text-ink">Demo sign-in</h2>
+        <ul className="m-0 flex list-none flex-col gap-3 p-0">
+          {DEMO_LOGINS.map((d) => (
+            <li key={d.email} className="flex flex-col gap-2 rounded-xl bg-page p-3">
+              <span className="text-sm font-semibold text-brown">{d.label}</span>
+              <dl className="m-0 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-sm">
+                <dt className="text-muted">Email</dt>
+                <dd className="m-0 font-mono break-all text-ink select-all">{d.email}</dd>
+                <dt className="text-muted">Password</dt>
+                <dd className="m-0 font-mono break-all text-ink select-all">{d.password}</dd>
+              </dl>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => pickDemo(d)}
+                className="inline-flex min-h-11 items-center justify-center self-start rounded-xl border-[1.5px] border-cta bg-white px-4 text-sm font-bold text-cta hover:bg-cta-bg disabled:opacity-60"
+              >
+                Use this login
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+    </>
   );
 }
