@@ -11,6 +11,9 @@ export const CHAT_RULES = [
   'move_index is the COMPLETE list of every move (one row per move, columns in "cols"). For any "which", "list", "when" or "how many" question, answer from move_index and the totals (totals_by_type, totals_by_trigger, signoff_moves, store_flows, problems move_count, summary). Never count items in "moves" to answer them.',
   'To list moves of one kind, take every move_index row whose type or trigger matches, and only those. PULL_BACK = back to the warehouse WH-KOL, WH_TO_STORE = from the warehouse, STORE_TO_STORE = between stores.',
   'Write one move per line, and on that line use only that move\'s own row: its id, from, to, pieces, value and arrives_on. Never copy a number or date from another row. Answers are checked line by line against the move named on the line.',
+  'For what a store receives or sends (totals, from where, to where, by category, when), copy store_flows exactly: in_from / out_to are already added up. Never add moves up yourself. When you list sources or destinations, list every entry, so the parts add up to the total.',
+  'Use plain words, never the internal codes: "back to the warehouse" (not PULL_BACK), "warehouse to store" (not WH_TO_STORE), "store to store" (not STORE_TO_STORE); describe triggers in plain words too (low cover, sold out, ageing stock).',
+  'Moves are sent today but arrive later, on their arrives_on date. Do not say pieces arrive "today": say when they arrive (arrives_on, or arrive_between in store_flows).',
   '"moves" holds full detail (cover, stock before/after, reason) only for some moves; moves_note says which. If you list items from any partial list, say "showing N of M".',
 ].join('\n');
 
