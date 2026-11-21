@@ -12,6 +12,7 @@ import { useRuns } from '../data/useRuns';
 import { downloadApprovedCsv } from '../lib/csv';
 import { dateLong, num, timeShort } from '../lib/format';
 import { STEPS, TRIGGER, failedStep, foundLabel, when } from '../features/run/labels';
+import { useBriefSource } from '../features/run/useBriefSource';
 
 const STATUS: Record<RunStatus, { label: string; tone: ChipTone }> = {
   FINISHED: { label: 'Finished', tone: 'ok' },
@@ -27,6 +28,7 @@ export default function RunPage() {
   const { data, loading, reload: reloadMoves } = useMovesFile();
   const { runs, loading: runsLoading, isSample: runsDown, reload: reloadRuns } = useRuns();
   const { state, counts } = useApprovals();
+  const briefSource = useBriefSource(data?.run.run_id ?? '');
 
   const latest: RunRow | undefined = runs[0];
   const running = latest?.status === 'RUNNING';
@@ -65,18 +67,23 @@ export default function RunPage() {
   const lastMs = new Date(last.at).getTime();
   while (latest && nextMs <= lastMs) nextMs += 86_400_000;
   const nextRun = new Date(nextMs).toISOString();
+  // Only claim it has run on its own once the history shows a scheduled (cron) run.
+  const lastCron = runs.find((r) => r.trigger === 'cron');
 
   return (
     <div className="flex flex-col gap-10 md:gap-12">
       <div>
-        <h1 className="m-0 font-heading text-3xl font-normal text-ink md:text-[42px] md:leading-tight">It runs every morning on its own</h1>
+        <h1 className="m-0 font-heading text-3xl font-normal text-ink md:text-[42px] md:leading-tight">
+          {lastCron ? 'It runs every morning on its own' : 'Scheduled to run every morning on its own'}
+        </h1>
         <p className="mt-2 max-w-2xl text-base text-muted md:text-lg">
-          No buttons to press. The list is built at {timeShort(run.next_run_at)} every day and is ready when you sign in.
+          No buttons to press. A daily run is scheduled for {timeShort(run.next_run_at)} every day and builds the list before you sign in.
+          {lastCron && ` The last scheduled run started ${when(lastCron.started_at)}.`}
         </p>
       </div>
 
       {failed && (
-        <Banner tone="danger" title="This morning's run failed.">
+        <Banner tone="danger" title="The last run failed.">
           Showing the last good list from {when(run.generated_at)} (stock as of {dateLong(run.as_of)}).
         </Banner>
       )}
@@ -111,7 +118,7 @@ export default function RunPage() {
           <Chip tone="neutral" className="self-start">Scheduled</Chip>
           <div className="text-[15px] text-muted">Next run</div>
           <div className="font-heading text-2xl md:text-3xl">{when(nextRun)}</div>
-          <div className="text-base text-muted">Runs by itself, every day</div>
+          <div className="text-base text-muted">Scheduled for {timeShort(nextRun)} every day</div>
         </Card>
       </section>
 
@@ -135,22 +142,30 @@ export default function RunPage() {
         <h2 className="m-0 font-heading text-2xl font-normal md:text-3xl">The steps, every morning</h2>
         <Card className="flex flex-col">
           {STEPS.map((s, i) => {
-            const state = running ? 'wait' : failed ? (i < badStep ? 'ok' : i === badStep ? 'bad' : 'skip') : 'ok';
-            const d = i === 4 && !failed && !running ? `${num(summary.violations)} broken in the last list` : s.d;
+            let state = running ? 'wait' : failed ? (i < badStep ? 'ok' : i === badStep ? 'bad' : 'skip') : 'ok';
+            let title = s.t;
+            let d = i === 4 && !failed && !running ? `${num(summary.violations)} broken in the last list` : s.d;
+            // Last step: say what really happened to the brief (GET /api/brief source), never assume a tick.
+            if (i === STEPS.length - 1 && state === 'ok') {
+              if (briefSource === 'AI') { title = 'AI wrote the morning brief'; d = 'Written from the checked list'; }
+              else if (briefSource === 'TEMPLATE') { state = 'warn'; title = 'Morning brief written from the template (AI was not available)'; d = ''; }
+              else { state = 'none'; title = 'Morning brief'; d = ''; }
+            }
             return (
               <div key={s.t} className="flex items-start gap-4 border-b border-line py-3.5 last:border-b-0">
                 <span
                   className={`flex h-7 w-7 flex-none items-center justify-center rounded-full text-white ${
-                    state === 'ok' ? 'bg-ok' : state === 'bad' ? 'bg-danger' : 'bg-line'
+                    state === 'ok' ? 'bg-ok' : state === 'bad' ? 'bg-danger' : state === 'warn' ? 'bg-warn' : 'bg-line'
                   }`}
-                  aria-label={state === 'ok' ? 'done' : state === 'bad' ? 'failed' : 'not done'}
+                  aria-label={state === 'ok' ? 'done' : state === 'bad' ? 'failed' : state === 'warn' ? 'done without AI' : state === 'none' ? 'unknown' : 'not done'}
                 >
+                  {state === 'warn' && <span className="text-sm font-bold" aria-hidden="true">!</span>}
                   {state === 'ok' && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10" /></svg>}
                   {state === 'bad' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>}
                   {state === 'wait' && i === 0 && <Spinner />}
                 </span>
                 <div className="min-w-0">
-                  <div className={`text-[17px] font-bold ${state === 'skip' ? 'text-muted' : ''}`}>{s.t}</div>
+                  <div className={`text-[17px] font-bold ${state === 'skip' ? 'text-muted' : state === 'warn' ? 'text-warn' : ''}`}>{title}</div>
                   {state === 'bad' ? (
                     <div className="mt-0.5 text-[15px] text-danger">{last.error ?? 'Stopped here.'}</div>
                   ) : (
@@ -191,7 +206,7 @@ export default function RunPage() {
         <div>
           <div className="font-heading text-2xl md:text-[28px]">Today's approvals</div>
           <div className="mt-1.5 text-base text-tint">
-            {num(counts.approved)} of {num(counts.total)} moves approved. Approved moves go to the warehouse and stores as a packing list.
+            {num(counts.approved)} of {num(counts.total)} moves approved. Approved moves download as a CSV file; nothing is sent to stores or the warehouse from here.
           </div>
         </div>
         <Button disabled={counts.approved === 0} onClick={() => downloadApprovedCsv(data, state)}>
