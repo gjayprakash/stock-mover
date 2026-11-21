@@ -103,11 +103,14 @@ export function buildProblems(P: Positions, moves: Move[], stores: StoreSummary[
     const st = stores.find((x) => x.store_id === f.store_id)!;
     const it = c.items.get(f.sku_id)!;
     const gap = Math.abs(f.on_hand - (f.last_weekly_closing ?? 0));
-    const fill = Math.round((100 * st.stock_now) / st.capacity);
+    // Raw snapshot count for the store, wrong count included (stock_now leaves it out): what the store would hold if the count were right.
+    let raw = 0;
+    for (const p of P.rows.values()) if (p.store_id === f.store_id) raw += p.on_hand + p.in_transit;
+    const fill = Math.round((100 * raw) / st.capacity);
     push('DATA_FLAG', {
       tag: 'Stock count looks wrong',
       title: `${it.style_name} (${it.size}) count at ${where(f.store_id)} does not add up`,
-      seen: `The count shows ${f.on_hand} pieces${f.last_weekly_closing != null ? ` but last Saturday closed at ${f.last_weekly_closing}` : ''}${fill > 100 ? `; that puts the store at ${fill}% of its space` : ''}.`,
+      seen: `The count shows ${f.on_hand} pieces${f.last_weekly_closing != null ? ` but last Saturday closed at ${f.last_weekly_closing}` : ''}.${fill >= 100 ? ` If the count were right the store would be at ${fill}% of its space.` : ''}`,
       fix: `Recount ${f.sku_id} at ${f.store_id}. We left it out of every move until then.`,
       subject: { store_id: f.store_id, sku_id: f.sku_id },
       move_ids: [], impact_inr: gap * it.mrp,

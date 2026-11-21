@@ -14,9 +14,11 @@ export function buildSummary(P: Positions, moves: Move[], violations: number): M
   let over = 0, belowMin = 0;
   for (const st of P.c.stores) {
     const s = P.byStore.get(st.store_id)!;
-    // Same stock as stores[].stock_now and the capacity rule: a count flagged as wrong is not real stock
-    // (it is counted under data_flags instead).
-    if (s.store_units + s.store_in_transit > s.capacity) over++;
+    // Hidden-problem finding (docs/02-engine.md §7 "A store at or over capacity"): on the RAW snapshot count
+    // (Σ max(on_hand,0) + in transit), a count flagged as wrong included, as the store reports it.
+    // The plan, the validator and stores[].stock_now use the trusted count (store_units) instead.
+    const raw = rows.filter((p) => p.store_id === st.store_id).reduce((a, p) => a + p.on_hand + p.in_transit, 0);
+    if (raw >= s.capacity) over++;
     for (const [cat, min] of Object.entries(s.min_display)) if ((s.cat_units[cat] ?? 0) < min) belowMin++;
   }
   return {
