@@ -39,9 +39,11 @@ function checkRows(ctx: FakeCtx, rows: string[][], firstRowNo: number, sampleLin
   const errors: StockRowError[] = [];
   const bad: { cells: string[]; error: string }[] = [];
   const byLoc = new Map<string, { pieces: number; rows: number }>();
+  const newSkus = new Set<string>();
   let total = 0;
   rows.forEach((cells, i) => {
     const rowNo = firstRowNo + i;
+    if (cells.every((c) => !(c ?? '').trim())) return; // blank line
     if (sampleLines.has(toCsvLine(cells))) return; // example rows left in are ignored
     total++;
     const [loc, sku, name, size, category, mrp, qtyRaw, date] = cells.map((c) => (c ?? '').trim());
@@ -59,6 +61,7 @@ function checkRows(ctx: FakeCtx, rows: string[][], firstRowNo: number, sampleLin
     else if (age < 0) e = err('received_on', `Date ${date} is in the future.`, 'Use the day the pieces actually arrived.');
     else if (age > 60) e = err('received_on', `Date ${date} is more than 60 days ago.`, 'Only stock received in the last 60 days can be added here.');
     if (e) { errors.push(e); bad.push({ cells, error: `${e.message} ${e.fix}` }); return; }
+    if (!cat.has(sku)) newSkus.add(sku);
     const cur = byLoc.get(loc) ?? { pieces: 0, rows: 0 };
     byLoc.set(loc, { pieces: cur.pieces + n, rows: cur.rows + 1 });
   });
@@ -68,6 +71,11 @@ function checkRows(ctx: FakeCtx, rows: string[][], firstRowNo: number, sampleLin
       return { location_id, ...v, over_capacity: !!s && s.stock_now + v.pieces > s.capacity };
     })
     .sort((a, b) => b.pieces - a.pieces);
+  // Same wording as apps/api/src/stock/check.ts.
+  const warnings: StockRowError[] = by_location.filter((l) => l.over_capacity).map((l) => {
+    const s = known.get(l.location_id)!;
+    return { row: 0, column: 'location_id', message: `${l.location_id} would hold ${s.stock_now + l.pieces} of ${s.capacity} spaces`, fix: 'You can still add it; the next run will pull back slow stock.' };
+  });
   const result: StockCheckResult = {
     check_id: `fake-${hash(text)}-${Date.now()}`,
     file_hash: hash(text),
@@ -76,8 +84,8 @@ function checkRows(ctx: FakeCtx, rows: string[][], firstRowNo: number, sampleLin
     pieces: by_location.reduce((s, l) => s + l.pieces, 0),
     by_location,
     errors,
-    warnings: [],
-    new_skus: [],
+    warnings,
+    new_skus: [...newSkus],
     expires_at: new Date(Date.now() + 30 * 60_000).toISOString(),
   };
   pending.set(result.check_id, { result, hash: result.file_hash!, bad });
@@ -90,7 +98,8 @@ export async function fakeCheckFile(ctx: FakeCtx, file: File): Promise<FakeCheck
   await new Promise((r) => setTimeout(r, 700));
   if (!/\.csv$/i.test(file.name)) return { status: 422, body: { message: 'The test version reads CSV files only. Save the sheet as CSV and upload again.' } };
   const text = await file.text();
-  const [header = [], ...rows] = parseCsv(text);
+  if (!text.trim()) return { status: 422, body: { message: 'The file is empty.' } };
+  const [header = [], ...rows] = parseCsv(text, true);
   const wrong = STOCK_COLUMNS.findIndex((c, i) => (header[i] ?? '').trim() !== c);
   if (wrong >= 0 || header.length !== STOCK_COLUMNS.length) {
     const i = wrong >= 0 ? wrong : STOCK_COLUMNS.length;

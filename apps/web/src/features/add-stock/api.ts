@@ -5,7 +5,8 @@ import type { Move, StoreSummary } from '@sm/contract';
 import { saveText } from './csvParse';
 import type { StockCheckResult, StockCommitResult, StockErrorBody, StockRowInput } from './types';
 
-export type FakeCtx = { stores: StoreSummary[]; moves: Move[]; today: string };
+/** today = the product's today (as_of + 1); asOf = the stock count date (run.as_of). */
+export type FakeCtx = { stores: StoreSummary[]; moves: Move[]; today: string; asOf: string };
 
 export type SampleOutcome = { kind: 'ok'; text: string; fake: boolean } | { kind: 'unavailable' };
 export type CheckOutcome =

@@ -11,7 +11,7 @@ const SAMPLE_NAME = 'new-stock-sample.csv';
 /** Plain-word guide per column, in file order. Examples come from the sample file itself. */
 const GUIDE: { label: string; help: string }[] = [
   { label: 'Where it arrived', help: 'Store code, or WH-KOL for the warehouse.' },
-  { label: 'Product code', help: 'Style, number and size joined by dashes.' },
+  { label: 'Product code', help: 'Style, number and size joined by dashes. A code we do not know yet creates a new product, so fill in its name, category and tag price.' },
   { label: 'Product name', help: 'The name on the tag.' },
   { label: 'Size', help: 'The size at the end of the product code.' },
   { label: 'Category', help: 'As in the catalogue.' },

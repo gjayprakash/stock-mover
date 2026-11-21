@@ -17,7 +17,7 @@ export default function AddStockPage() {
     // "Today" in the product = the day after the stock snapshot.
     const t = new Date(`${data.run.as_of}T00:00:00Z`);
     t.setUTCDate(t.getUTCDate() + 1);
-    return { stores: data.stores, moves: data.moves, today: t.toISOString().slice(0, 10) };
+    return { stores: data.stores, moves: data.moves, today: t.toISOString().slice(0, 10), asOf: data.run.as_of };
   }, [data]);
   const [sample, setSample] = useState<{ text: string | null; fake: boolean; unavailable: boolean }>({ text: null, fake: false, unavailable: false });
 
@@ -60,7 +60,7 @@ export default function AddStockPage() {
           <div id="sample-file" className="scroll-mt-6">
             <SampleFile text={sample.text} />
           </div>
-          <UploadAndCheck ctx={ctx} nextRun={nextRun} />
+          <UploadAndCheck ctx={ctx} nextRun={nextRun} sampleText={sample.text} />
           <TypeInForm ctx={ctx} nextRun={nextRun} />
           <section className="flex flex-col gap-5 rounded-2xl bg-ok-bg p-5 text-[#123D2E] md:px-10 md:py-9">
             <h2 className="m-0 font-heading text-2xl font-normal">What we check on every row</h2>

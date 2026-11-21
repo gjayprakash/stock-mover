@@ -7,12 +7,14 @@ import { Chip } from '../../components/Chip';
 import { Section } from '../../components/Section';
 import { num, pieces, storeLabel } from '../../lib/format';
 import { checkFile, commit, downloadErrors, type FakeCtx } from './api';
-import { MAX_ROWS, STOCK_COLUMNS, type StockCheckResult } from './types';
+import { prepareCsv } from './csvParse';
+import { EarlyNote, capacityText } from './notes';
+import { MAX_ROWS, STOCK_COLUMNS, columnName, sentence, type StockCheckResult } from './types';
 
 type State =
   | { step: 'empty' }
   | { step: 'checking'; fileName: string }
-  | { step: 'checked'; fileName: string; result: StockCheckResult; fake: boolean; adding?: boolean; addError?: string }
+  | { step: 'checked'; fileName: string; result: StockCheckResult; fake: boolean; early: number[]; stripped: boolean; adding?: boolean; addError?: string }
   | { step: 'added'; result: StockCheckResult; fake: boolean; rows: number; pieces: number }
   | { step: 'refused'; fileName: string; message: string }
   | { step: 'error'; message: string }
@@ -24,7 +26,9 @@ function plural(n: number, one: string, many: string) {
   return `${num(n)} ${n === 1 ? one : many}`;
 }
 
-export function UploadAndCheck({ ctx, nextRun }: { ctx: FakeCtx; nextRun: string }) {
+const EMPTY_FILE = 'The file has no rows. Fill in the sample file and upload it again.';
+
+export function UploadAndCheck({ ctx, nextRun, sampleText }: { ctx: FakeCtx; nextRun: string; sampleText: string | null }) {
   const [state, setState] = useState<State>({ step: 'empty' });
   const [dragging, setDragging] = useState(false);
   const input = useRef<HTMLInputElement>(null);
@@ -32,9 +36,24 @@ export function UploadAndCheck({ ctx, nextRun }: { ctx: FakeCtx; nextRun: string
 
   async function run(file: File) {
     setState({ step: 'checking', fileName: file.name });
-    const out = await checkFile(ctx, file);
-    if (out.kind === 'checked') setState({ step: 'checked', fileName: file.name, result: out.result, fake: out.fake });
-    else if (out.kind === 'refused') setState({ step: 'refused', fileName: file.name, message: out.message });
+    if (file.size === 0) return setState({ step: 'refused', fileName: file.name, message: EMPTY_FILE });
+    // CSV only: drop the "error" column of a rows-to-fix file and find rows dated before the count.
+    let send = file;
+    let early: number[] = [];
+    let stripped = false;
+    if (/\.csv$/i.test(file.name) || file.type === 'text/csv') {
+      const text = await file.text();
+      if (!text.trim()) return setState({ step: 'refused', fileName: file.name, message: EMPTY_FILE });
+      const prep = prepareCsv(text, ctx.asOf, sampleText);
+      early = prep.early;
+      stripped = prep.stripped;
+      if (stripped) send = new File([prep.text], file.name, { type: 'text/csv' });
+    }
+    const out = await checkFile(ctx, send);
+    if (out.kind === 'checked') {
+      const bad = new Set(out.result.errors.map((e) => e.row));
+      setState({ step: 'checked', fileName: file.name, result: out.result, fake: out.fake, early: early.filter((n) => !bad.has(n)), stripped });
+    } else if (out.kind === 'refused') setState({ step: 'refused', fileName: file.name, message: /empty/i.test(out.message) ? EMPTY_FILE : out.message });
     else if (out.kind === 'unavailable') setState({ step: 'unavailable' });
     else setState({ step: 'error', message: out.message });
   }
@@ -130,7 +149,7 @@ export function UploadAndCheck({ ctx, nextRun }: { ctx: FakeCtx; nextRun: string
           </Card>
         )}
 
-        {state.step === 'checked' && <Checked state={state} stores={stores} nextRun={nextRun} onAdd={add} onReset={reset} />}
+        {state.step === 'checked' && <Checked state={state} stores={stores} asOf={ctx.asOf} nextRun={nextRun} onAdd={add} onReset={reset} />}
 
         {state.step === 'added' && (
           <div className="flex flex-col gap-2.5 rounded-2xl bg-ok-bg p-5 text-[#123D2E] md:p-8" role="status">
@@ -149,6 +168,7 @@ export function UploadAndCheck({ ctx, nextRun }: { ctx: FakeCtx; nextRun: string
                 Add another file
               </button>
             </div>
+            {state.result.errors.length > 0 && <div className="text-sm">{FIX_NOTE}</div>}
           </div>
         )}
       </Section>
@@ -156,11 +176,14 @@ export function UploadAndCheck({ ctx, nextRun }: { ctx: FakeCtx; nextRun: string
   );
 }
 
+const FIX_NOTE = 'Upload it again as CSV once fixed; we drop its last column, error, for you. If you save it as Excel (.xlsx), delete that column first.';
+
 function Checked({
-  state, stores, nextRun, onAdd, onReset,
+  state, stores, asOf, nextRun, onAdd, onReset,
 }: {
   state: Extract<State, { step: 'checked' }>;
   stores: StoreSummary[];
+  asOf: string;
   nextRun: string;
   onAdd: () => void;
   onReset: () => void;
@@ -173,16 +196,17 @@ function Checked({
       <div className="flex flex-col gap-5 p-5 md:px-8 md:py-7">
         <div className="text-muted">
           We read <span className="font-bold break-all text-ink">{state.fileName}</span>. The columns are in the right order.
+          {state.stripped && ' We left out the last column, error, from the rows-to-fix file.'}
         </div>
         <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-4">
           <Tile n={r.rows_total} label={r.rows_total === 1 ? 'row in the file' : 'rows in the file'} cls="bg-page" />
           <Tile n={r.ok_rows} label={`${r.ok_rows === 1 ? 'row' : 'rows'} ready to add · ${pieces(r.pieces)}`} cls="bg-ok-bg" num="text-[#1D5B45]" />
-          <Tile n={bad} label={bad === 1 ? 'row needs fixing' : 'rows need fixing'} cls="bg-cta-bg" num="text-[#8A2C07]" />
+          <Tile n={bad} label={bad === 1 ? 'row needs fixing' : 'rows need fixing'} cls={bad > 0 ? 'bg-cta-bg' : 'bg-page'} num={bad > 0 ? 'text-[#8A2C07]' : ''} />
         </div>
         {r.by_location.length > 0 && (
           <div className="flex flex-col gap-2 rounded-xl bg-page px-4 py-3 leading-normal">
             <div>
-              Where the {pieces(r.pieces)} go:{' '}
+              Where the {pieces(r.pieces)} {r.pieces === 1 ? 'goes' : 'go'}:{' '}
               {r.by_location.map((l, i) => (
                 <span key={l.location_id}>
                   {i > 0 && (i === r.by_location.length - 1 ? ' and ' : ', ')}
@@ -194,26 +218,35 @@ function Checked({
             {full.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {full.map((l) => (
-                  <Chip key={l.location_id} tone="warn">{storeLabel(l.location_id, stores)} goes over its space</Chip>
+                  <Chip key={l.location_id} tone="warn" className="whitespace-normal">{capacityText(l.location_id, r.warnings, stores)}</Chip>
                 ))}
               </div>
             )}
+            {full.length > 0 && <div className="text-sm text-muted">You can still add these pieces; the next daily run will move slow stock out.</div>}
           </div>
         )}
         {/* Row 0 warnings are the over-capacity ones, already shown as chips above. */}
         {r.warnings.some((w) => w.row > 0) && (
           <ul className="m-0 flex list-none flex-col gap-1 p-0 text-[15px] text-[#6B4100]">
             {r.warnings.filter((w) => w.row > 0).map((w, i) => (
-              <li key={i}><span className="font-semibold">Row {w.row}:</span> {w.message}. {w.fix}</li>
+              <li key={i}><span className="font-semibold">Row {w.row}:</span> {sentence(w.message, w.fix)}</li>
             ))}
           </ul>
+        )}
+        {state.early.length > 0 && <EarlyNote rows={state.early} asOf={asOf} />}
+        {r.new_skus.length > 0 && (
+          <div className="rounded-xl bg-tint px-4 py-3 text-[15px] leading-snug">
+            <span className="font-semibold">{r.new_skus.length === 1 ? '1 new product' : `${num(r.new_skus.length)} new products`} will be created:</span>{' '}
+            {r.new_skus.join(', ')}. A product code we do not know yet is added to the catalogue with the name, category and tag price from your file.
+          </div>
         )}
       </div>
       {r.errors.map((e, i) => (
         <div key={`${e.row}-${i}`} className="flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-line px-5 py-4 md:px-8 md:py-5">
           <div className="w-[90px] shrink-0 text-[15px] font-bold text-[#8A2C07]">Row {e.row}</div>
           <div className="min-w-0 flex-1 basis-64">
-            <div className="font-semibold">{e.message}</div>
+            <div className="text-sm font-semibold text-muted">{columnName(e.column)}</div>
+            <div className="font-semibold">{sentence(e.message)}</div>
             <div className="mt-0.5 text-[15px] text-muted">{e.fix}</div>
           </div>
           {e.column === 'location_id' && (
@@ -235,6 +268,7 @@ function Checked({
             </button>
           )}
         </div>
+        {bad > 0 && <div className="text-sm text-muted">{FIX_NOTE}</div>}
         {r.ok_rows > 0 ? (
           <div className="text-sm text-muted">Goes into the next daily run, {nextRun}. Today's list stays as it is.</div>
         ) : r.rows_total === 0 ? (
