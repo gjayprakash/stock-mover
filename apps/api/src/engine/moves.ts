@@ -244,7 +244,9 @@ export function generateMoves(P: Positions): GenerateResult {
       emit({
         type: 'STORE_TO_STORE', trigger: 'AGEING', sku: a.sku_id, from: a.store_id, to: t.store_id, qty: q,
         geo: { distance_km: o.km, travel_days: o.days, alternatives: takers.filter((x) => x !== o).slice(0, 5).map(altOf) },
-        reason: () => R.ageing({ from: a.store_id, age: a.stock_age_days!, sold: a.units_12w, instock: a.instock_days, to: t.store_id, toV: t.velocity, toBasis: t.basis, qty: q, days: o.days }),
+        reason: ({ fromBefore }) => R.ageing({
+          from: a.store_id, age: a.stock_age_days!, sold: a.units_12w, instock: a.instock_days,
+          fromV: fromBefore.velocity, fromOnHand: fromBefore.on_hand + fromBefore.in_transit, fromCover: fromBefore.cover_days, to: t.store_id, toV: t.velocity, toBasis: t.basis, qty: q, days: o.days }),
         priority: () => ageingPriority({ qty: q, mrp: a.mrp, age: a.stock_age_days }),
       });
       spare -= q;

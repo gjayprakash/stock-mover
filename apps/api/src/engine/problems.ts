@@ -139,7 +139,7 @@ export function buildProblems(P: Positions, moves: Move[], stores: StoreSummary[
       const short = st.categories.filter((x) => x.now < x.min_display);
       push('NEW_STORE', {
         tag: 'New store',
-        title: `${where(st.store_id)} opened ${age} days ago and is still filling up`,
+        title: `${where(st.store_id)} is still filling up in the ${age + 1} days from its opening (${shortDate(st.opened_on)}) to ${shortDate(AS_OF)}`,
         seen: `Opened ${shortDate(st.opened_on)} with little sales history, so we plan from similar ${st.tier} stores. ${st.sold_out_with_demand} items that should sell are sold out${short.length ? `; ${short.map((x) => `${x.category} ${x.now} of ${x.min_display} minimum`).join(', ')}` : ''}.`,
         fix: inbound.length ? fixLine(inbound) : 'Nothing to send today.',
         subject: { store_id: st.store_id }, move_ids: inbound.map((m) => m.id), impact_inr: priority(inbound) + st.at_risk_week_inr,
@@ -184,7 +184,7 @@ export function buildProblems(P: Positions, moves: Move[], stores: StoreSummary[
     if (!fix.length) continue;
     push('LAUNCH_RAMP', {
       tag: 'New launch picking up',
-      title: `${s.name} sales are climbing ${daysBetween(it.launch_date, AS_OF)} days after launch`,
+      title: `${s.name} sales are climbing in the ${daysBetween(it.launch_date, AS_OF) + 1} days from launch (${shortDate(it.launch_date)}) to ${shortDate(AS_OF)}`,
       seen: `Launched ${shortDate(it.launch_date)}; pieces sold a week went ${u.slice(nW - 4).join(' → ')} over the last 4 weeks.`,
       fix: fixLine(fix),
       subject: { style_id: s.style_id }, move_ids: fix.map((m) => m.id), impact_inr: priority(fix), chart: chartFor(s),
