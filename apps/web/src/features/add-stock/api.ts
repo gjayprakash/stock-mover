@@ -3,7 +3,7 @@
 // endpoint is reported as "unavailable", never faked.
 import type { Move, StoreSummary } from '@sm/contract';
 import { saveText } from './csvParse';
-import type { StockCheckResult, StockCommitResult, StockRefused, StockRowInput } from './types';
+import type { StockCheckResult, StockCommitResult, StockErrorBody, StockRowInput } from './types';
 
 export type FakeCtx = { stores: StoreSummary[]; moves: Move[]; today: string };
 
@@ -21,25 +21,31 @@ export type CommitOutcome =
 
 const loadFake = () => import('./fake');
 
-/** null = endpoint not there (network error, 404, 5xx). */
+/**
+ * null = endpoint not there: network error, 5xx, or a 404 that is not the stock API's own
+ * `{ error }` answer (the stock API uses 404 { error } for an expired check).
+ */
 async function call(url: string, init?: RequestInit): Promise<Response | null> {
   try {
     const r = await fetch(url, init);
-    if (r.status === 404 || r.status >= 500) return null;
+    if (r.status >= 500) return null;
+    if (r.status === 404) {
+      const body = (await r.clone().json().catch(() => null)) as StockErrorBody | null;
+      if (!body || body.statusCode !== undefined || !body.error) return null;
+    }
     return r;
   } catch {
     return null;
   }
 }
 
+function pick(body: StockErrorBody | null | undefined): string | undefined {
+  if (!body) return undefined;
+  return body.error || (Array.isArray(body.message) ? body.message[0] : body.message) || undefined;
+}
+
 async function messageOf(r: Response, fallback: string): Promise<string> {
-  try {
-    const body = (await r.json()) as StockRefused;
-    const m = Array.isArray(body.message) ? body.message[0] : body.message;
-    return m || fallback;
-  } catch {
-    return fallback;
-  }
+  return pick((await r.json().catch(() => null)) as StockErrorBody | null) || fallback;
 }
 
 export async function loadSample(ctx: FakeCtx): Promise<SampleOutcome> {
@@ -77,7 +83,7 @@ export async function checkRow(ctx: FakeCtx, input: StockRowInput): Promise<Chec
 
 export async function commit(checkId: string, fake: boolean, fallback: StockCheckResult): Promise<CommitOutcome> {
   let status: number;
-  let body: StockCommitResult & { message?: string | string[] };
+  let body: Partial<StockCommitResult> & StockErrorBody;
   if (import.meta.env.DEV && fake) {
     ({ status, body } = await (await loadFake()).fakeCommit(checkId));
   } else {
@@ -88,9 +94,9 @@ export async function commit(checkId: string, fake: boolean, fallback: StockChec
     status = r.status;
     body = await r.json().catch(() => ({}));
   }
-  const msg = Array.isArray(body.message) ? body.message[0] : body.message;
+  const msg = pick(body);
   if (status >= 200 && status < 300) {
-    return { kind: 'added', rows: body.rows_added ?? fallback.ok_rows, pieces: body.pieces_added ?? fallback.pieces };
+    return { kind: 'added', rows: body.receipts ?? fallback.ok_rows, pieces: body.pieces ?? fallback.pieces };
   }
   if (status === 409) return { kind: 'refused', message: msg || 'This file was already added. Nothing was added twice.' };
   return { kind: 'error', message: msg || 'The rows could not be added.' };

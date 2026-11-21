@@ -57,7 +57,10 @@ export function TypeInForm({ ctx, nextRun }: { ctx: FakeCtx; nextRun: string }) 
       setSku('');
       setQty('');
     } else {
-      setErrors({ form: c.kind === 'unavailable' ? 'Adding stock is not available right now.' : c.message });
+      setErrors({
+        form: c.kind === 'unavailable' ? 'Adding stock is not available right now.'
+          : c.kind === 'refused' ? 'This exact item was already added. Nothing was added twice.' : c.message,
+      });
     }
   }
 
