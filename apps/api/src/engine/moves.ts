@@ -168,7 +168,9 @@ export function generateMoves(P: Positions): GenerateResult {
     });
   };
 
-  const restockTrigger = (p: Position): MoveTrigger => (p.velocity > 0 && p.instock_days < WINDOW_DAYS - STOCKOUT_DAYS ? 'STOCKOUT' : 'LOW_COVER');
+  // Out-of-stock share is judged on the days it could have been on the shelf (launch / store opening), same test as the reason line.
+  const restockTrigger = (p: Position): MoveTrigger =>
+    p.velocity > 0 && R.wasStockout(p.instock_days, c.items.get(p.sku_id)!.launch_date, c.storeById.get(p.store_id)!.opened_on) ? 'STOCKOUT' : 'LOW_COVER';
   const restockReason = (p: Position, from: string, qty: number) => (x: { arrives: string; toBefore: Side; toAfter: Side }) =>
     restockTrigger(p) === 'STOCKOUT'
       ? R.stockout({
