@@ -54,6 +54,24 @@ export class AiLogService implements OnModuleInit {
     return row;
   }
 
+  /**
+   * The latest AI brief already shown for this run, so a restart reuses it instead of asking the model again (#18).
+   * Only SHOWN rows count: template fallbacks are logged as ERROR / HELD_BACK, so they never block a later AI brief.
+   */
+  async latestShownBrief(runId: string): Promise<AiCall | null> {
+    const real = (c: Pick<AiCall, 'model' | 'output'>) => !!c.output && !!c.model && c.model !== 'template';
+    if (!this.db.configured) {
+      return this.memory.find((c) => c.run_id === runId && c.job === 'BRIEF' && c.result === 'SHOWN' && real(c)) ?? null;
+    }
+    const rows = await this.db.query<AiCall & { at: Date }>(
+      `select * from ai_calls
+        where run_id = $1 and job = 'BRIEF' and result = 'SHOWN' and output <> '' and model not in ('', 'template')
+        order by at desc limit 1`,
+      [runId],
+    );
+    return rows[0] ? { ...rows[0], at: rows[0].at.toISOString() } : null;
+  }
+
   async list(runId?: string) {
     let calls: AiCall[];
     if (!this.db.configured) {
