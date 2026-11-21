@@ -8,6 +8,7 @@ import { AiModule } from './ai/ai.module';
 import { GeoModule } from './geo/geo.module';
 import { StoresModule } from './stores/stores.module';
 import { StockModule } from './stock/stock.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { StockModule } from './stock/stock.module';
     GeoModule,
     StoresModule,
     StockModule,
+    AuthModule, // optional sign-in: off unless APP_USERS is set
   ],
   controllers: [HealthController],
 })

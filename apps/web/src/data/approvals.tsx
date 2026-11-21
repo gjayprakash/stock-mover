@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { Move, Problem } from '@sm/contract';
 import { useMovesFile } from './useMovesFile';
+import { useAuth } from '../features/login/auth';
 
 export type Decision = 'approved' | 'skipped';
 export type ApprovalsState = {
@@ -25,9 +26,8 @@ export type ApprovalsApi = {
 };
 
 const EMPTY: ApprovalsState = { moves: {}, problems: {} };
-/** No auth yet (#19 adds login): everyone is "anon". */
-const USER = 'anon';
-const keyFor = (runId: string) => `sm:${USER}:${runId}`;
+/** User part is the signed-in email, or "anon" when sign-in is off. */
+const keyFor = (user: string, runId: string) => `sm:${user}:${runId}`;
 
 function load(key: string): ApprovalsState {
   try {
@@ -48,7 +48,8 @@ const Ctx = createContext<ApprovalsApi | null>(null);
 /** Approvals live in localStorage per run_id; a new run_id starts empty. Must sit inside <MovesFileProvider>. */
 export function ApprovalsProvider({ children }: { children: ReactNode }) {
   const { data } = useMovesFile();
-  const key = data ? keyFor(data.run.run_id) : null;
+  const { email } = useAuth();
+  const key = data ? keyFor(email ?? 'anon', data.run.run_id) : null;
   const [store, setStore] = useState<{ key: string | null; state: ApprovalsState }>({ key: null, state: EMPTY });
 
   // Reload whenever the run changes (reset = new key has nothing stored).

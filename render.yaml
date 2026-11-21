@@ -19,3 +19,8 @@ services:
         sync: false
       - key: MESH_MODEL
         sync: false
+      # Optional sign-in: off unless APP_USERS is set (see README).
+      - key: APP_USERS
+        sync: false
+      - key: AUTH_SECRET
+        sync: false

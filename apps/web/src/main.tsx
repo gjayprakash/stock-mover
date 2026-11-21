@@ -5,15 +5,18 @@ import './index.css';
 import App from './App';
 import { MovesFileProvider } from './data/useMovesFile';
 import { ApprovalsProvider } from './data/approvals';
+import { AuthProvider } from './features/login/auth';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <MovesFileProvider>
-        <ApprovalsProvider>
-          <App />
-        </ApprovalsProvider>
-      </MovesFileProvider>
+      <AuthProvider>
+        <MovesFileProvider>
+          <ApprovalsProvider>
+            <App />
+          </ApprovalsProvider>
+        </MovesFileProvider>
+      </AuthProvider>
     </BrowserRouter>
   </StrictMode>,
 );
