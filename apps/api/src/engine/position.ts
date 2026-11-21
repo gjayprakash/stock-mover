@@ -30,7 +30,7 @@ export type Position = {
 
 export type StorePosition = {
   store_id: string;
-  store_units: number; // Σ on_hand
+  store_units: number; // Σ on_hand (flagged rows at last weekly count)
   store_in_transit: number;
   capacity: number;
   cat_units: Record<string, number>; // Σ on_hand per display category
@@ -96,9 +96,11 @@ export function buildPositions(data: EngineData): Positions {
   }
   for (const p of rows.values()) {
     const sp = byStore.get(p.store_id)!;
-    sp.store_units += p.on_hand;
+    // A wrong count (A8) must not drive capacity or display decisions: use last week's closing count.
+    const units = p.flagged ? Math.max(0, c.flags.get(key(p.store_id, p.sku_id))!.last_weekly_closing ?? 0) : p.on_hand;
+    sp.store_units += units;
     sp.store_in_transit += p.in_transit;
-    sp.cat_units[p.category] = (sp.cat_units[p.category] ?? 0) + p.on_hand;
+    sp.cat_units[p.category] = (sp.cat_units[p.category] ?? 0) + units;
   }
 
   const inbound: Positions['inbound'] = new Map();
