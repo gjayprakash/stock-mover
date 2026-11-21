@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import LoginPage from '../../pages/LoginPage';
+import manyavarLogo from '../../assets/manyavar.png';
 
 /** loading → first GET /api/me in flight; off → sign-in not configured (app behaves as before). */
 type Status = 'loading' | 'off' | 'out' | 'in';
@@ -25,14 +26,8 @@ const PUBLIC_API = ['/api/me', '/api/auth/', '/api/run'];
 /** Shown while GET /api/me is in flight, so a page load never flashes blank. */
 function Loading() {
   return (
-    <div role="status" aria-label="Loading Stock Mover" className="flex min-h-screen items-center justify-center bg-page font-body text-ink">
-      <div className="flex animate-pulse items-center gap-2.5">
-        <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
-          <rect x="1" y="1" width="32" height="32" rx="8" fill="#511D00" />
-          <path d="M9 13h13m0 0-4-4m4 4-4 4M25 21H12m0 0 4-4m-4 4 4 4" fill="none" stroke="#F4A27C" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        <span className="font-heading text-[22px]">Stock Mover</span>
-      </div>
+    <div role="status" aria-label="Loading" className="flex min-h-screen items-center justify-center bg-page font-body text-ink">
+      <img src={manyavarLogo} alt="Manyavar" width={319} height={77} className="block h-10 w-auto animate-pulse" />
     </div>
   );
 }
