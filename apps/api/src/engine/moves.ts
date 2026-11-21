@@ -100,7 +100,7 @@ export function generateMoves(P: Positions): GenerateResult {
     if (loc === WAREHOUSE_ID) return { on_hand: L.whLeft(sku) + L.get(L.whIn, sku), in_transit: 0, velocity: 0, cover_days: null };
     if (!p) return { on_hand: 0, in_transit: 0, velocity: 0, cover_days: null };
     const k = key(p.store_id, p.sku_id);
-    const cover = L.cover(p);
+    const cover = round(p.velocity, 3) > 0 ? L.cover(p) : null; // shown velocity 0 → "no sales", not 21,000 days
     return {
       on_hand: L.onHand(p), in_transit: p.in_transit + L.get(L.inQ, k), velocity: round(p.velocity, 3),
       cover_days: cover == null ? null : round(cover, 1),
