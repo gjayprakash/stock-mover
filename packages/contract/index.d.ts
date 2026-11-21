@@ -115,3 +115,15 @@ export type NewStoreRequest = {
 /** GET /api/geo?pin= ; zone null = state outside North/East/South (pick by hand). */
 export type GeoResult = { pin: string; place: string; city: string; state: string; zone: string | null; lat: number; lng: number };
 export type NearestLocation = { location_id: string; city: string; distance_km: number; travel_days: number };
+
+// #23 Add stock. Sample columns, in this order: location_id, sku_id, style_name, size, category, mrp_inr, qty, received_on.
+export type StockRowError = { row: number; column: string; message: string; fix: string };   // row = line in the file (header = 1); 0 = whole location
+export type StockCheckResult = {
+  check_id: string; file_hash: string; expires_at: string;   // kept 30 min, nothing saved yet
+  rows_total: number; ok_rows: number; pieces: number;       // example rows from the sample are not counted
+  by_location: { location_id: string; pieces: number; rows: number; over_capacity: boolean }[];
+  errors: StockRowError[];
+  warnings: StockRowError[];                                 // over capacity, duplicate rows summed
+  new_skus: string[];                                        // SKUs that will be created on commit
+};
+export type StockCommitResult = { receipts: number; pieces: number; items_added: number; applies_from: "next run" };
