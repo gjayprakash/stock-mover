@@ -134,6 +134,18 @@ export class DriversService {
     ].join('\n');
   }
 
+  /** Who is adding this phone, for the Join screen. Reads the link without using it; null when used, expired or off. */
+  async preview(token: string): Promise<Pick<DriverMe, 'name' | 'store' | 'manager_name'> | null> {
+    if (!token || token.length > 100) return null;
+    const [r] = await this.db.query<{ name: string; location_id: string; m_name: string | null }>(
+      `select d.name, d.location_id, m.name as m_name
+         from device_pairings p join drivers d on d.id = p.driver_id ${MANAGER}
+        where p.token_hash = $1 and p.used_at is null and p.expires_at > now() and d.active`,
+      [hashToken(token), null],
+    );
+    return r ? { name: r.name, store: this.storeLabel(r.location_id), manager_name: r.m_name ?? 'Store manager' } : null;
+  }
+
   /** Uses the link once (atomic). Returns the new device token, or null when the link is used, expired or off. */
   async pair(token: string, userAgent?: string): Promise<string | null> {
     if (!token || token.length > 100) return null;

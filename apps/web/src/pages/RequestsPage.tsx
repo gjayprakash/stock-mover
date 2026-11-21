@@ -1,3 +1,4 @@
+import { useAuth } from '../features/auth/auth';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Banner } from '../components/Banner';
@@ -30,7 +31,8 @@ export default function RequestsPage() {
   // A store manager sees their own store only. Anyone else (super admin, or sign-in off) picks the Viewing store.
   const superAdmin = me?.role === 'super_admin';
   const fixed = superAdmin ? null : me?.store_id ?? null;
-  const store = fixed ?? params.get('store') ?? (me && !superAdmin ? 'KNP-03' : '');
+  const { viewing, setViewing } = useAuth();
+  const store = fixed ?? params.get('store') ?? viewing ?? (me && !superAdmin ? 'KNP-03' : '');
 
   const products = useMemo<Product[]>(() => {
     const seen = new Map<string, Product>();
@@ -70,7 +72,7 @@ export default function RequestsPage() {
               id="viewing-store"
               className="h-10 rounded-xl border-[1.5px] border-[#D9C49C] bg-[#FFFDF8] px-3 text-ink"
               value={store}
-              onChange={(e) => setParams(e.target.value ? { store: e.target.value } : {}, { replace: true })}
+              onChange={(e) => { setParams(e.target.value ? { store: e.target.value } : {}, { replace: true }); if (superAdmin) setViewing(e.target.value || null); }}
             >
               <option value="">Pick a store to request for</option>
               {stores.map((s) => (

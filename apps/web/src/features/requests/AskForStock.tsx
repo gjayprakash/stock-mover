@@ -169,7 +169,7 @@ export function AskForStock({ store, products, onCreated }: { store: string; pro
                     <div className="h-2 flex-1 rounded-full bg-line" aria-hidden="true">
                       <div className="h-2 rounded-full bg-ok" style={{ width: `${Math.max(3, (s.km / maxKm) * 100)}%` }} />
                     </div>
-                    <span className="w-36 shrink-0 text-right text-sm">{num(s.km)} km · {dayWord(s.days)}</span>
+                    <span className="w-36 shrink-0 text-right text-sm">{s.km < 1 ? 'Same city' : `${num(s.km)} km`} · {dayWord(s.days)}</span>
                   </div>
                   <span className="w-28 shrink-0 font-semibold">Can give {num(s.can_spare)}</span>
                   <span className="shrink-0">{chipFor(s, nextClosest)}</span>

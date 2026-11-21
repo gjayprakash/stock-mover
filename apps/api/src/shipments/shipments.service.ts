@@ -181,8 +181,13 @@ export class ShipmentsService {
     }>(
       `select s.id, r.status, r.from_location, r.to_location,
               (select sum(qty)::int from transfer_lines where request_id = r.id) as pieces,
-              (select u.mobile from users u where u.role = 'store_manager' and u.location_id = r.from_location and u.active
-                order by u.created_at limit 1) as manager_phone,
+              coalesce(
+                (select u.mobile from users u where u.id = s.assigned_by and u.mobile is not null and u.mobile <> ''),
+                (select u.mobile from users u join drivers d on d.created_by = u.id
+                  where d.id = s.driver_id and u.mobile is not null and u.mobile <> ''),
+                (select u.mobile from users u where u.role = 'store_manager' and u.location_id = r.from_location and u.active
+                  and u.mobile is not null and u.mobile <> '' order by u.created_at limit 1)
+              ) as manager_phone,
               (select max(taken_at) from location_pings where shipment_id = s.id) as last_ping_at
          from shipments s join transfer_requests r on r.id = s.request_id
         where s.driver_id = $1 and r.status in ('driver_assigned', 'on_the_way')

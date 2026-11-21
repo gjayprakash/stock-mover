@@ -96,6 +96,8 @@ export const driverApi = {
   // Mock: joining again starts the demo trip over.
   pair: (token: string) => call<void>('POST', 'pair', { token }, () => writeMock({ status: 'assigned', last_ping_at: null })),
   me: () => call<DriverMe>('GET', 'me', undefined, mockMe),
+  /** Store and manager behind a pair link, before Join (does not use the link). */
+  preview: (token: string) => call<Pick<DriverMe, 'name' | 'store' | 'manager_name'>>('POST', 'pair-preview', { token }, mockMe),
   setLang: (lang: Lang) => call<void>('PATCH', 'me', { lang }, () => writeMock({ lang })),
   // #82 may answer with one trip, a list, or nothing: the phone shows the first open one.
   trip: () =>

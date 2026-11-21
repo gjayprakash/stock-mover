@@ -8,13 +8,17 @@ export const INSTALL_HINT_KEY = 'sm.driver.installHint';
 /** /pair#<token>: choose a language, see who is adding you, press Join once. */
 export function JoinScreen({ onJoined }: { onJoined: () => void }) {
   const { lang, t, setLang, adoptServerLang } = useLang();
-  const [who, setWho] = useState<DriverMe | null>(null);
+  const [who, setWho] = useState<Pick<DriverMe, 'store' | 'manager_name'> | null>(null);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
 
-  // Already-paired phones (and the mock) know their store and manager; a fresh phone shows a generic line.
+  // Already-paired phones (and the mock) know their store and manager; a fresh phone asks the link who is adding it.
   useEffect(() => {
-    driverApi.me().then((m) => { setWho(m); adoptServerLang(m.lang); }).catch((e) => { if (!(e instanceof Unpaired)) setWho(null); });
+    const token = decodeURIComponent(window.location.hash.slice(1));
+    driverApi.me().then((m) => { setWho(m); adoptServerLang(m.lang); }).catch((e) => {
+      if (!(e instanceof Unpaired) || !token) { setWho(null); return; }
+      driverApi.preview(token).then(setWho, () => setWho(null));
+    });
   }, [adoptServerLang]);
 
   const join = async () => {
