@@ -83,7 +83,9 @@ export function suggestions(m: MovesFile, about: About): string[] {
   if (!out.length) {
     const top = [...m.problems].sort((a, b) => a.rank - b.rank)[0];
     if (top) out.push(`What is behind "${top.title}"?`);
-    const most = storeFlows(m).filter((f) => f.store !== WAREHOUSE).sort((a, b) => b.in_pieces - a.in_pieces)[0];
+    // Only stores of this (possibly scoped, #77) file, never a counterparty store outside the scope.
+    const own = new Set(m.stores.map((s) => s.store_id));
+    const most = storeFlows(m).filter((f) => own.has(f.store)).sort((a, b) => b.in_pieces - a.in_pieces)[0];
     if (most && most.in_pieces > 0) out.push(`What arrives at ${most.store} and from where?`);
     out.push('Which moves need my sign-off?', 'Which moves send stock back to the warehouse?');
   }
