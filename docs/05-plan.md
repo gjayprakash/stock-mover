@@ -3,7 +3,7 @@
 | Time | Jay (data + engine) | Asjad (UI + AI) |
 |---|---|---|
 | 0:00–0:20 | Workbook into `data/`, open every tab, fill "Open questions" in CLAUDE.md, `scripts/prepare` → derived JSON | `create-next-app`, Tailwind, shadcn, push to GitHub, **deploy empty app to Vercel now** |
-| 0:20–1:30 | Velocity + position + Warehouse → store + validator → first real `moves.json` | Screen 1 against `shared/moves.sample.json`: header, tabs, grouped rows, approve/reject |
+| 0:20–1:30 | Velocity + position + Warehouse → store + validator → first real `moves.json` | Screen 1 against `packages/contract/moves.sample.json`: header, tabs, grouped rows, approve/reject |
 | 1:30–2:30 | Store → store, ageing, pull back, capacity guard, priority score | Swap to real data, row expand with mini chart + rule ticks, keyboard shortcuts, export CSV |
 | 2:30–3:10 | `/api/run` + Vercel Cron, forward uplift from calendar | MeshAPI: morning brief + chat drawer |
 | 3:10–3:40 | Walk the hidden-problem checklist, hand-check 5 moves in Excel | Polish, empty/loading states, "Found problems" cards if time |
@@ -11,7 +11,7 @@
 
 ## Rules of the day
 - Deploy in the first 20 minutes and after every milestone. Never demo from localhost.
-- The contract is `shared/moves.schema.md`. UI never waits for the engine.
+- The contract is `packages/contract/index.d.ts`. UI never waits for the engine.
 - Something taking over 20 minutes longer than planned → cut it, move on.
 
 ## Cut order if we run late (cut from the top)

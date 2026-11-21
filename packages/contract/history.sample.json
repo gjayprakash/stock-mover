@@ -1,0 +1,1186 @@
+{
+ "PAT-02|KUR-02-M": [
+  {
+   "week_ending": "2026-08-09",
+   "units_sold": 3,
+   "closing_on_hand": 11,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-16",
+   "units_sold": 3,
+   "closing_on_hand": 10,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-23",
+   "units_sold": 3,
+   "closing_on_hand": 9,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-30",
+   "units_sold": 3,
+   "closing_on_hand": 8,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-06",
+   "units_sold": 3,
+   "closing_on_hand": 7,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-13",
+   "units_sold": 3,
+   "closing_on_hand": 6,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-20",
+   "units_sold": 3,
+   "closing_on_hand": 5,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-27",
+   "units_sold": 3,
+   "closing_on_hand": 4,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-04",
+   "units_sold": 1,
+   "closing_on_hand": 3,
+   "days_in_stock": 2
+  },
+  {
+   "week_ending": "2026-10-11",
+   "units_sold": 1,
+   "closing_on_hand": 2,
+   "days_in_stock": 2
+  },
+  {
+   "week_ending": "2026-10-18",
+   "units_sold": 1,
+   "closing_on_hand": 1,
+   "days_in_stock": 2
+  },
+  {
+   "week_ending": "2026-10-25",
+   "units_sold": 1,
+   "closing_on_hand": 0,
+   "days_in_stock": 2
+  }
+ ],
+ "LKO-03|KUR-12-XL": [
+  {
+   "week_ending": "2026-08-09",
+   "units_sold": 3,
+   "closing_on_hand": 14,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-16",
+   "units_sold": 3,
+   "closing_on_hand": 13,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-23",
+   "units_sold": 4,
+   "closing_on_hand": 12,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-30",
+   "units_sold": 3,
+   "closing_on_hand": 11,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-06",
+   "units_sold": 3,
+   "closing_on_hand": 10,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-13",
+   "units_sold": 4,
+   "closing_on_hand": 9,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-20",
+   "units_sold": 3,
+   "closing_on_hand": 8,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-27",
+   "units_sold": 3,
+   "closing_on_hand": 7,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-04",
+   "units_sold": 4,
+   "closing_on_hand": 6,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-11",
+   "units_sold": 3,
+   "closing_on_hand": 5,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-18",
+   "units_sold": 3,
+   "closing_on_hand": 4,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-25",
+   "units_sold": 4,
+   "closing_on_hand": 3,
+   "days_in_stock": 7
+  }
+ ],
+ "BLR-04|SHW-01-L": [
+  {
+   "week_ending": "2026-08-09",
+   "units_sold": 1,
+   "closing_on_hand": 12,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-16",
+   "units_sold": 2,
+   "closing_on_hand": 11,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-23",
+   "units_sold": 2,
+   "closing_on_hand": 10,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-30",
+   "units_sold": 1,
+   "closing_on_hand": 9,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-06",
+   "units_sold": 2,
+   "closing_on_hand": 8,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-13",
+   "units_sold": 2,
+   "closing_on_hand": 7,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-20",
+   "units_sold": 1,
+   "closing_on_hand": 6,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-27",
+   "units_sold": 2,
+   "closing_on_hand": 5,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-04",
+   "units_sold": 2,
+   "closing_on_hand": 4,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-11",
+   "units_sold": 1,
+   "closing_on_hand": 3,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-18",
+   "units_sold": 2,
+   "closing_on_hand": 2,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-25",
+   "units_sold": 2,
+   "closing_on_hand": 1,
+   "days_in_stock": 7
+  }
+ ],
+ "MZF-02|JKT-04-M": [
+  {
+   "week_ending": "2026-08-09",
+   "units_sold": 1,
+   "closing_on_hand": 12,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-16",
+   "units_sold": 1,
+   "closing_on_hand": 11,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-23",
+   "units_sold": 1,
+   "closing_on_hand": 10,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-30",
+   "units_sold": 1,
+   "closing_on_hand": 9,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-06",
+   "units_sold": 1,
+   "closing_on_hand": 8,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-13",
+   "units_sold": 1,
+   "closing_on_hand": 7,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-20",
+   "units_sold": 1,
+   "closing_on_hand": 6,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-27",
+   "units_sold": 1,
+   "closing_on_hand": 5,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-04",
+   "units_sold": 1,
+   "closing_on_hand": 4,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-11",
+   "units_sold": 1,
+   "closing_on_hand": 3,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-18",
+   "units_sold": 1,
+   "closing_on_hand": 2,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-25",
+   "units_sold": 1,
+   "closing_on_hand": 1,
+   "days_in_stock": 7
+  }
+ ],
+ "BLR-05|KUR-05-L": [
+  {
+   "week_ending": "2026-08-09",
+   "units_sold": 2,
+   "closing_on_hand": 11,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-16",
+   "units_sold": 2,
+   "closing_on_hand": 10,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-23",
+   "units_sold": 2,
+   "closing_on_hand": 9,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-30",
+   "units_sold": 2,
+   "closing_on_hand": 8,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-06",
+   "units_sold": 2,
+   "closing_on_hand": 7,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-13",
+   "units_sold": 2,
+   "closing_on_hand": 6,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-20",
+   "units_sold": 2,
+   "closing_on_hand": 5,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-27",
+   "units_sold": 2,
+   "closing_on_hand": 4,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-04",
+   "units_sold": 2,
+   "closing_on_hand": 3,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-11",
+   "units_sold": 2,
+   "closing_on_hand": 2,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-18",
+   "units_sold": 2,
+   "closing_on_hand": 1,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-25",
+   "units_sold": 2,
+   "closing_on_hand": 0,
+   "days_in_stock": 7
+  }
+ ],
+ "LKO-02|IW-03-M": [
+  {
+   "week_ending": "2026-08-09",
+   "units_sold": 1,
+   "closing_on_hand": 25,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-16",
+   "units_sold": 1,
+   "closing_on_hand": 24,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-23",
+   "units_sold": 1,
+   "closing_on_hand": 23,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-30",
+   "units_sold": 1,
+   "closing_on_hand": 22,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-06",
+   "units_sold": 1,
+   "closing_on_hand": 21,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-13",
+   "units_sold": 1,
+   "closing_on_hand": 20,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-20",
+   "units_sold": 1,
+   "closing_on_hand": 19,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-27",
+   "units_sold": 1,
+   "closing_on_hand": 18,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-04",
+   "units_sold": 1,
+   "closing_on_hand": 17,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-11",
+   "units_sold": 1,
+   "closing_on_hand": 16,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-18",
+   "units_sold": 1,
+   "closing_on_hand": 15,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-25",
+   "units_sold": 1,
+   "closing_on_hand": 14,
+   "days_in_stock": 7
+  }
+ ],
+ "BLR-01|IW-03-M": [
+  {
+   "week_ending": "2026-08-09",
+   "units_sold": 2,
+   "closing_on_hand": 11,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-16",
+   "units_sold": 2,
+   "closing_on_hand": 10,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-23",
+   "units_sold": 3,
+   "closing_on_hand": 9,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-30",
+   "units_sold": 2,
+   "closing_on_hand": 8,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-06",
+   "units_sold": 2,
+   "closing_on_hand": 7,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-13",
+   "units_sold": 3,
+   "closing_on_hand": 6,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-20",
+   "units_sold": 2,
+   "closing_on_hand": 5,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-27",
+   "units_sold": 2,
+   "closing_on_hand": 4,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-04",
+   "units_sold": 1,
+   "closing_on_hand": 3,
+   "days_in_stock": 2
+  },
+  {
+   "week_ending": "2026-10-11",
+   "units_sold": 1,
+   "closing_on_hand": 2,
+   "days_in_stock": 2
+  },
+  {
+   "week_ending": "2026-10-18",
+   "units_sold": 1,
+   "closing_on_hand": 1,
+   "days_in_stock": 2
+  },
+  {
+   "week_ending": "2026-10-25",
+   "units_sold": 1,
+   "closing_on_hand": 0,
+   "days_in_stock": 2
+  }
+ ],
+ "PAT-03|KUR-12-M": [
+  {
+   "week_ending": "2026-08-09",
+   "units_sold": 1,
+   "closing_on_hand": 27,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-16",
+   "units_sold": 1,
+   "closing_on_hand": 26,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-23",
+   "units_sold": 1,
+   "closing_on_hand": 25,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-30",
+   "units_sold": 1,
+   "closing_on_hand": 24,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-06",
+   "units_sold": 1,
+   "closing_on_hand": 23,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-13",
+   "units_sold": 1,
+   "closing_on_hand": 22,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-20",
+   "units_sold": 1,
+   "closing_on_hand": 21,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-27",
+   "units_sold": 1,
+   "closing_on_hand": 20,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-04",
+   "units_sold": 1,
+   "closing_on_hand": 19,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-11",
+   "units_sold": 1,
+   "closing_on_hand": 18,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-18",
+   "units_sold": 1,
+   "closing_on_hand": 17,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-25",
+   "units_sold": 1,
+   "closing_on_hand": 16,
+   "days_in_stock": 7
+  }
+ ],
+ "PAT-01|KUR-12-M": [
+  {
+   "week_ending": "2026-08-09",
+   "units_sold": 2,
+   "closing_on_hand": 13,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-16",
+   "units_sold": 3,
+   "closing_on_hand": 12,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-23",
+   "units_sold": 3,
+   "closing_on_hand": 11,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-30",
+   "units_sold": 2,
+   "closing_on_hand": 10,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-06",
+   "units_sold": 3,
+   "closing_on_hand": 9,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-13",
+   "units_sold": 3,
+   "closing_on_hand": 8,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-20",
+   "units_sold": 2,
+   "closing_on_hand": 7,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-27",
+   "units_sold": 3,
+   "closing_on_hand": 6,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-04",
+   "units_sold": 3,
+   "closing_on_hand": 5,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-11",
+   "units_sold": 2,
+   "closing_on_hand": 4,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-18",
+   "units_sold": 3,
+   "closing_on_hand": 3,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-25",
+   "units_sold": 3,
+   "closing_on_hand": 2,
+   "days_in_stock": 7
+  }
+ ],
+ "KNP-03|MOJ-02-9": [
+  {
+   "week_ending": "2026-08-09",
+   "units_sold": 0,
+   "closing_on_hand": 17,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-16",
+   "units_sold": 0,
+   "closing_on_hand": 16,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-23",
+   "units_sold": 1,
+   "closing_on_hand": 15,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-30",
+   "units_sold": 0,
+   "closing_on_hand": 14,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-06",
+   "units_sold": 0,
+   "closing_on_hand": 13,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-13",
+   "units_sold": 1,
+   "closing_on_hand": 12,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-20",
+   "units_sold": 0,
+   "closing_on_hand": 11,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-27",
+   "units_sold": 0,
+   "closing_on_hand": 10,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-04",
+   "units_sold": 1,
+   "closing_on_hand": 9,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-11",
+   "units_sold": 0,
+   "closing_on_hand": 8,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-18",
+   "units_sold": 0,
+   "closing_on_hand": 7,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-25",
+   "units_sold": 1,
+   "closing_on_hand": 6,
+   "days_in_stock": 7
+  }
+ ],
+ "LKO-04|MOJ-02-9": [
+  {
+   "week_ending": "2026-08-09",
+   "units_sold": 1,
+   "closing_on_hand": 12,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-16",
+   "units_sold": 1,
+   "closing_on_hand": 11,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-23",
+   "units_sold": 2,
+   "closing_on_hand": 10,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-30",
+   "units_sold": 1,
+   "closing_on_hand": 9,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-06",
+   "units_sold": 1,
+   "closing_on_hand": 8,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-13",
+   "units_sold": 2,
+   "closing_on_hand": 7,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-20",
+   "units_sold": 1,
+   "closing_on_hand": 6,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-27",
+   "units_sold": 1,
+   "closing_on_hand": 5,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-04",
+   "units_sold": 2,
+   "closing_on_hand": 4,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-11",
+   "units_sold": 1,
+   "closing_on_hand": 3,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-18",
+   "units_sold": 1,
+   "closing_on_hand": 2,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-25",
+   "units_sold": 2,
+   "closing_on_hand": 1,
+   "days_in_stock": 7
+  }
+ ],
+ "MYS-01|KUR-02-L": [
+  {
+   "week_ending": "2026-08-09",
+   "units_sold": 1,
+   "closing_on_hand": 31,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-16",
+   "units_sold": 1,
+   "closing_on_hand": 30,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-23",
+   "units_sold": 1,
+   "closing_on_hand": 29,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-30",
+   "units_sold": 1,
+   "closing_on_hand": 28,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-06",
+   "units_sold": 1,
+   "closing_on_hand": 27,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-13",
+   "units_sold": 1,
+   "closing_on_hand": 26,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-20",
+   "units_sold": 1,
+   "closing_on_hand": 25,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-27",
+   "units_sold": 1,
+   "closing_on_hand": 24,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-04",
+   "units_sold": 1,
+   "closing_on_hand": 23,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-11",
+   "units_sold": 1,
+   "closing_on_hand": 22,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-18",
+   "units_sold": 1,
+   "closing_on_hand": 21,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-25",
+   "units_sold": 1,
+   "closing_on_hand": 20,
+   "days_in_stock": 7
+  }
+ ],
+ "BLR-03|KUR-02-L": [
+  {
+   "week_ending": "2026-08-09",
+   "units_sold": 2,
+   "closing_on_hand": 12,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-16",
+   "units_sold": 2,
+   "closing_on_hand": 11,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-23",
+   "units_sold": 3,
+   "closing_on_hand": 10,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-30",
+   "units_sold": 2,
+   "closing_on_hand": 9,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-06",
+   "units_sold": 2,
+   "closing_on_hand": 8,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-13",
+   "units_sold": 3,
+   "closing_on_hand": 7,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-20",
+   "units_sold": 2,
+   "closing_on_hand": 6,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-27",
+   "units_sold": 2,
+   "closing_on_hand": 5,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-04",
+   "units_sold": 3,
+   "closing_on_hand": 4,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-11",
+   "units_sold": 2,
+   "closing_on_hand": 3,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-18",
+   "units_sold": 2,
+   "closing_on_hand": 2,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-25",
+   "units_sold": 3,
+   "closing_on_hand": 1,
+   "days_in_stock": 7
+  }
+ ],
+ "PAT-03|IW-03-XXXL": [
+  {
+   "week_ending": "2026-08-09",
+   "units_sold": 0,
+   "closing_on_hand": 14,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-16",
+   "units_sold": 0,
+   "closing_on_hand": 13,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-23",
+   "units_sold": 1,
+   "closing_on_hand": 12,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-30",
+   "units_sold": 0,
+   "closing_on_hand": 11,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-06",
+   "units_sold": 0,
+   "closing_on_hand": 10,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-13",
+   "units_sold": 1,
+   "closing_on_hand": 9,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-20",
+   "units_sold": 0,
+   "closing_on_hand": 8,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-27",
+   "units_sold": 0,
+   "closing_on_hand": 7,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-04",
+   "units_sold": 1,
+   "closing_on_hand": 6,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-11",
+   "units_sold": 0,
+   "closing_on_hand": 5,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-18",
+   "units_sold": 0,
+   "closing_on_hand": 4,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-25",
+   "units_sold": 1,
+   "closing_on_hand": 3,
+   "days_in_stock": 7
+  }
+ ],
+ "KNP-02|KUR-05-XXL": [
+  {
+   "week_ending": "2026-08-09",
+   "units_sold": 0,
+   "closing_on_hand": 26,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-16",
+   "units_sold": 1,
+   "closing_on_hand": 25,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-23",
+   "units_sold": 1,
+   "closing_on_hand": 24,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-30",
+   "units_sold": 0,
+   "closing_on_hand": 23,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-06",
+   "units_sold": 1,
+   "closing_on_hand": 22,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-13",
+   "units_sold": 1,
+   "closing_on_hand": 21,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-20",
+   "units_sold": 0,
+   "closing_on_hand": 20,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-27",
+   "units_sold": 1,
+   "closing_on_hand": 19,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-04",
+   "units_sold": 1,
+   "closing_on_hand": 18,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-11",
+   "units_sold": 0,
+   "closing_on_hand": 17,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-18",
+   "units_sold": 1,
+   "closing_on_hand": 16,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-25",
+   "units_sold": 1,
+   "closing_on_hand": 15,
+   "days_in_stock": 7
+  }
+ ],
+ "MZF-01|SAF-02-FS": [
+  {
+   "week_ending": "2026-08-09",
+   "units_sold": 0,
+   "closing_on_hand": 20,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-16",
+   "units_sold": 0,
+   "closing_on_hand": 19,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-23",
+   "units_sold": 1,
+   "closing_on_hand": 18,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-08-30",
+   "units_sold": 0,
+   "closing_on_hand": 17,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-06",
+   "units_sold": 0,
+   "closing_on_hand": 16,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-13",
+   "units_sold": 1,
+   "closing_on_hand": 15,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-20",
+   "units_sold": 0,
+   "closing_on_hand": 14,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-09-27",
+   "units_sold": 0,
+   "closing_on_hand": 13,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-04",
+   "units_sold": 1,
+   "closing_on_hand": 12,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-11",
+   "units_sold": 0,
+   "closing_on_hand": 11,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-18",
+   "units_sold": 0,
+   "closing_on_hand": 10,
+   "days_in_stock": 7
+  },
+  {
+   "week_ending": "2026-10-25",
+   "units_sold": 1,
+   "closing_on_hand": 9,
+   "days_in_stock": 7
+  }
+ ]
+}
