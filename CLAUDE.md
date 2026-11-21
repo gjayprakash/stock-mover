@@ -56,7 +56,24 @@ simple rates, mobile layout, settings pages, salesperson/roster/footfall analysi
 - 2026-11-21, Jay: switched stack from Next.js/Vercel/no-DB to React Vite + NestJS + Neon Postgres on Render. Daily run = Render cron (to wire) hitting `/api/run`.
 - 2026-11-21, Jay: contract v2 in `packages/contract` (`@sm/contract`, types-only `index.d.ts` + samples). Adds run_id/status, needs_signoff, problems[], stores[], blocked, DATA_COUNT_MISMATCH flag, HistoryFile, RunRow, AiCall, BriefResponse. Engine lives in `apps/api/src/engine/`; `runEngine(input)` signature is the Jay-A/Jay-B contract.
 
-## Open questions (resolve as soon as the workbook is opened)
-- Exact column names in `rules`, `min_display`, `lead_times` tabs (the brief does not list them).
-- Does `rules` define target cover / ageing thresholds? If yes, use theirs, not our defaults.
-- Are there returns / negative qty in `bill_lines`?
+## Open questions: answered from `data/csv/` (2026-11-21, Asjad)
+- **Column names.** `rules`: `rule, detail` (8 rows of prose, no machine-readable parameters).
+  `min_display`: `tier, category, min_display_units` (24 rows = 4 tiers × 6 categories).
+  `lead_times`: `route, days` (6 rows; `route` is a sentence, not a code).
+  - `min_display` categories: Kurta Set, Sherwani, Indo-Western, Jacket, Mojari, and
+    `Accessories (Safa/Mala/Stole)`, which is Safa + Mala + Stole from `items` added together. No Packaging row.
+  - Lead times in days: WH-KOL → East (Bihar) 3, → North (UP) 4, → South (Karnataka) 6;
+    store → store same city 2, same zone other city 4, different zone 7.
+    Work out the route from `stores.zone` and `stores.city`.
+- **Target cover / ageing thresholds.** `rules` defines neither. Its only number is the 30-day donor cover,
+  so our defaults stand (TARGET_COVER 45, AGE_DAYS 90, AGE_COVER 120).
+- **Returns / negative qty.** None. `bill_lines.qty` is only 1, 2 or 3. No blanks, no zero or negative
+  qty or price, no `selling_price` above `mrp`, and every `bill_id` and `sku_id` joins.
+  84,001 of 259,772 lines are ₹0 packaging (3 SKUs, category `Packaging`): exclude them.
+
+### In `rules.csv` but not in our docs yet (not decided)
+- Donor cover is worded "below 30 days of cover **for that style**", so style level. `docs/02-engine.md` works per SKU.
+- Min display is worded as a donor rule: "A store giving stock away must not drop below it."
+- Approval: "Any single recommended move worth more than Rs 1,00,000 at MRP needs a human approval before it goes."
+- Replenishment cycle: the warehouse tops stores up every Monday today; we may recommend any day.
+  2026-11-01 is a Sunday, so the next normal top-up is Monday 2026-11-02.
