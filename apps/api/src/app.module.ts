@@ -9,6 +9,7 @@ import { GeoModule } from './geo/geo.module';
 import { StoresModule } from './stores/stores.module';
 import { StockModule } from './stock/stock.module';
 import { AuthModule } from './auth/auth.module';
+import { DriversModule } from './drivers/drivers.module';
 
 @Module({
   imports: [
@@ -16,6 +17,8 @@ import { AuthModule } from './auth/auth.module';
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', '..', 'web', 'dist'),
       exclude: ['/api/{*path}'],
+      // /pair#<token>: never leak the page URL to other sites.
+      serveStaticOptions: { setHeaders: (res) => res.setHeader('Referrer-Policy', 'no-referrer') },
     }),
     DbModule,
     RunsModule,
@@ -23,6 +26,7 @@ import { AuthModule } from './auth/auth.module';
     GeoModule,
     StoresModule,
     StockModule,
+    DriversModule, // drivers + phone pairing (#81)
     AuthModule, // users + sessions; routes need sign-in only when AUTH_REQUIRED=true
   ],
   controllers: [HealthController],
