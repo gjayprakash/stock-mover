@@ -1,5 +1,9 @@
-import { readFileSync } from 'node:fs';
 import type { HistoryFile, MovesFile } from '@sm/contract';
+import { loadData } from './data';
+import { buildPositions } from './position';
+import { generateMoves } from './moves';
+import { validate } from './validate';
+import { buildSummary, buildHistory, nextRunAt } from './summary';
 
 // Contract between Jay-A (engine) and Jay-B (API). Do not change without telling the other lane.
 // Extensions must be additive (optional fields).
@@ -10,20 +14,32 @@ export type EngineInput = {
 };
 export type EngineOutput = { moves: MovesFile; history: HistoryFile };
 
-const sample = <T>(file: string): T => JSON.parse(readFileSync(require.resolve(`@sm/contract/${file}`), 'utf8')) as T;
+export const ENGINE_VERSION = '1.0';
 
-// STUB: returns the sample files with run fields filled from input. Jay-A replaces the body.
+/** loadData → buildPositions → generateMoves → validate → summary. Throws (run FAILS) on any violation. */
 export function runEngine(input: EngineInput): EngineOutput {
-  const moves = sample<MovesFile>('moves.sample.json');
-  const next = new Date(input.now.getTime() + 24 * 60 * 60 * 1000);
-  moves.run = {
-    ...moves.run,
-    run_id: input.runId,
-    status: 'FINISHED',
-    as_of: input.asOf,
-    generated_at: input.now.toISOString(),
-    next_run_at: next.toISOString(),
-    engine_version: 'stub',
+  const P = buildPositions(loadData(input.dataDir));
+  const gen = generateMoves(P);
+  const checked = validate(P, gen.moves);
+  for (const d of checked.dropped) console.warn(`[engine] dropped ${d.move_id} (${d.rule}): ${d.detail}`);
+  if (checked.violations.length) {
+    throw new Error(`engine: ${checked.violations.length} rule violations remain after validation: ` +
+      checked.violations.slice(0, 5).map((v) => `${v.move_id} ${v.rule} ${v.detail}`).join('; '));
+  }
+  const moves = checked.moves;
+  return {
+    moves: {
+      run: {
+        run_id: input.runId, status: 'FINISHED', as_of: input.asOf,
+        generated_at: input.now.toISOString(), next_run_at: nextRunAt(input.now), engine_version: ENGINE_VERSION,
+      },
+      summary: buildSummary(P, moves, checked.violations.length),
+      moves,
+      flags: gen.flags,
+      problems: [],
+      stores: [],
+      blocked: gen.blocked,
+    },
+    history: buildHistory(P, moves),
   };
-  return { moves, history: sample<HistoryFile>('history.sample.json') };
 }
