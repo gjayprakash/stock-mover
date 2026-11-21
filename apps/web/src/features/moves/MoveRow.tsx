@@ -1,6 +1,7 @@
 import type { Move } from '@sm/contract';
 import { Chip, ConfidenceDot, KIND_LABEL, dateShort, days, inr } from './deps';
 import type { ApprovalStatus } from './filters';
+import { RowDistance } from './Distance';
 
 const KIND_COLOR: Record<Move['type'], string> = {
   WH_TO_STORE: 'text-ok',
@@ -59,6 +60,7 @@ export function MoveRow({ move: m, status, selected, expanded, onSelect, onToggl
         </div>
         <div className="font-semibold">{m.from}</div>
         <div className="text-[#5E4E42]">to {m.to}</div>
+        <RowDistance move={m} />
       </td>
       <td className={`${td} text-xl font-bold`}>{m.qty}</td>
       <td className={`${td} whitespace-nowrap`}>{coverText(m)}</td>

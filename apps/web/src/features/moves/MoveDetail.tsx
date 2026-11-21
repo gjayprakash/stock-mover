@@ -40,7 +40,7 @@ export function MoveDetail({ move: m, status, onApprove, onSkip, onUndo, extra }
   return (
     <div className="grid gap-6 bg-[#FFFDF8] px-5 py-5 md:px-7 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
       <div className="flex min-w-0 flex-col gap-5">
-        <div className="overflow-x-auto">
+        <div className="relative overflow-x-auto">
           <table className="w-full min-w-[520px] border-collapse text-sm">
             <thead>
               <tr className="text-left text-[#4A3A2E]">

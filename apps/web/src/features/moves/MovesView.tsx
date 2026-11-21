@@ -5,6 +5,7 @@ import { applyFilters, EMPTY_FILTERS, type ApprovalStatus, type Filters } from '
 import { MovesFilters } from './MovesFilters';
 import { MoveRow } from './MoveRow';
 import { MoveDetail } from './MoveDetail';
+import { AlternativesList, ClosestBanner } from './Distance';
 
 const PAGE = 50;
 
@@ -98,8 +99,10 @@ export function MovesView(p: MovesViewProps) {
 
       {file && <ActiveFilters file={file} filters={filters} onChange={p.onFiltersChange} />}
 
+      {file && <ClosestBanner file={file} />}
+
       <Card padded={false} className="overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="relative overflow-x-auto">
           <table className="w-full min-w-[980px] border-collapse text-[15px]">
             <thead>
               <tr className="bg-page text-left text-sm text-[#4A3A2E]">
@@ -156,6 +159,7 @@ export function MovesView(p: MovesViewProps) {
                             onApprove={() => { p.approveMoves([m.id]); toggle(m.id, false); }}
                             onSkip={() => { p.skipMoves([m.id]); toggle(m.id, false); }}
                             onUndo={() => p.undo([m.id])}
+                            extra={<AlternativesList move={m} />}
                           />
                         </td>
                       </tr>
