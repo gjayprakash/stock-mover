@@ -4,6 +4,7 @@
 
 import type { Move, MoveType, MovesFile, StoreSummary } from '@sm/contract';
 import { storeFlows, type PlaceShare, type StoreFlow } from './context';
+import type { About } from './entities';
 
 const MONTHS =['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 const MON = '(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\\.?';
@@ -131,7 +132,12 @@ export class AllowedSet {
   private readonly cache = new Map<string, NumberSet>();
   private flows?: Map<string, StoreFlow>;
 
-  constructor(context: unknown, private readonly extraDates: string[] = [], private readonly file?: MovesFile) {
+  constructor(
+    context: unknown,
+    private readonly extraDates: string[] = [],
+    private readonly file?: MovesFile,
+    private readonly ask?: { question: string; about: About },
+  ) {
     this.global = new NumberSet(true, context, extraDates);
     file?.moves.forEach((mv) => this.moves.set(mv.id, mv));
     file?.stores.forEach((s) => this.stores.set(s.store_id, s));
@@ -226,6 +232,14 @@ export class AllowedSet {
           total++;
           if (!ok.has(s)) missing.push(`${s} is not part of ${mv.id} (${mv.from} → ${mv.to})`);
         }
+        // Direction words: "from X" / "out of X" / "X →" must be the move's from; "to X" / "into X" / "→ X" its to.
+        for (const h of seg.matchAll(CODE)) {
+          const role = roleAt(seg, h.index!, h[0]);
+          if (!role || !ok.has(h[0]) || mv.alternatives.some((a) => a.store_id === h[0])) continue;
+          total++;
+          const want = role === 'from' ? mv.from : mv.to;
+          if (h[0] !== want) missing.push(`${mv.id} goes from ${mv.from} to ${mv.to}, not ${role} ${h[0]}`);
+        }
         const said = claim ?? listClaim;
         if (said) {
           total++;
@@ -248,6 +262,11 @@ export class AllowedSet {
         if (!set.hasNumber(n)) missing.push(`${n}${about}`);
       }
     }
+    if (this.file && this.ask) {
+      const l = listCheck(this.file, this.ask.question, this.ask.about, answer);
+      total += l.total;
+      missing.push(...l.missing);
+    }
     if (this.file) {
       // Lines that name a move are already checked against that move; a breakdown is about places only.
       const b = this.breakdownCheck(answer.split('\n').filter((l) => !/\bM\d{4}\b/.test(l)).join('\n'));
@@ -268,3 +287,87 @@ const WILL_CHANGE = /\b(will|going to)\b[^?.!]{0,60}\b(sell|go (up|down)|increas
 const ABOUT_DATA = /\b(stock|cover|on hand|pieces|units|move|moves|M\d{4}|arrive\w*|after)\b/i;
 export const isForecastRequest = (q: string) =>
   FORECAST_WORD.test(q) || (DEMAND.test(q) && FUTURE.test(q)) || (WILL_CHANGE.test(q) && !ABOUT_DATA.test(q));
+
+/** Role of a store code at `index` in a line about one move: 'from', 'to' or null when no direction word is next to it. */
+function roleAt(line: string, index: number, code: string): 'from' | 'to' | null {
+  const before = line.slice(0, index);
+  const after = line.slice(index + code.length);
+  if (/→\s*$/.test(before) || /\b(to|into|arrives? (at|in)|arriving (at|in)|reach(es)?|for)\s*$/i.test(before)) return 'to';
+  if (/^\s*→/.test(after) || /\b(from|out of|leaves|leaving)\s*$/i.test(before)) return 'from';
+  return null;
+}
+
+/** Where a single store sits in the question: moves INTO it or OUT of it. */
+function storeRole(q: string, m: MovesFile, id: string): 'in' | 'out' | null {
+  const city = m.stores.find((s) => s.store_id === id)?.city?.toLowerCase();
+  const forms = [id.toLowerCase(), id.toLowerCase().replace('-', ''), id.toLowerCase().replace('-', ' '), city]
+    .filter((f): f is string => !!f);
+  const at = Math.min(...forms.map((f) => q.indexOf(f)).filter((i) => i >= 0));
+  if (Number.isFinite(at)) {
+    const before = q.slice(Math.max(0, at - 30), at);
+    if (/\b(into|in to|to|at|arriv\w*|reach\w*|receiv\w*|for)\s*$/.test(before)) return 'in';
+    if (/\b(from|out of|leav\w*|by)\s*$/.test(before)) return 'out';
+  }
+  if (/\b(send|sends|sent|sending|outgoing|leav\w*|out of|going out)\b/.test(q)) return 'out';
+  if (/\b(arriv\w*|receiv\w*|incoming|get|gets|getting|coming in|going in(to)?|into)\b/.test(q)) return 'in';
+  return null;
+}
+
+/**
+ * The set of moves a list question asks for, worked out from the data (#18: "every move going into LKO-04 from
+ * other stores" was answered with 2 of 5 plus a move going the other way). null = not a recognisable filter.
+ */
+export function expectedMoves(m: MovesFile, question: string, about: About): { ids: Set<string>; label: string } | null {
+  if (about.moves.length) return null;   // a question about named moves is not a list question
+  const q = question.toLowerCase();
+  let set = m.moves;
+  const label: string[] = [];
+  const shops = about.stores.filter((id) => id !== 'WH-KOL');
+  const otherStore = /\b(from|to) (other |another |the other )?stores?\b|store[- ]to[- ]store|between stores/.test(q);
+  const otherWh = /\b(from|to) (the )?(warehouse|wh[- ]?kol)\b|back to (the )?warehouse/.test(q);
+  const role = shops.length === 1 ? storeRole(q, m, shops[0]) : null;
+  if (role) {
+    const s = shops[0];
+    set = set.filter((mv) => (role === 'in' ? mv.to === s : mv.from === s));
+    label.push(role === 'in' ? `into ${s}` : `out of ${s}`);
+    const end = (mv: Move) => (role === 'in' ? mv.from : mv.to);
+    if (otherStore && !otherWh) (set = set.filter((mv) => end(mv) !== 'WH-KOL')), label.push(role === 'in' ? 'from stores' : 'to stores');
+    if (otherWh && !otherStore) (set = set.filter((mv) => end(mv) === 'WH-KOL')), label.push(role === 'in' ? 'from the warehouse' : 'to the warehouse');
+  } else if (shops.length === 0) {
+    const t = typeClaim(q);
+    if (t) (set = set.filter((mv) => mv.type === t)), label.push(TYPE_WORDS[t]);
+  }
+  if (/sign[- ]?off|approv/.test(q)) (set = set.filter((mv) => mv.needs_signoff)), label.push('needing sign-off');
+  if (about.skus.length === 1) {
+    const p = about.skus[0];
+    (set = set.filter((mv) => mv.sku_id === p || mv.style_id === p)), label.push(`of ${p}`);
+  }
+  const prob = question.match(/\bP(\d{1,2})\b/);
+  const problem = prob && m.problems.find((p) => p.id === `P${prob[1]}`);
+  if (problem) (set = set.filter((mv) => problem.move_ids.includes(mv.id))), label.push(`in ${problem.id}`);
+  return label.length ? { ids: new Set(set.map((mv) => mv.id)), label: `moves ${label.join(', ')}` } : null;
+}
+
+/** Compare the moves an answer lists with the moves the question asks for: no extras; none missing for a full list. */
+function listCheck(m: MovesFile, question: string, about: About, answer: string): { total: number; missing: string[] } {
+  const exp = expectedMoves(m, question, about);
+  if (!exp) return { total: 0, missing: [] };
+  const known = new Set(m.moves.map((mv) => mv.id));
+  const listed = new Set((answer.match(MOVE_ID) ?? []).filter((id) => known.has(id)));
+  const full = /\b(every|all|complete|list|which)\b/i.test(question) || /\b(every|all|complete|full list)\b/i.test(answer);
+  if (!listed.size && !full) return { total: 0, missing: [] };
+  const missing: string[] = [];
+  const extra = [...listed].filter((id) => !exp.ids.has(id));
+  if (extra.length) missing.push(`${extra.join(', ')} ${extra.length > 1 ? 'are' : 'is'} not among the ${exp.label}`);
+  const shown = answer.match(/showing (\d+) of (\d+)/i);
+  if (shown) {
+    if (+shown[2] !== exp.ids.size || +shown[1] !== listed.size) {
+      missing.push(`there are ${exp.ids.size} ${exp.label}; "showing ${shown[1]} of ${shown[2]}" should be "showing ${listed.size} of ${exp.ids.size}"`);
+    }
+  } else if (full) {
+    const absent = [...exp.ids].filter((id) => !listed.has(id));
+    const few = absent.slice(0, 20).join(', ') + (absent.length > 20 ? ` and ${absent.length - 20} more` : '');
+    if (absent.length) missing.push(`there are ${exp.ids.size} ${exp.label}; missing: ${few}`);
+  }
+  return { total: 1, missing };
+}

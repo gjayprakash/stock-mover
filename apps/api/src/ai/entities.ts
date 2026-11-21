@@ -46,7 +46,11 @@ export function recognise(m: MovesFile, question: string, tags: About = { stores
     if (storeIds.has(id)) stores.add(id);
   }
   if (/\b(warehouse|wh[\s-]?kol)\b/.test(q)) stores.add(WAREHOUSE);
-  for (const s of m.stores) if (s.city && new RegExp(`\\b${s.city.toLowerCase()}\\b`).test(q)) stores.add(s.store_id);
+  // A city adds its stores only when none of that city's stores was named by id ("Lucknow LKO-04" = LKO-04 only).
+  const named = new Set([...stores].map((id) => m.stores.find((s) => s.store_id === id)?.city));
+  for (const s of m.stores) {
+    if (s.city && !named.has(s.city) && new RegExp(`\\b${s.city.toLowerCase()}\\b`).test(q)) stores.add(s.store_id);
+  }
 
   const skuByKey = new Map(m.moves.map((mv) => [key(mv.sku_id), mv.sku_id]));
   const styleByKey = new Map(m.moves.map((mv) => [key(mv.style_id), mv.style_id]));

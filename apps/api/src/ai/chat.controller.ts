@@ -90,7 +90,7 @@ export class ChatController {
     }
 
     const ctx = chatContext(m, question, about);
-    const allowed = new AllowedSet(ctx, [m.run.as_of, TODAY], m);
+    const allowed = new AllowedSet(ctx, [m.run.as_of, TODAY], m, { question, about });
     const messages: ChatMessage[] = [
       { role: 'system', content: `${SYSTEM_RULES}\n${CHAT_RULES}${loc ? '\n' + scopeRule(loc) : ''}\n\nTODAY'S DATA (as of ${m.run.as_of}):\n${JSON.stringify(ctx)}` },
       ...history,

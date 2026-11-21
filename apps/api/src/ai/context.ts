@@ -2,6 +2,7 @@ import type { Move, MovesFile } from '@sm/contract';
 import { recognise, isEmpty, type About } from './entities';
 
 const MAX_CHAT_MOVES = 20; // full detail; every matching move is also a compact row in focus and move_index
+const WH = 'WH-KOL';
 const DEFAULT_CHAT_MOVES = 8; // full detail only; move_index already lists every move
 
 const problemLines = (m: MovesFile) => m.problems.map(({ tag, title, seen, fix }) => ({ tag, title, seen, fix }));
@@ -51,13 +52,14 @@ function completeLists(m: MovesFile) {
       [...new Set(m.moves.map((mv) => mv.trigger))].map((t) => [t, tally(m.moves.filter((mv) => mv.trigger === t))]),
     ),
     store_flows: {
-      note: 'per place, already added up: in_from = [source, moves, pieces], out_to = [destination, moves, pieces], biggest first; copy these, never add moves up yourself',
+      note: 'per place, already added up and listed: in_ids / out_ids = every move id in or out, split by warehouse or store at the other end; in_from = [source, moves, pieces], out_to = [destination, moves, pieces], biggest first; copy these, never add moves up yourself',
       list: storeFlows(m).map((f) => ({
         store: f.store,
         in_moves: f.in_moves, in_pieces: f.in_pieces, in_from: f.in_from.map((p) => [p.place, p.moves, p.pieces]),
         in_by_category: f.in_by_category, arrive_between: f.arrive_between,
         out_moves: f.out_moves, out_pieces: f.out_pieces, out_to: f.out_to.map((p) => [p.place, p.moves, p.pieces]),
         out_by_category: f.out_by_category,
+        in_ids: f.in_ids, out_ids: f.out_ids,
       })),
     },
   };
@@ -69,6 +71,9 @@ export type StoreFlow = {
   in_moves: number; in_pieces: number; in_from: PlaceShare[]; in_by_category: Record<string, number>;
   arrive_between: [string, string] | null;
   out_moves: number; out_pieces: number; out_to: PlaceShare[]; out_by_category: Record<string, number>;
+  // Move ids, split by whether the other end is the warehouse or a store (#18: copy a list, don't filter 280 rows).
+  in_ids: { from_warehouse: string[]; from_stores: string[] };
+  out_ids: { to_warehouse: string[]; to_stores: string[] };
 };
 
 /**
@@ -102,6 +107,8 @@ export function storeFlows(m: MovesFile): StoreFlow[] {
       in_moves: inc.length, in_pieces: tally(inc).pieces, in_from: share(inc, 'from'), in_by_category: byCat(inc),
       arrive_between: dates.length ? [dates[0], dates[dates.length - 1]] : null,
       out_moves: out.length, out_pieces: tally(out).pieces, out_to: share(out, 'to'), out_by_category: byCat(out),
+      in_ids: { from_warehouse: inc.filter((mv) => mv.from === WH).map((mv) => mv.id), from_stores: inc.filter((mv) => mv.from !== WH).map((mv) => mv.id) },
+      out_ids: { to_warehouse: out.filter((mv) => mv.to === WH).map((mv) => mv.id), to_stores: out.filter((mv) => mv.to !== WH).map((mv) => mv.id) },
     };
   });
 }
