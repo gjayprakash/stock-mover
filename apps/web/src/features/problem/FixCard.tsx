@@ -20,7 +20,10 @@ export function FixCard({ problem, moves, stores }: { problem: Problem; moves: M
     approveMoves([id]);
     if (!approved && pending.length === 1 && pending[0].id === id) approveProblem(problem, moves);
   };
-  const undoAll = () => undo([problem.id, ...problem.move_ids]);
+  // Undo a skip: clear this problem's own status and only its moves that are still skipped.
+  // Moves approved here or elsewhere (shared with another problem, All moves, Store) are never touched.
+  const undoSkip = () => undo([problem.id, ...moves.filter((m) => statusOf(m.id) === 'skipped').map((m) => m.id)]);
+  const keptApproved = status === 'skipped' ? moves.filter((m) => statusOf(m.id) === 'approved') : [];
 
   if (t.entries === 0) {
     return (
@@ -46,9 +49,24 @@ export function FixCard({ problem, moves, stores }: { problem: Problem; moves: M
       </div>
 
       {status === 'skipped' ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-tint px-4 py-3 text-brown">
-          <span className="font-bold">Skipped. Nothing from this problem will be sent.</span>
-          <Button size="sm" variant="outline" onClick={undoAll}>Undo</Button>
+        <div className="flex flex-col gap-2 rounded-xl bg-tint px-4 py-3 text-brown">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span className="font-bold">
+              {keptApproved.length === 0
+                ? 'Skipped. Nothing from this problem will be sent.'
+                : `Skipped. ${keptApproved.length} ${keptApproved.length === 1 ? 'entry stays' : 'entries stay'} approved from elsewhere.`}
+            </span>
+            <Button size="sm" variant="outline" onClick={undoSkip}>Undo</Button>
+          </div>
+          {keptApproved.length > 0 && (
+            <ul className="m-0 flex list-none flex-col gap-1 p-0 text-sm">
+              {keptApproved.map((m) => (
+                <li key={m.id}>
+                  <span className="font-semibold text-ok">Approved</span> · {pieces(m.qty)} {m.sku_id} to {storeLabel(m.to, stores)}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       ) : !approved && normal === 0 ? null : !approved ? (
         <Button full onClick={() => approveProblem(problem, moves)}>
