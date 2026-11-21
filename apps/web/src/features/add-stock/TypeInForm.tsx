@@ -5,7 +5,7 @@ import { Card } from '../../components/Card';
 import { Chip } from '../../components/Chip';
 import { dateLong, pieces, storeLabel } from '../../lib/format';
 import { checkRow, commit, type FakeCtx } from './api';
-import { EarlyNote, capacityText } from './notes';
+import { capacityText, oldDateText } from './notes';
 import { beforeCount, sentence, type StockCheckResult, type StockRowInput } from './types';
 
 type Field = 'location_id' | 'sku_id' | 'qty' | 'received_on';
@@ -32,7 +32,7 @@ export function TypeInForm({ ctx, nextRun }: { ctx: FakeCtx; nextRun: string }) 
   const [done, setDone] = useState<string | null>(null);
 
   /** Any edit after a check makes the user check again. */
-  const edit = (set: (v: string) => void) => (v: string) => { set(v); setChecked(null); setDone(null); };
+  const edit = (set: (v: string) => void) => (v: string) => { set(v); setChecked(null); setDone(null); setErrors({}); };
 
   async function check(e: FormEvent) {
     e.preventDefault();
@@ -90,7 +90,8 @@ export function TypeInForm({ ctx, nextRun }: { ctx: FakeCtx; nextRun: string }) 
       </p>
     ) : null;
 
-  const name = checked ? ctx.moves.find((m) => m.sku_id === checked.input.sku_id)?.style_name : undefined;
+  // Only a name the check response carries; the response has none today, so it stays out rather than guessed.
+  const name = (checked?.result as { style_name?: string } | undefined)?.style_name;
   const isNew = checked?.result.new_skus.includes(checked.input.sku_id);
   const full = checked?.result.by_location.filter((l) => l.over_capacity) ?? [];
   const otherWarnings = checked?.result.warnings.filter((w) => w.row > 0) ?? [];
@@ -125,8 +126,8 @@ export function TypeInForm({ ctx, nextRun }: { ctx: FakeCtx; nextRun: string }) 
             <input id="as-date" type="date" max={ctx.today} value={date} onChange={(e) => edit(setDate)(e.target.value)} className={inputCls} aria-invalid={!!errors.received_on} aria-describedby={errors.received_on ? 'received_on-err' : undefined} />
             {err('received_on')}
           </div>
-          {!checked && beforeCount(date, ctx.asOf) && (
-            <div className="sm:col-span-2 xl:col-span-4"><EarlyNote asOf={ctx.asOf} /></div>
+          {!checked && !errors.received_on && beforeCount(date, ctx.asOf) && (
+            <p className="m-0 text-sm font-semibold text-warn sm:col-span-2 xl:col-span-4" role="status">{oldDateText(ctx.asOf)}</p>
           )}
           <div className="sm:col-span-2 xl:col-span-4">
             {!checked && (
@@ -153,7 +154,6 @@ export function TypeInForm({ ctx, nextRun }: { ctx: FakeCtx; nextRun: string }) 
               </div>
             )}
             {otherWarnings.map((w, i) => <div key={i} className="text-[15px] text-[#6B4100]">{sentence(w.message, w.fix)}</div>)}
-            {beforeCount(checked.input.received_on, ctx.asOf) && <EarlyNote asOf={ctx.asOf} />}
             <div className="flex flex-wrap items-center gap-3">
               <Button onClick={add} disabled={busy} className="max-md:w-full">{busy ? 'Adding…' : 'Add this item'}</Button>
               <Button variant="ghost" onClick={() => setChecked(null)} disabled={busy} className="max-md:w-full">Change it</Button>

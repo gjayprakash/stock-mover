@@ -8,13 +8,13 @@ import { Section } from '../../components/Section';
 import { num, pieces, storeLabel } from '../../lib/format';
 import { checkFile, commit, downloadErrors, type FakeCtx } from './api';
 import { prepareCsv } from './csvParse';
-import { EarlyNote, capacityText } from './notes';
+import { capacityText } from './notes';
 import { MAX_ROWS, STOCK_COLUMNS, columnName, sentence, type StockCheckResult } from './types';
 
 type State =
   | { step: 'empty' }
   | { step: 'checking'; fileName: string }
-  | { step: 'checked'; fileName: string; result: StockCheckResult; fake: boolean; early: number[]; stripped: boolean; adding?: boolean; addError?: string }
+  | { step: 'checked'; fileName: string; result: StockCheckResult; fake: boolean; stripped: boolean; adding?: boolean; addError?: string }
   | { step: 'added'; result: StockCheckResult; fake: boolean; rows: number; pieces: number }
   | { step: 'refused'; fileName: string; message: string }
   | { step: 'error'; message: string }
@@ -28,7 +28,7 @@ function plural(n: number, one: string, many: string) {
 
 const EMPTY_FILE = 'The file has no rows. Fill in the sample file and upload it again.';
 
-export function UploadAndCheck({ ctx, nextRun, sampleText }: { ctx: FakeCtx; nextRun: string; sampleText: string | null }) {
+export function UploadAndCheck({ ctx, nextRun }: { ctx: FakeCtx; nextRun: string }) {
   const [state, setState] = useState<State>({ step: 'empty' });
   const [dragging, setDragging] = useState(false);
   const input = useRef<HTMLInputElement>(null);
@@ -37,23 +37,19 @@ export function UploadAndCheck({ ctx, nextRun, sampleText }: { ctx: FakeCtx; nex
   async function run(file: File) {
     setState({ step: 'checking', fileName: file.name });
     if (file.size === 0) return setState({ step: 'refused', fileName: file.name, message: EMPTY_FILE });
-    // CSV only: drop the "error" column of a rows-to-fix file and find rows dated before the count.
+    // CSV only: drop the "error" column of a rows-to-fix file.
     let send = file;
-    let early: number[] = [];
     let stripped = false;
     if (/\.csv$/i.test(file.name) || file.type === 'text/csv') {
       const text = await file.text();
       if (!text.trim()) return setState({ step: 'refused', fileName: file.name, message: EMPTY_FILE });
-      const prep = prepareCsv(text, ctx.asOf, sampleText);
-      early = prep.early;
+      const prep = prepareCsv(text);
       stripped = prep.stripped;
       if (stripped) send = new File([prep.text], file.name, { type: 'text/csv' });
     }
     const out = await checkFile(ctx, send);
-    if (out.kind === 'checked') {
-      const bad = new Set(out.result.errors.map((e) => e.row));
-      setState({ step: 'checked', fileName: file.name, result: out.result, fake: out.fake, early: early.filter((n) => !bad.has(n)), stripped });
-    } else if (out.kind === 'refused') setState({ step: 'refused', fileName: file.name, message: /empty/i.test(out.message) ? EMPTY_FILE : out.message });
+    if (out.kind === 'checked') setState({ step: 'checked', fileName: file.name, result: out.result, fake: out.fake, stripped });
+    else if (out.kind === 'refused') setState({ step: 'refused', fileName: file.name, message: /empty/i.test(out.message) ? EMPTY_FILE : out.message });
     else if (out.kind === 'unavailable') setState({ step: 'unavailable' });
     else setState({ step: 'error', message: out.message });
   }
@@ -149,7 +145,7 @@ export function UploadAndCheck({ ctx, nextRun, sampleText }: { ctx: FakeCtx; nex
           </Card>
         )}
 
-        {state.step === 'checked' && <Checked state={state} stores={stores} asOf={ctx.asOf} nextRun={nextRun} onAdd={add} onReset={reset} />}
+        {state.step === 'checked' && <Checked state={state} stores={stores} nextRun={nextRun} onAdd={add} onReset={reset} />}
 
         {state.step === 'added' && (
           <div className="flex flex-col gap-2.5 rounded-2xl bg-ok-bg p-5 text-[#123D2E] md:p-8" role="status">
@@ -179,11 +175,10 @@ export function UploadAndCheck({ ctx, nextRun, sampleText }: { ctx: FakeCtx; nex
 const FIX_NOTE = 'Upload it again as CSV once fixed; we drop its last column, error, for you. If you save it as Excel (.xlsx), delete that column first.';
 
 function Checked({
-  state, stores, asOf, nextRun, onAdd, onReset,
+  state, stores, nextRun, onAdd, onReset,
 }: {
   state: Extract<State, { step: 'checked' }>;
   stores: StoreSummary[];
-  asOf: string;
   nextRun: string;
   onAdd: () => void;
   onReset: () => void;
@@ -233,7 +228,6 @@ function Checked({
             ))}
           </ul>
         )}
-        {state.early.length > 0 && <EarlyNote rows={state.early} asOf={asOf} />}
         {r.new_skus.length > 0 && (
           <div className="rounded-xl bg-tint px-4 py-3 text-[15px] leading-snug">
             <span className="font-semibold">{r.new_skus.length === 1 ? '1 new product' : `${num(r.new_skus.length)} new products`} will be created:</span>{' '}
