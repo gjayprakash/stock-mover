@@ -26,9 +26,19 @@ export default function AskPage() {
   const [practice, setPractice] = useState(savedPractice);
   const [params, setParams] = useSearchParams();
   const sentQ = useRef<string | null>(null);
-  const endRef = useRef<HTMLDivElement>(null);
+  // Only the message list scrolls. Follow the newest message unless the user has scrolled up to read.
+  const listRef = useRef<HTMLDivElement>(null);
+  const follow = useRef(true);
+  const onListScroll = () => {
+    const el = listRef.current;
+    if (el) follow.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  };
 
-  useEffect(() => { saved = msgs; endRef.current?.scrollIntoView({ block: 'nearest' }); }, [msgs]);
+  useEffect(() => {
+    saved = msgs;
+    const el = listRef.current;
+    if (el && follow.current) el.scrollTop = el.scrollHeight;
+  }, [msgs]);
 
   const send = async (raw: string) => {
     const question = raw.trim().slice(0, MAX_QUESTION);
@@ -40,6 +50,7 @@ export default function AskPage() {
     nextId += 2;
     setInput('');
     setBusy(true);
+    follow.current = true;
     setMsgs((cur) => [...cur, { id: aiId - 1, me: true, text: question }, { id: aiId, me: false, text: '', pending: true, final: null }]);
     const patch = (p: Partial<Extract<Msg, { me: false }>>) =>
       setMsgs((cur) => cur.map((m) => (m.id === aiId && !m.me ? { ...m, ...p } : m)));
@@ -62,17 +73,31 @@ export default function AskPage() {
   const onSubmit = (e: FormEvent) => { e.preventDefault(); void send(input); };
   const tries = suggestions(data);
 
+  const canSee = (
+    <div className="rounded-2xl bg-ok-bg p-5 text-[15px] leading-relaxed text-[#123D2E] lg:p-6">
+      <div className="mb-1.5 text-base font-bold">What Ask can see</div>
+      {data
+        ? `Today's ${num(data.summary.moves)} moves, the ${num(data.stores.length)} stores, the ${num(data.problems.length)} problems and the rules. Nothing outside that.`
+        : "Today's list, the stores, the problems and the rules. Nothing outside that."}
+      {isSample && <p className="mt-2 mb-0 text-sm">Showing the sample list because today's run could not be loaded.</p>}
+    </div>
+  );
+
+  // Fills the window (the shell gives this route a full-height main); the page itself never scrolls.
   return (
-    <div className="flex flex-wrap items-start gap-7">
-      <main className="flex min-w-0 flex-[999_1_560px] flex-col gap-6">
-        <div>
-          <h1 className="m-0 font-heading text-3xl font-normal text-ink md:text-[40px]">Ask Stock Mover</h1>
-          <p className="mt-2 mb-0 text-[17px] text-muted">Ask in your own words. Answers use only today's list, and every number is checked.</p>
-        </div>
-        {practice && (
+    <div className="flex min-h-0 flex-1 flex-col gap-4 md:gap-6">
+      <div className="shrink-0">
+        <h1 className="m-0 font-heading text-3xl font-normal text-ink md:text-[40px]">Ask Stock Mover</h1>
+        <p className={`mt-1 mb-0 text-[15px] text-muted md:mt-2 md:block md:text-[17px] ${msgs.length ? 'hidden' : ''}`}>Ask in your own words. Answers use only today's list, and every number is checked.</p>
+      </div>
+      {practice && (
+        <div className="shrink-0">
           <Banner tone="warn" title="Practice answers.">The Ask service is not running on this computer, so these answers are made up from the sample list to show the screen.</Banner>
-        )}
-        <Card className="flex flex-col gap-6">
+        </div>
+      )}
+      <div className="flex min-h-0 flex-1 gap-7">
+        <Card padded={false} className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <div ref={listRef} onScroll={onListScroll} className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 md:p-8">
           {msgs.length === 0 ? (
             <div className="flex flex-col gap-3">
               <p className="m-0 font-heading text-xl text-brown">What would you like to know about today's list?</p>
@@ -82,6 +107,7 @@ export default function AskPage() {
                   {t}
                 </button>
               ))}
+              <div className="mt-3 lg:hidden">{canSee}</div>
             </div>
           ) : (
             <div className="flex flex-col gap-6" aria-live="polite">
@@ -99,42 +125,47 @@ export default function AskPage() {
                   </div>
                 ),
               )}
-              <div ref={endRef} />
             </div>
           )}
-          <form onSubmit={onSubmit} className="flex flex-wrap items-end gap-3 border-t border-line pt-5">
-            <div className="flex min-w-0 flex-[1_1_260px] flex-col gap-1.5">
-              <label htmlFor="ask-input" className="text-sm font-semibold">Your question</label>
-              <input id="ask-input" type="text" value={input} maxLength={MAX_QUESTION} disabled={busy}
-                onChange={(e) => setInput(e.target.value)} placeholder="Type a question about today's list"
-                className="h-14 rounded-xl border-[1.5px] border-[#D9C49C] bg-[#FFFDF8] px-[18px] text-[17px] text-ink disabled:opacity-60" />
-            </div>
-            <Button type="submit" disabled={busy || !input.trim()} className="h-14 px-7">{busy ? 'Asking…' : 'Ask'}</Button>
-          </form>
-        </Card>
-      </main>
-      <aside className="flex min-w-0 flex-[1_1_280px] flex-col gap-5 xl:pt-[92px]">
-        {msgs.length > 0 && tries.length > 0 && (
-          <Card className="flex flex-col gap-3" padded={false}>
-            <div className="flex flex-col gap-3 p-6">
-              <div className="text-[17px] font-bold">Try asking</div>
+          </div>
+          {/* Under 1024 px there is no side column: suggestions ride in a sideways-scrolling row above the input. */}
+          {msgs.length > 0 && tries.length > 0 && (
+            <div className="flex shrink-0 gap-2 overflow-x-auto border-t border-line px-5 py-3 md:px-8 lg:hidden" aria-label="Try asking">
               {tries.map((t) => (
                 <button key={t} type="button" onClick={() => void send(t)} disabled={busy}
-                  className="min-h-12 rounded-xl bg-tint px-4 py-2.5 text-left text-[15px] font-medium text-brown hover:bg-cta-bg disabled:opacity-50">
+                  className="max-w-[80%] shrink-0 truncate rounded-full bg-tint px-4 py-2 text-[15px] font-medium text-brown hover:bg-cta-bg disabled:opacity-50">
                   {t}
                 </button>
               ))}
             </div>
-          </Card>
-        )}
-        <div className="rounded-2xl bg-ok-bg p-6 text-[15px] leading-relaxed text-[#123D2E]">
-          <div className="mb-1.5 text-base font-bold">What Ask can see</div>
-          {data
-            ? `Today's ${num(data.summary.moves)} moves, the ${num(data.stores.length)} stores, the ${num(data.problems.length)} problems and the rules. Nothing outside that.`
-            : "Today's list, the stores, the problems and the rules. Nothing outside that."}
-          {isSample && <p className="mt-2 mb-0 text-sm">Showing the sample list because today's run could not be loaded.</p>}
-        </div>
-      </aside>
+          )}
+          <form onSubmit={onSubmit} className="flex shrink-0 items-end gap-3 border-t border-line px-5 py-4 md:px-8 md:py-5">
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+              <label htmlFor="ask-input" className="text-sm font-semibold max-md:sr-only">Your question</label>
+              <input id="ask-input" type="text" value={input} maxLength={MAX_QUESTION} disabled={busy}
+                onChange={(e) => setInput(e.target.value)} placeholder="Type a question about today's list"
+                className="h-14 w-full min-w-0 rounded-xl border-[1.5px] border-[#D9C49C] bg-[#FFFDF8] px-4 text-[17px] text-ink disabled:opacity-60 md:px-[18px]" />
+            </div>
+            <Button type="submit" disabled={busy || !input.trim()} className="h-14 shrink-0 px-5 md:px-7">{busy ? 'Asking…' : 'Ask'}</Button>
+          </form>
+        </Card>
+        <aside className="-mx-4 hidden min-h-0 w-80 shrink-0 flex-col gap-5 overflow-y-auto overscroll-contain px-4 pb-4 lg:flex xl:w-88">
+          {msgs.length > 0 && tries.length > 0 && (
+            <Card className="flex shrink-0 flex-col gap-3" padded={false}>
+              <div className="flex flex-col gap-3 p-6">
+                <div className="text-[17px] font-bold">Try asking</div>
+                {tries.map((t) => (
+                  <button key={t} type="button" onClick={() => void send(t)} disabled={busy}
+                    className="min-h-12 rounded-xl bg-tint px-4 py-2.5 text-left text-[15px] font-medium text-brown hover:bg-cta-bg disabled:opacity-50">
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </Card>
+          )}
+          <div className="shrink-0">{canSee}</div>
+        </aside>
+      </div>
     </div>
   );
 }

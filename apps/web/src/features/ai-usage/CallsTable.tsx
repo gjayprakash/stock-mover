@@ -70,7 +70,7 @@ export function CallsTable({ calls }: { calls: AiCall[] }) {
                     <tr className="bg-page" id={panelId}>
                       <td colSpan={5} className="px-6 pb-5 pt-1 text-[15px] leading-relaxed">
                         {/* Sticky + capped width so the text stays readable when the table scrolls sideways on a phone. */}
-                        <div className="sticky left-6 max-w-[calc(100vw-5rem)] md:max-w-none">
+                        <div className="sticky left-6 max-w-[calc(100vw-5rem)] md:max-w-[calc(100vw-22rem)] lg:max-w-none">
                           <div className="font-semibold text-muted">Full answer</div>
                           <p className="mt-1 whitespace-pre-wrap">{c.output || '(no text)'}</p>
                           {c.held_reason && (

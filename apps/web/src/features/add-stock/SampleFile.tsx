@@ -41,11 +41,11 @@ export function SampleFile({ text }: { text: string | null }) {
         <div className="border-t border-line px-5 pt-5 pb-2 text-[15px] font-semibold text-muted md:px-8">This is what the file looks like</div>
         <div className="overflow-x-auto px-5 pb-6 md:px-8">
           {text ? (
-            <table className="w-full min-w-[900px] border-collapse text-sm">
+            <table className="w-full min-w-[760px] border-collapse text-sm lg:min-w-0">
               <thead>
                 <tr className="text-left">
                   {STOCK_COLUMNS.map((c, i) => (
-                    <th key={c} className="border-r border-[#6B3414] bg-brown px-3 py-3 font-semibold whitespace-nowrap text-page">
+                    <th key={c} className="border-r border-[#6B3414] bg-brown px-2 py-3 xl:px-3 font-semibold whitespace-nowrap text-page">
                       <span className="block text-xs font-medium text-tint">Column {i + 1}</span>
                       {c}
                     </th>
@@ -56,7 +56,7 @@ export function SampleFile({ text }: { text: string | null }) {
                 {rows.map((r, i) => (
                   <tr key={i} className="border-b border-line bg-[#FFFDF8]">
                     {STOCK_COLUMNS.map((c, j) => (
-                      <td key={c} className={`p-3 ${j === 0 || j === 6 ? 'font-semibold' : ''} ${j === 2 ? '' : 'whitespace-nowrap'}`}>{r[j]}</td>
+                      <td key={c} className={`px-2 py-3 xl:px-3 ${j === 0 || j === 6 ? 'font-semibold' : ''} ${j === 2 ? '' : 'whitespace-nowrap'}`}>{r[j]}</td>
                     ))}
                   </tr>
                 ))}

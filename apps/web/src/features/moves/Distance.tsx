@@ -31,9 +31,9 @@ const storeWord = (n: number) => (n === 1 ? 'store' : 'stores');
 export function ClosestBanner({ file }: { file: MovesFile }) {
   if (!file.moves.some(hasDistance)) return null;
   return (
-    <div className="rounded-[14px] bg-ok-bg px-6 py-4 text-base leading-normal text-[#123D2E]">
+    <div className="rounded-[14px] bg-ok-bg px-5 py-4 text-base leading-normal text-[#123D2E] md:px-6">
       <span className="font-bold">Closest store first.</span> When stock can go to more than one store, it goes to the nearest one
-      first, unless a farther store has none left to sell. Travel time = 1 day to pack + a day for every 350 km.
+      first, unless a farther store has none left to sell. Arrival dates follow the planned lead times.
     </div>
   );
 }
@@ -47,15 +47,15 @@ export function RowDistance({ move: m }: { move: Move }) {
   const unserved = closer.filter((c) => !c.moves.length).length;
   return (
     <>
-      <div className="mt-1.5 text-sm font-semibold">{kmDays(m.distance_km!, m.travel_days!)}</div>
+      <div className="mt-1.5 text-sm font-semibold whitespace-nowrap">{kmDays(m.distance_km!, m.travel_days!)}</div>
       {n > 1 && (
         <div className="mt-1.5">
           {closer.length === 0 ? (
-            <Chip tone="ok" className="text-[13px]">Closest of {n}</Chip>
+            <Chip tone="ok" className="text-[13px] whitespace-normal! rounded-xl! leading-snug">Closest of {n}</Chip>
           ) : unserved === 0 ? (
-            <Chip tone="ok" className="text-[13px]">After {closer.length} closer {storeWord(closer.length)}</Chip>
+            <Chip tone="ok" className="text-[13px] whitespace-normal! rounded-xl! leading-snug">After {closer.length} closer {storeWord(closer.length)}</Chip>
           ) : (
-            <Chip tone="warn" className="text-[13px]">{unserved} closer {storeWord(unserved)} not served today</Chip>
+            <Chip tone="warn" className="text-[13px] whitespace-normal! rounded-xl! leading-snug">{unserved} closer {storeWord(unserved)} not served today</Chip>
           )}
         </div>
       )}

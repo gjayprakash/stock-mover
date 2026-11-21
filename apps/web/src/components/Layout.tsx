@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useSearchParams } from 'react-router-dom';
 import { useMovesFile } from '../data/useMovesFile';
 import { dateLong, dateShort, timeShort } from '../lib/format';
 
@@ -72,7 +72,7 @@ function RunCard() {
 function Sidebar() {
   const { data, isSample } = useMovesFile();
   return (
-    <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col gap-7 overflow-y-auto bg-white px-4 py-6 shadow-[1px_0_0_#EFE2C8,8px_0_24px_rgba(81,29,0,0.04)] md:flex">
+    <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col gap-7 overflow-y-auto overscroll-contain bg-white px-4 py-6 shadow-[1px_0_0_#EFE2C8,8px_0_24px_rgba(81,29,0,0.04)] md:flex">
       <div className="px-2"><Logo /></div>
       <div className="flex flex-col gap-2 px-2 text-sm leading-snug text-muted">
         <span>{data ? `Stock as of close ${dateLong(data.run.as_of)}` : ' '}</span>
@@ -171,14 +171,32 @@ function TabBar() {
   );
 }
 
-/** Desktop: left sidebar. Under 768 px: slim header + fixed bottom tab bar. */
+/** New screen -> back to the top. `/moves?move=<id>` scrolls to its own row, so leave that alone. */
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  const [params] = useSearchParams();
+  const deepLink = pathname === '/moves' && params.has('move');
+  useEffect(() => {
+    if (!deepLink) window.scrollTo(0, 0);
+  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+  return null;
+}
+
+/** Desktop: fixed left sidebar, only the main column scrolls. Under 768 px: slim header + fixed bottom tab bar. */
 export function Layout() {
+  // Ask is a chat: it fills exactly one window height and scrolls inside its own card, never the page.
+  const fullHeight = useLocation().pathname === '/ask';
   return (
-    <div className="flex min-h-screen bg-page font-body text-ink">
+    <div className="min-h-screen bg-page font-body text-ink">
+      <ScrollToTop />
       <Sidebar />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className={`flex min-w-0 flex-col md:pl-60 ${fullHeight ? 'h-dvh' : ''}`}>
         <MobileHeader />
-        <main className="mx-auto w-full max-w-[1120px] min-w-0 px-4 pt-6 pb-28 md:px-8 md:pt-10 md:pb-16">
+        <main
+          className={`mx-auto w-full max-w-[1200px] min-w-0 px-4 pt-6 md:px-8 md:pt-10 xl:px-10 ${
+            fullHeight ? 'flex min-h-0 flex-1 flex-col pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-8' : 'pb-28 md:pb-16'
+          }`}
+        >
           <Outlet />
         </main>
       </div>

@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import type { Move } from '@sm/contract';
 import { Chip, ConfidenceDot, KIND_LABEL, dateShort, days, inr } from './deps';
 import type { ApprovalStatus } from './filters';
@@ -27,14 +28,14 @@ type Props = {
 };
 
 export function MoveRow({ move: m, status, selected, expanded, onSelect, onToggle }: Props) {
-  const td = 'px-3 py-5';
+  const td = 'px-2.5 py-5 xl:px-3';
   return (
     <tr
       onClick={onToggle}
       aria-expanded={expanded}
-      className={`cursor-pointer border-t border-[#F3E8D2] align-top hover:bg-[#FFFDF8] ${status === 'skipped' ? 'opacity-50' : ''} ${expanded ? 'bg-[#FFFDF8]' : ''}`}
+      className={`cursor-pointer scroll-mt-20 border-t border-[#F3E8D2] align-top md:scroll-mt-6 hover:bg-[#FFFDF8] ${status === 'skipped' ? 'opacity-50' : ''} ${expanded ? 'bg-[#FFFDF8]' : ''}`}
     >
-      <td className="py-5 pl-5 pr-3 md:pl-7" onClick={(e) => e.stopPropagation()}>
+      <td className="py-5 pr-2 pl-5 xl:pl-7" onClick={(e) => e.stopPropagation()}>
         {status === 'approved' ? (
           <Chip tone="ok">Approved</Chip>
         ) : status === 'skipped' ? (
@@ -49,23 +50,28 @@ export function MoveRow({ move: m, status, selected, expanded, onSelect, onToggl
           />
         )}
       </td>
-      <td className={`${td} min-w-[200px]`}>
+      <td className={`${td} min-w-[120px] break-words xl:min-w-[160px]`}>
         <div className="font-bold">{m.style_name}, {m.size}</div>
-        <div className="mt-0.5 text-sm text-[#5E4E42]">{m.sku_id} · {inr(m.value_inr)}</div>
+        <div className="mt-0.5 text-sm text-[#5E4E42]"><span className="whitespace-nowrap">{m.sku_id}</span> · <span className="whitespace-nowrap">{inr(m.value_inr)}</span></div>
         {m.needs_signoff && <div className="mt-2"><Chip tone="orange">Needs sign-off</Chip></div>}
       </td>
-      <td className={`${td} whitespace-nowrap`}>
+      <td className={`${td} min-w-[120px] xl:min-w-[150px]`}>
         <div className={`mb-1 text-[13px] font-bold ${KIND_COLOR[m.type]}`}>
           {KIND_LABEL[m.type]}{m.trigger === 'AGEING' ? ' · old stock' : ''}
         </div>
-        <div className="font-semibold">{m.from}</div>
-        <div className="text-[#5E4E42]">to {m.to}</div>
+        <div className="font-semibold whitespace-nowrap">{m.from}</div>
+        <div className="whitespace-nowrap text-[#5E4E42]">to {m.to}</div>
         <RowDistance move={m} />
       </td>
-      <td className={`${td} text-xl font-bold`}>{m.qty}</td>
-      <td className={`${td} whitespace-nowrap`}>{coverText(m)}</td>
+      <td className={`${td} text-xl font-bold whitespace-nowrap tabular-nums`}>{m.qty}</td>
+      <td className={td}>
+        {/* Wrap only before "at" or the arrow, never inside a number. */}
+        {coverText(m).split(/ (?=→ |at )/).map((part, i) => (
+          <Fragment key={i}>{i > 0 && ' '}<span className="whitespace-nowrap">{part}</span></Fragment>
+        ))}
+      </td>
       <td className={`${td} whitespace-nowrap`}>{dateShort(m.arrives_on)}</td>
-      <td className="min-w-[260px] py-5 pl-3 pr-5 leading-normal text-[#2E221A] md:pr-7">
+      <td className="min-w-[140px] py-5 pr-5 pl-2.5 leading-normal break-words text-[#2E221A] xl:min-w-[240px] xl:pr-7">
         <span className="mr-2 align-middle"><ConfidenceDot basis={m.velocity_basis} /></span>
         {m.reason}
       </td>

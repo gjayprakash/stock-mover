@@ -12,15 +12,22 @@ const CHECKS: [keyof Move['checks'], string][] = [
   ['donor_cover_30', 'Giving store keeps at least 30 days of stock'],
 ];
 
-function SideRow({ label, wh, before, after }: { label: string; wh: boolean; before: Side; after: Side }) {
+function SideRow({ store, role, wh, before, after }: { store: string; role: string; wh: boolean; before: Side; after: Side }) {
   const td = 'px-1.5 py-2 align-top md:px-3';
   return (
     <tr className="border-t border-[#F3E8D2]">
-      <th scope="row" className={`${td} text-left font-semibold`}>{label}</th>
-      <td className={td}>{before.on_hand} → {after.on_hand}</td>
-      <td className={td}>{before.in_transit} → {after.in_transit}</td>
+      <th scope="row" className={`${td} text-left font-semibold`}><span className="whitespace-nowrap">{store}</span> {role}</th>
+      <td className={`${td} whitespace-nowrap`}>{before.on_hand} → {after.on_hand}</td>
+      <td className={`${td} whitespace-nowrap`}>{before.in_transit} → {after.in_transit}</td>
       <td className={td}>{before.velocity ? `${(before.velocity * 7).toFixed(1)} a week` : '–'}</td>
-      <td className={td}>{wh ? 'warehouse' : `${days(before.cover_days)} → ${days(after.cover_days)}`}</td>
+      <td className={td}>
+        {wh ? 'warehouse' : (
+          <>
+            <span className="whitespace-nowrap">{days(before.cover_days)}</span>{' '}
+            <span className="whitespace-nowrap">→ {days(after.cover_days)}</span>
+          </>
+        )}
+      </td>
     </tr>
   );
 }
@@ -52,8 +59,8 @@ export function MoveDetail({ move: m, status, onApprove, onSkip, onUndo, extra }
               </tr>
             </thead>
             <tbody>
-              <SideRow wh={m.from === 'WH-KOL'} label={`${m.from} (gives)`} before={m.from_before} after={m.from_after} />
-              <SideRow wh={m.to === 'WH-KOL'} label={`${m.to} (gets)`} before={m.to_before} after={m.to_after} />
+              <SideRow wh={m.from === 'WH-KOL'} store={m.from} role="(gives)" before={m.from_before} after={m.from_after} />
+              <SideRow wh={m.to === 'WH-KOL'} store={m.to} role="(gets)" before={m.to_before} after={m.to_after} />
             </tbody>
           </table>
           <p className="mt-2 px-3 text-[13px] text-[#5E4E42]">

@@ -120,11 +120,11 @@ export default function AiUsagePage() {
           action={useSample && <SampleBadge>Sample figures until the first live run</SampleBadge>}
         >
           {loading || !t ? (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
               {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-28 w-full" />)}
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
               <Tile
                 big={num(t.briefs)}
                 label={`morning ${t.briefs === 1 ? 'briefing' : 'briefings'} written${t.latest_brief_at ? `, latest ${timeShort(t.latest_brief_at)}` : ''}`}
@@ -157,7 +157,7 @@ export default function AiUsagePage() {
       )}
 
       <Section title="How every answer is checked">
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
           {STEPS.map(([title, text], i) => (
             <Card key={title} className="flex flex-col gap-2.5 !p-6">
               <span className="flex h-10 w-10 items-center justify-center rounded-full bg-tint font-heading text-xl text-brown">
