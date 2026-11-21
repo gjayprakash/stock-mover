@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { DbService } from '../db/db.service';
-import { roadKm, travelDays, type LatLng } from './distance';
+import { haversineKm, roadKm, travelDays, type LatLng } from './distance';
 
 // apps/api/dist/geo -> repo root.
 const GEO_DIR = join(__dirname, '..', '..', '..', '..', 'data', 'geo');
@@ -70,6 +70,17 @@ export class GeoService implements OnModuleInit {
 
   zoneOf(state: string): string | null {
     return ZONES[state] ?? null;
+  }
+
+  /** Ping place from the bundled PIN table (no paid geocoder): "Kanpur", or "18 km from Kanpur". */
+  placeNear(point: LatLng): string | null {
+    let best: { city: string; km: number } | null = null;
+    for (const p of this.pins.values()) {
+      const km = haversineKm(point, p);
+      if (!best || km < best.km) best = { city: p.city, km };
+    }
+    if (!best || best.km > 150) return null;
+    return best.km <= 10 ? best.city : `${Math.round(best.km)} km from ${best.city}`;
   }
 
   lookupPin(pin: string): PinInfo | null {

@@ -10,7 +10,7 @@ import { DriversService } from './drivers.service';
 const DEMO_STORE = 'KNP-03';
 
 /** The manager's store (#77 scope: own store, or the super admin's Viewing pick). With sign-in off, the demo store. */
-function storeOf(req: Request): string {
+export function storeOf(req: Request): string {
   const scope = scopeOf(req);
   if ('locationId' in scope) return scope.locationId;
   if (!authRequired()) return DEMO_STORE;
@@ -94,12 +94,5 @@ export class DriverPhoneController {
   @HttpCode(204)
   async setLang(@Req() req: Request, @Body() body: { lang?: unknown }) {
     await this.drivers.setLang(req.driver!.driver_id, body?.lang);
-  }
-
-  /** Placeholder until #82: no open trip. */
-  @UseGuards(DriverDeviceGuard)
-  @Get('trip')
-  trip() {
-    return null;
   }
 }

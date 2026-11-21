@@ -7,9 +7,9 @@ import { StoresService } from '../stores/stores.service';
 const LINK_MS = 30 * 60 * 1000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// last_ping_at / last_ping_place / load come from trips and pings (#82).
+// last_ping_* and load from shipments and location_pings (#82).
 const ROW = `
-  select d.id, d.name, d.phone_e164,
+  select d.id, d.name, d.phone_e164, lp.taken_at as last_ping_at, lp.place as last_ping_place, ld.pieces, ld.to_location,
          case when not d.active then 'TURNED_OFF'
               when exists (select 1 from driver_devices v where v.driver_id = d.id and v.revoked_at is null) then 'PAIRED'
               when p.expires_at > now() then 'LINK_SENT'
@@ -18,9 +18,21 @@ const ROW = `
     from drivers d
     left join lateral (
       select expires_at from device_pairings where driver_id = d.id and used_at is null order by created_at desc limit 1
-    ) p on true`;
+    ) p on true
+    left join lateral (
+      select x.taken_at, x.place from location_pings x join shipments s on s.id = x.shipment_id
+       where s.driver_id = d.id order by x.taken_at desc limit 1
+    ) lp on true
+    left join lateral (
+      select sum(l.qty)::int as pieces, min(r.to_location) as to_location
+        from shipments s join transfer_requests r on r.id = s.request_id join transfer_lines l on l.request_id = r.id
+       where s.driver_id = d.id and r.status in ('assigned', 'in_transit')
+    ) ld on true`;
 
-type Row = { id: string; name: string; phone_e164: string; status: Driver['status']; link_expires_at: Date | null };
+type Row = {
+  id: string; name: string; phone_e164: string; status: Driver['status']; link_expires_at: Date | null;
+  last_ping_at: Date | null; last_ping_place: string | null; pieces: number | null; to_location: string | null;
+};
 
 const asDriver = (r: Row): Driver => ({
   id: r.id,
@@ -30,9 +42,9 @@ const asDriver = (r: Row): Driver => ({
   status: r.status,
   // Only while the driver is waiting on a link (live or expired).
   link_expires_at: r.link_expires_at && (r.status === 'LINK_SENT' || r.status === 'LINK_EXPIRED') ? r.link_expires_at.toISOString() : null,
-  last_ping_at: null,
-  last_ping_place: null,
-  load: null,
+  last_ping_at: r.last_ping_at ? r.last_ping_at.toISOString() : null,
+  last_ping_place: r.last_ping_at ? r.last_ping_place : null,
+  load: r.pieces ? { pieces: r.pieces, to: r.to_location! } : null,
 });
 
 /** "98073 11426", "+91 98073-11426", "09807311426" → "+919807311426", or null. */

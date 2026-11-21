@@ -6,6 +6,7 @@ import { ENGINE_VERSION, runEngine } from '../engine';
 import { GeoService } from '../geo/geo.service';
 import { StoresService } from '../stores/stores.service';
 import { StockService } from '../stock/stock.service';
+import { ShipmentsService } from '../shipments/shipments.service';
 import { scopeHistory, scopeMoves } from './scoped';
 
 export const AS_OF = '2026-10-31';
@@ -29,6 +30,7 @@ export class RunsService implements OnApplicationBootstrap {
     private readonly geo: GeoService,
     private readonly stores: StoresService,
     private readonly stock: StockService,
+    private readonly shipments: ShipmentsService,
   ) {}
 
   /** Other modules (AI brief) register here; called after every FINISHED run, errors are logged and ignored. */
@@ -75,9 +77,11 @@ export class RunsService implements OnApplicationBootstrap {
 
   private async execute(runId: string, now: Date) {
     try {
+      const transfers = await this.shipments.engineTransfers(); // rule 3: app transfers in transit / received
       const { moves, history } = runEngine({
         dataDir: DATA_DIR, asOf: AS_OF, today: TODAY, now, runId, locations: this.geo.locations(),
         extraStores: this.stores.extraStores(), receipts: this.stock.receipts(), extraItems: this.stock.extraItems(),
+        transfers,
       });
       const violations = moves.summary.violations;
       if (violations > 0) throw new Error(`validator found ${violations} rule violations; list not published`);
