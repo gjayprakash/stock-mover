@@ -15,3 +15,7 @@ services:
         sync: false
       - key: CRON_SECRET
         sync: false
+      - key: MESH_API_KEY
+        sync: false
+      - key: MESH_MODEL
+        sync: false
