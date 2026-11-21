@@ -17,6 +17,7 @@ each explained in one line, with zero rule violations.
 | `docs/05-plan.md` | You want to know what to do right now and what we cut |
 | `shared/moves.schema.md` | The contract between engine and UI. Do not change without telling the other person |
 | `TASKS.md` | Live checklist with owners. Tick things off here |
+| `docs/claude-project/` | Context for the claude.ai Project: `instructions.md` → Project instructions, `knowledge.md` → Project knowledge |
 
 ## Sharing between Jay and Asjad
 This folder lives on Jay's Desktop. To share: `git init`, push to a private GitHub
