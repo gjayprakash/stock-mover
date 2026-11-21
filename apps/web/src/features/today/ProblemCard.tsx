@@ -1,3 +1,4 @@
+import { DeliveryNote } from '../deliveries/DeliveryNote';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Move, Problem } from '@sm/contract';
@@ -98,7 +99,7 @@ export function ProblemCard({ problem, moves, large }: Props) {
           {problem.needs_signoff_count === 1 ? ' needs' : ' need'} your sign-off one by one.
         </p>
       )}
-      <div className="mt-auto pt-1">{actions}</div>
+      <div className="mt-auto flex flex-col gap-2 pt-1">{actions}{!noMoves && <DeliveryNote />}</div>
     </div>
   );
 

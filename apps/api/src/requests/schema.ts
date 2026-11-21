@@ -18,6 +18,8 @@ export const REQUESTS_SCHEMA = `
   );
   create index if not exists transfer_requests_from on transfer_requests (from_location, status);
   create index if not exists transfer_requests_to on transfer_requests (to_location, status);
+  -- One transfer per approved daily-list move ("<run_id>:<move_id>"), however often Approve is pressed.
+  create unique index if not exists transfer_requests_engine_move on transfer_requests (engine_move_id) where engine_move_id is not null;
   create table if not exists transfer_lines (
     request_id uuid not null references transfer_requests(id) on delete cascade,
     sku_id text not null,

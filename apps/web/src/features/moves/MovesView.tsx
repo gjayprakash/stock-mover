@@ -1,3 +1,5 @@
+import { DeliveryNote } from '../deliveries/DeliveryNote';
+import { useApprovals } from '../../data/approvals';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Move, MovesFile } from '@sm/contract';
 import { Button, Card, Chip, EmptyState, inr } from './deps';
@@ -120,7 +122,9 @@ export function MovesView(p: MovesViewProps) {
   };
 
   const nf = new Intl.NumberFormat('en-IN');
-  const showBulk = chosen.length > 0 || !!note || undoIds.length > 0;
+  // Keep the bar up while deliveries are being created or some failed, so a failure is never silent.
+  const { sending, failed } = useApprovals().deliveryCounts;
+  const showBulk = chosen.length > 0 || !!note || undoIds.length > 0 || sending > 0 || failed > 0;
   const bulkBody = (
     <>
       <span className="text-base">
@@ -150,6 +154,7 @@ export function MovesView(p: MovesViewProps) {
               </button>
             </span>
           )}
+          <DeliveryNote className="w-full text-tint" />
     </>
   );
 

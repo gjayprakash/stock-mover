@@ -1,3 +1,4 @@
+import { DeliveryNote } from '../deliveries/DeliveryNote';
 import type { Move, Problem, StoreSummary } from '@sm/contract';
 import { Button } from '../../components/Button';
 import { useApprovals } from '../../data/approvals';
@@ -79,6 +80,7 @@ export function FixCard({ problem, moves, stores }: { problem: Problem; moves: M
                 ? `Approve all ${t.entries} ${t.entries === 1 ? 'entry' : 'entries'}`
                 : `Approve ${normal} of ${t.entries} entries`}
           </Button>
+          <DeliveryNote className="text-tint" />
           {approvedCount > 0 && (
             <div className="text-[15px] text-tint">
               {approvedCount} {approvedCount === 1 ? 'entry is' : 'entries are'} already approved from elsewhere.

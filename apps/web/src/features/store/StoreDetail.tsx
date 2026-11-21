@@ -1,3 +1,4 @@
+import { DeliveryNote } from '../deliveries/DeliveryNote';
 import { Link, useNavigate } from 'react-router-dom';
 import type { MovesFile, StoreSummary } from '@sm/contract';
 import { Banner } from '../../components/Banner';
@@ -174,6 +175,7 @@ export function StoreDetail({ file, store }: { file: MovesFile; store: StoreSumm
               ) : (
                 <div className="flex min-h-12 items-center justify-center rounded-xl bg-ok-bg font-bold text-ok">Approved</div>
               )}
+              {approvable.length > 0 && <DeliveryNote className="text-tint" />}
               {signoff.length > 0 && (
                 <div className="flex flex-col gap-2 rounded-xl bg-white/10 p-4 text-[15px]">
                   <span className="font-semibold">

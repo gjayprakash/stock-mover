@@ -1,6 +1,7 @@
 import { Body, Controller, ForbiddenException, Get, HttpCode, Param, Post, Query, Req } from '@nestjs/common';
 import type { Request } from 'express';
 import { WAREHOUSE_ID } from '../engine/params';
+import { Roles } from '../auth/roles.decorator';
 import { RequestsService, type Actor } from './requests.service';
 
 /** Store manager → own store always. Super admin → the Viewing store (?store= / ?location= / body.to_location), else WH-KOL. */
@@ -32,6 +33,14 @@ export class RequestsController {
   @Post()
   create(@Req() req: Request, @Body() body: { sku_id?: unknown; qty?: unknown; from_location?: unknown; to_location?: unknown }) {
     return this.requests.create(actor(req, body?.to_location), body ?? {});
+  }
+
+  /** Super admin approved a store-to-store move on the daily list: make it a delivery (Going out / Coming in). */
+  @Roles('super_admin')
+  @Post('from-move')
+  @HttpCode(200)
+  fromMove(@Req() req: Request, @Body() body: { move_id?: unknown }) {
+    return this.requests.fromEngineMove(actor(req), body?.move_id);
   }
 
   @Post(':id/approve')

@@ -44,7 +44,7 @@ export class RequestsService {
     private readonly geo: GeoService,
     private readonly stores: StoresService,
     private readonly stock: StockService,
-    runs: RunsService,
+    private readonly runs: RunsService,
   ) {
     // Stores, locations or receipts may have changed: rebuild positions on the next call.
     runs.onRunFinished(() => (this.P = null));
@@ -174,6 +174,51 @@ export class RequestsService {
     if (a.role === 'store_manager' && a.location !== r.to_location) throw new ForbiddenException(err('Only the asking store can cancel'));
     if (r.status !== 'waiting') return this.settled(r, ['cancelled']);
     return this.step(r, a, 'cancelled', '');
+  }
+
+  /**
+   * A super admin approved a store-to-store move on the daily list: it becomes an approved transfer with a shipment,
+   * so the giving store sees it under Going out (and gives it to a driver) and the receiving store under Coming in.
+   * Once per run + move: approving again returns the same transfer. The move already passed the engine validator
+   * in its run. Warehouse moves are not tracked yet.
+   */
+  async fromEngineMove(a: Actor, moveId: unknown) {
+    if (a.role !== 'super_admin' || !a.id) throw new ForbiddenException(err('Only a super admin can send a move from the daily list'));
+    const run = await this.runs.latest({ all: true });
+    const want = typeof moveId === 'string' ? moveId.trim().toUpperCase() : '';
+    const m = run?.moves.moves.find((x) => x.id === want);
+    if (!run || !m) throw new NotFoundException(err("No such move on today's list"));
+    if (m.type !== 'STORE_TO_STORE') throw new BadRequestException(err('Delivery tracking for warehouse moves is coming soon'));
+    const tag = `${run.run_id}:${m.id}`;
+    const find = () => this.db.query<Row>(`${SELECT} where r.engine_move_id = $1`, [tag]);
+    const [had] = await find();
+    if (had) return this.view(had);
+    // Rule 3: open requests made since the run may already have taken these pieces off the giver.
+    const left = canSpare(this.positions(), m.from, m.to, m.sku_id, await this.pending())?.on_hand ?? 0;
+    if (left < m.qty) throw new ConflictException(err(`${m.from} has ${Math.max(0, left)} of ${m.sku_id} left after open requests; this move needs ${m.qty}`));
+    try {
+      const [row] = await this.db.query<Row>(
+        `with r as (
+           insert into transfer_requests (from_location, to_location, status, requested_by, decided_by, signed_off_by,
+                                          value_mrp, needs_signoff, engine_move_id, approved_at)
+           values ($1::text, $2::text, 'approved', $3::uuid, $3::uuid, $4::uuid, $5::int, $6::boolean, $7::text, now())
+           returning *),
+         l as (insert into transfer_lines (request_id, sku_id, qty) select id, $8::text, $9::int from r),
+         e as (insert into transfer_events (request_id, actor, from_status, to_status, note)
+               select id, $3::uuid, null, 'approved', $10::text from r),
+         s as (insert into shipments (request_id) select id from r)
+         select r.*, $8::text as sku_id, $9::int as qty from r`,
+        [m.from, m.to, a.id, m.needs_signoff ? a.id : null, Math.round(m.value_inr), m.needs_signoff, tag, m.sku_id, m.qty,
+         `Daily list ${m.id}: ${m.reason}`.slice(0, 500)],
+      );
+      return this.view(row);
+    } catch (e) {
+      // Approve pressed twice at once: the unique index lets one through; return that one.
+      if ((e as { code?: string }).code !== '23505') throw e;
+      const [again] = await find();
+      if (again) return this.view(again);
+      throw e;
+    }
   }
 
   private async get(id: string): Promise<Row> {
