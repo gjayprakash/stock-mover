@@ -8,6 +8,7 @@ import { Skeleton } from '../components/Skeleton';
 import { useMovesFile } from '../data/useMovesFile';
 import { useRuns } from '../data/useRuns';
 import { dateShort, num, timeShort } from '../lib/format';
+import { DeliveriesCard } from '../features/deliveries/DeliveriesCard';
 import { AskBox } from '../features/today/AskBox';
 import { Hero } from '../features/today/Hero';
 import { ProblemCard } from '../features/today/ProblemCard';
@@ -64,6 +65,7 @@ export default function TodayPage() {
     <div className="flex flex-col gap-10 md:gap-14">
       <RunBanners file={data} isSample={isSample} />
       <Hero file={data} />
+      <DeliveriesCard />
 
       <Section n={1} title="Today's problems and their fixes" explainer="Most urgent first. Read what we saw, then approve or skip.">
         {first ? (

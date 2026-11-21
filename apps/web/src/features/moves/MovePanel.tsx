@@ -256,6 +256,7 @@ export function MovePanel(p: MovePanelProps) {
           ) : (
             <><strong className="font-semibold text-ok">{delivery === 'sent' ? 'Delivery created.' : 'Approved.'}</strong> {title(m.from)} can now pick a driver, and {title(m.to)} will see it coming in.{' '}
               <Link to="/shipments" className="font-semibold text-cta underline">Open Shipments</Link>
+              {delivery === 'sent' && <> Undo here only removes the tick; the delivery stays in Shipments (no cancel yet).</>}
               {delivery !== 'sent' && <>{' · '}<button type="button" className="bg-transparent p-0 font-semibold text-cta underline" onClick={() => sendDelivery(m.id)}>Send to Shipments</button></>}</>
           )}
         </p>

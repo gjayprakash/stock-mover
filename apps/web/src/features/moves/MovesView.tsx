@@ -1,3 +1,4 @@
+import { DeliveryNote } from '../deliveries/DeliveryNote';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Move, MovesFile } from '@sm/contract';
 import { Button, Card, Chip, EmptyState, inr } from './deps';
@@ -150,6 +151,7 @@ export function MovesView(p: MovesViewProps) {
               </button>
             </span>
           )}
+          <DeliveryNote className="w-full text-tint" />
     </>
   );
 

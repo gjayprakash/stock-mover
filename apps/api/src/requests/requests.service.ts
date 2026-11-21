@@ -193,6 +193,9 @@ export class RequestsService {
     const find = () => this.db.query<Row>(`${SELECT} where r.engine_move_id = $1`, [tag]);
     const [had] = await find();
     if (had) return this.view(had);
+    // Rule 3: open requests made since the run may already have taken these pieces off the giver.
+    const left = canSpare(this.positions(), m.from, m.to, m.sku_id, await this.pending())?.on_hand ?? 0;
+    if (left < m.qty) throw new ConflictException(err(`${m.from} has ${Math.max(0, left)} of ${m.sku_id} left after open requests; this move needs ${m.qty}`));
     try {
       const [row] = await this.db.query<Row>(
         `with r as (
@@ -205,7 +208,7 @@ export class RequestsService {
                select id, $3::uuid, null, 'approved', $10::text from r),
          s as (insert into shipments (request_id) select id from r)
          select r.*, $8::text as sku_id, $9::int as qty from r`,
-        [m.from, m.to, a.id, m.needs_signoff ? a.id : null, m.value_inr, m.needs_signoff, tag, m.sku_id, m.qty,
+        [m.from, m.to, a.id, m.needs_signoff ? a.id : null, Math.round(m.value_inr), m.needs_signoff, tag, m.sku_id, m.qty,
          `Daily list ${m.id}: ${m.reason}`.slice(0, 500)],
       );
       return this.view(row);

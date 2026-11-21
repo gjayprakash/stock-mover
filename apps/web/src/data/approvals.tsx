@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Move, Problem } from '@sm/contract';
 import { useMovesFile } from './useMovesFile';
 import { useAuth } from '../features/auth/auth';
@@ -30,6 +30,8 @@ export type ApprovalsApi = {
   deliveryOf: (moveId: string) => Delivery | undefined;
   /** Creates the delivery for an approved store-to-store move (safe to repeat: one delivery per move). */
   sendDelivery: (moveId: string) => void;
+  /** Deliveries in this visit: how many are being created and how many failed. */
+  deliveryCounts: { sending: number; failed: number };
 };
 
 const EMPTY: ApprovalsState = { moves: {}, problems: {} };
@@ -88,6 +90,8 @@ export function ApprovalsProvider({ children }: { children: ReactNode }) {
   // Going out and hands it to a driver, the receiving store under Coming in. Warehouse moves: not tracked yet.
   const [deliveries, setDeliveries] = useState<Record<string, Delivery>>({});
   useEffect(() => setDeliveries({}), [key]);
+  // One request at a time, even for a bulk approve of many moves (chained on a shared queue).
+  const queue = useRef<Promise<void>>(Promise.resolve());
   const send = useCallback((ids: string[]) => {
     if (!isAdmin || !data) return;
     const byId = new Map(data.moves.map((m) => [m.id, m]));
@@ -95,13 +99,15 @@ export function ApprovalsProvider({ children }: { children: ReactNode }) {
     for (const id of ids) {
       if (byId.get(id)?.type !== 'STORE_TO_STORE') continue;
       mark(id, 'sending');
-      fetch('/api/requests/from-move', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ move_id: id }) })
-        .then(async (r) => {
-          if (r.ok) return mark(id, 'sent');
-          const j = (await r.json().catch(() => null)) as { error?: string } | null;
-          mark(id, { error: j?.error ?? 'The delivery could not be created' });
-        })
-        .catch(() => mark(id, { error: "Can't reach Stock Mover. Try again." }));
+      queue.current = queue.current.then(() =>
+        fetch('/api/requests/from-move', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ move_id: id }) })
+          .then(async (r) => {
+            if (r.ok) return mark(id, 'sent');
+            const j = (await r.json().catch(() => null)) as { error?: string; message?: string } | null;
+            mark(id, { error: j?.error ?? j?.message ?? 'The delivery could not be created' });
+          })
+          .catch(() => mark(id, { error: "Can't reach Stock Mover. Try again." })),
+      );
     }
   }, [isAdmin, data]);
 
@@ -144,6 +150,10 @@ export function ApprovalsProvider({ children }: { children: ReactNode }) {
       counts: { approved, skipped, total: moves.length },
       deliveryOf: (id) => deliveries[id],
       sendDelivery: (id) => send([id]),
+      deliveryCounts: {
+        sending: Object.values(deliveries).filter((d) => d === 'sending').length,
+        failed: Object.values(deliveries).filter((d) => typeof d === 'object').length,
+      },
     };
   }, [data, state, setMoves, update, deliveries, send]);
 
