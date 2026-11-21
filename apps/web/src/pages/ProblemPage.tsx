@@ -7,6 +7,7 @@ import { ChecksAndQuestions } from '../features/problem/ChecksAndQuestions';
 import { Evidence } from '../features/problem/Evidence';
 import { FixCard } from '../features/problem/FixCard';
 import { Destinations, Entries } from '../features/problem/Moves';
+import { isStoreProblem } from '../features/problem/status';
 
 function BackLink() {
   return (
@@ -55,7 +56,8 @@ export default function ProblemPage() {
   const moves = problem.move_ids.map((mid) => byId.get(mid)).filter((m): m is NonNullable<typeof m> => !!m);
   const units = moves.reduce((s, m) => s + m.qty, 0);
   const first = moves[0];
-  const subject = [
+  const storeLevel = isStoreProblem(problem);
+  const subject = storeLevel ? [storeLabel(problem.subject.store_id!, data.stores)] : [
     first?.style_name,
     problem.subject.style_id ?? problem.subject.sku_id,
     problem.subject.style_id && first ? inr(first.mrp) : null,
@@ -78,10 +80,10 @@ export default function ProblemPage() {
         </div>
       </section>
 
-      <Evidence problem={problem} moves={moves} />
-      {moves.length > 0 && <Destinations moves={moves} stores={data.stores} units={units} />}
+      <Evidence problem={problem} moves={moves} stores={data.stores} />
+      {moves.length > 0 && <Destinations moves={moves} stores={data.stores} units={units} storeLevel={storeLevel} />}
       {moves.length > 0 && <Entries problemId={problem.id} moves={moves} stores={data.stores} />}
-      <ChecksAndQuestions problem={problem} moves={moves} />
+      <ChecksAndQuestions problem={problem} moves={moves} stores={data.stores} />
     </div>
   );
 }

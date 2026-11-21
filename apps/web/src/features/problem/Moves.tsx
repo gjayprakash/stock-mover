@@ -6,22 +6,31 @@ import { ConfidenceDot } from '../../components/ConfidenceDot';
 import { Section } from '../../components/Section';
 import { useApprovals } from '../../data/approvals';
 import { dateShort, days, num, pieces, storeLabel } from '../../lib/format';
-import { byDestination } from './derive';
+import { byStore } from './derive';
 
 const SHOWN = 6;
 
 /** Section 2: one bar per destination store. */
-export function Destinations({ moves, stores, units }: { moves: Move[]; stores: StoreSummary[]; units: number }) {
-  const rows = byDestination(moves);
+export function Destinations({ moves, stores, units, storeLevel }: { moves: Move[]; stores: StoreSummary[]; units: number; storeLevel?: boolean }) {
+  // A store-level problem has one destination, so show where the pieces come from instead.
+  const rows = byStore(moves, storeLevel ? 'from' : 'to');
   const max = rows[0]?.qty || 1;
   return (
-    <Section n={2} title={`Where the ${pieces(units)} go`} explainer="Stores closest to empty are served first.">
+    <Section
+      n={2}
+      title={storeLevel ? `Where the ${pieces(units)} come from` : `Where the ${pieces(units)} go`}
+      explainer={storeLevel ? 'Each giving store keeps enough for itself.' : 'Stores closest to empty are served first.'}
+    >
       <Card className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-x-10 gap-y-3.5">
         {rows.map((r) => (
-          <div key={r.to} className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_4.5rem] items-center gap-3 text-[15px]">
-            <Link to={`/stores/${r.to}`} className="truncate font-bold text-ink no-underline hover:underline" title={storeLabel(r.to, stores)}>
-              {storeLabel(r.to, stores)}
-            </Link>
+          <div key={r.store} className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_4.5rem] items-center gap-3 text-[15px]">
+            {r.store === 'WH-KOL' ? (
+              <span className="truncate font-bold">{storeLabel(r.store, stores)}</span>
+            ) : (
+              <Link to={`/stores/${r.store}`} className="truncate font-bold text-ink no-underline hover:underline" title={storeLabel(r.store, stores)}>
+                {storeLabel(r.store, stores)}
+              </Link>
+            )}
             <div className="h-3 rounded-md bg-tint">
               <div className="h-3 rounded-md bg-cta" style={{ width: `${(r.qty / max) * 100}%` }} />
             </div>

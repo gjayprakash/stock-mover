@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
-import type { Move, Problem } from '@sm/contract';
+import type { Move, Problem, StoreSummary } from '@sm/contract';
+import { storeLabel } from '../../lib/format';
+import { isStoreProblem } from './status';
 
 const RULES: { key: keyof Move['checks']; text: string }[] = [
   { key: 'capacity', text: 'No store goes over its space limit' },
@@ -9,7 +11,14 @@ const RULES: { key: keyof Move['checks']; text: string }[] = [
   { key: 'donor_cover_30', text: 'A giving store keeps 30 days of stock' },
 ];
 
-function questions(problem: Problem, moves: Move[]): string[] {
+function questions(problem: Problem, moves: Move[], stores: StoreSummary[]): string[] {
+  if (isStoreProblem(problem)) {
+    const id = problem.subject.store_id!;
+    const city = stores.find((s) => s.store_id === id)?.city ?? id;
+    const q = [`Why is ${storeLabel(id, stores)} a problem today?`];
+    if (moves.length) q.push(`Why does ${city} get this first?`, `Which other stores give pieces to ${city}, and why them?`);
+    return q;
+  }
   const subject = problem.subject.style_id ?? problem.subject.sku_id ?? problem.subject.store_id ?? 'this item';
   const q = [`Why is ${subject} a problem today?`];
   if (moves.length) q.push(`Why do these stores get ${subject} first?`);
@@ -19,7 +28,7 @@ function questions(problem: Problem, moves: Move[]): string[] {
 }
 
 /** Green checks card for this problem's entries, plus question chips that open Ask. */
-export function ChecksAndQuestions({ problem, moves }: { problem: Problem; moves: Move[] }) {
+export function ChecksAndQuestions({ problem, moves, stores }: { problem: Problem; moves: Move[]; stores: StoreSummary[] }) {
   const leads = [...new Set(moves.map((m) => m.lead_time_days))].sort((a, b) => a - b);
   const allPass = moves.every((m) => RULES.every((r) => m.checks[r.key]));
   return (
@@ -41,7 +50,7 @@ export function ChecksAndQuestions({ problem, moves }: { problem: Problem; moves
       <div className="flex min-w-0 flex-[1_1_380px] flex-col gap-3.5 rounded-[18px] bg-white p-6 shadow-card md:p-8">
         <h2 className="m-0 font-heading text-2xl font-normal">Questions about this problem?</h2>
         <div className="flex flex-wrap gap-2">
-          {questions(problem, moves).map((q) => (
+          {questions(problem, moves, stores).map((q) => (
             <Link
               key={q}
               to={`/ask?q=${encodeURIComponent(q)}`}

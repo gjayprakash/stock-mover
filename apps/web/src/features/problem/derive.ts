@@ -13,11 +13,11 @@ export function fixTotals(moves: Move[]) {
   };
 }
 
-/** Pieces per destination, biggest first. */
-export function byDestination(moves: Move[]): { to: string; qty: number }[] {
+/** Pieces per destination (or per source with `by: 'from'`), biggest first. */
+export function byStore(moves: Move[], by: 'to' | 'from' = 'to'): { store: string; qty: number }[] {
   const map = new Map<string, number>();
-  for (const m of moves) map.set(m.to, (map.get(m.to) ?? 0) + m.qty);
-  return [...map.entries()].map(([to, qty]) => ({ to, qty })).sort((a, b) => b.qty - a.qty);
+  for (const m of moves) map.set(m[by], (map.get(m[by]) ?? 0) + m.qty);
+  return [...map.entries()].map(([store, qty]) => ({ store, qty })).sort((a, b) => b.qty - a.qty);
 }
 
 /**
@@ -28,7 +28,9 @@ export function stockTiles(moves: Move[]) {
   const atStores = new Map<string, number>();
   const atWarehouse = new Map<string, number>();
   for (const m of moves) {
-    atStores.set(`${m.to}|${m.sku_id}`, m.to_before.on_hand + m.to_before.in_transit);
+    const k = `${m.to}|${m.sku_id}`;
+    // First move per store+SKU holds the stock before any of these moves.
+    if (!atStores.has(k)) atStores.set(k, m.to_before.on_hand + m.to_before.in_transit);
     if (m.from === 'WH-KOL') atWarehouse.set(m.sku_id, Math.max(atWarehouse.get(m.sku_id) ?? 0, m.from_before.on_hand));
   }
   const sum = (x: Map<string, number>) => [...x.values()].reduce((s, v) => s + v, 0);
