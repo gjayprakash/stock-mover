@@ -1,7 +1,7 @@
 import type { Move, MovesFile } from '@sm/contract';
 
 const MAX_CHAT_MOVES = 150;
-const DEFAULT_CHAT_MOVES = 20;
+const DEFAULT_CHAT_MOVES = 8; // full detail only; move_index already lists every move
 
 const problemLines = (m: MovesFile) => m.problems.map(({ tag, title, seen, fix }) => ({ tag, title, seen, fix }));
 
@@ -31,7 +31,16 @@ function completeLists(m: MovesFile) {
   const signoff = m.moves.filter((mv) => mv.needs_signoff);
   const types = [...new Set(m.moves.map((mv) => mv.type))];
   const locations = [...new Set([...m.stores.map((s) => s.store_id), ...m.moves.flatMap((mv) => [mv.from, mv.to])])];
+  // One short row per move (column names given once, style names once per style) so every
+  // "which / list / when" question is answered from all moves, not a top-N slice (#18).
+  const cols = ['id', 'type', 'trigger', 'from', 'to', 'sku', 'pieces', 'value_inr', 'arrives_on', 'needs_signoff'];
   return {
+    move_index: {
+      note: `COMPLETE list of all ${m.moves.length} moves, one row each; columns as in "cols"; sku = style id + size, style names in "style_names"`,
+      cols,
+      rows: m.moves.map((mv) => [mv.id, mv.type, mv.trigger, mv.from, mv.to, mv.sku_id, mv.qty, mv.value_inr, mv.arrives_on, mv.needs_signoff ? 1 : 0]),
+      style_names: Object.fromEntries(m.moves.map((mv) => [mv.style_id, mv.style_name])),
+    },
     signoff_moves: {
       note: `complete list: all ${signoff.length} moves that need sign-off`,
       ...tally(signoff),
@@ -60,20 +69,24 @@ export function chatContext(m: MovesFile, question: string) {
   const storeIds = new Set(
     m.stores.filter((s) => has(s.store_id) || has(s.city)).map((s) => s.store_id),
   );
+  const moveIds = new Set((question.toUpperCase().match(/\bM\d{4}\b/g) ?? []));
   const movesHit = m.moves.filter(
     (mv) =>
+      moveIds.has(mv.id) ||
       storeIds.has(mv.from) || storeIds.has(mv.to) || has(mv.from) || has(mv.to) ||
       has(mv.sku_id) || has(mv.style_id) || has(mv.style_name),
   );
+  // Moves named by id go first so the cap never drops them.
+  movesHit.sort((a, b) => Number(moveIds.has(b.id)) - Number(moveIds.has(a.id)));
   const named = movesHit.length > 0 || storeIds.size > 0;
   const pool = named ? movesHit : [...m.moves].sort((a, b) => b.priority - a.priority);
   const moves = pool.slice(0, named ? MAX_CHAT_MOVES : DEFAULT_CHAT_MOVES).map(compactMove);
   // Label every partial list with its true total, so the model can say "showing N of M".
   const moves_note = named
     ? moves.length < pool.length
-      ? `PARTIAL: showing ${moves.length} of ${pool.length} moves that match the question (${m.moves.length} moves in the run)`
-      : `all ${moves.length} moves that match the question (${m.moves.length} moves in the run)`
-    : `PARTIAL: showing the top ${moves.length} of ${m.moves.length} moves by priority (question named no store, SKU or style)`;
+      ? `full detail for ${moves.length} of ${pool.length} moves that match the question; move_index has all ${m.moves.length}`
+      : `full detail for all ${moves.length} moves that match the question; move_index has all ${m.moves.length}`
+    : `full detail for the top ${moves.length} of ${m.moves.length} moves by priority; move_index has all ${m.moves.length}`;
   const flags = m.flags.filter((f) => storeIds.has(f.store_id) || has(f.store_id) || has(f.sku_id) || has(f.sku_id.split('-').slice(0, 2).join('-')));
   const stores = m.stores.filter((s) => storeIds.has(s.store_id));
   return {
