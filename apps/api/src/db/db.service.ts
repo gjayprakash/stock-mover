@@ -17,6 +17,25 @@ export class DbService implements OnModuleDestroy {
     return (await this.pool.query<T>(sql, params)).rows;
   }
 
+  // Tiny schema bootstrap: CREATE ... IF NOT EXISTS, run once on boot.
+  async migrate() {
+    if (!this.pool) return;
+    await this.query(`
+      create table if not exists runs (
+        run_id text primary key,
+        as_of date not null,
+        started_at timestamptz not null,
+        finished_at timestamptz,
+        status text not null,
+        trigger text not null,
+        moves_json jsonb,
+        history_json jsonb,
+        move_count int not null default 0,
+        violations int not null default 0,
+        error text
+      )`);
+  }
+
   async onModuleDestroy() {
     await this.pool?.end();
   }
