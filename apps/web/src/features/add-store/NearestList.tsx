@@ -8,6 +8,9 @@ const dayWord = (n: number) => `${n} ${n === 1 ? 'day' : 'days'}`;
 /** The rule from apps/api/src/geo/distance.ts, in plain words. */
 export const TRAVEL_RULE = `Travel time = ${dayWord(PACKING_DAYS)} to pack, then a day for every ${num(KM_PER_DAY)} km by road`;
 
+/** The days in this list are not the lead times the engine plans moves with. */
+export const ESTIMATE_NOTE = 'These travel days are estimates from distance. The move list uses the planned lead times.';
+
 /** Rows as the API sends them (closest first): 5 closest stores + the warehouse + the farthest store. */
 export function NearestList({ rows }: { rows: NearestLocation[] }) {
   const longest = Math.max(1, ...rows.map((r) => r.distance_km));

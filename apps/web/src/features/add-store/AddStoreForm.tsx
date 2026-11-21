@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { NearestLocation } from '@sm/contract';
 import { Banner } from '../../components/Banner';
@@ -7,8 +7,9 @@ import { Card } from '../../components/Card';
 import { Section } from '../../components/Section';
 import { dateLong, num, storeLabel } from '../../lib/format';
 import { NEW_STORE_DAYS, WAREHOUSE_ID } from '../../../../api/src/engine/params';
+import { useMovesFile } from '../../data/useMovesFile';
 import { createStore, lookupPin, nearestTo, nextCode, Unavailable, type CreatedStore } from './api';
-import { NearestList, TRAVEL_RULE } from './NearestList';
+import { ESTIMATE_NOTE, NearestList, TRAVEL_RULE } from './NearestList';
 import { TIERS, CAPACITY_MAX, CAPACITY_MIN, toRequest, validate, type Errors, type FormValues } from './validate';
 
 const EMPTY: FormValues = { city: '', store_id: '', tier: '', capacity: '', opened_on: '', pin: '', address: '', lat: '', lng: '' };
@@ -50,12 +51,24 @@ export function AddStoreForm() {
   const [unavailable, setUnavailable] = useState(false);
   const [usedFake, setUsedFake] = useState(false);
   const pinSeq = useRef(0);
+  const pointSeq = useRef(0);
   const topRef = useRef<HTMLDivElement>(null);
 
-  const errors = validate(v);
+  const { data } = useMovesFile();
+  const usedIds = useMemo(
+    () => new Set([WAREHOUSE_ID, ...(data?.stores ?? []).map((s) => s.store_id)]),
+    [data],
+  );
+  /** City value the last PIN lookup filled in, so a new or unknown PIN can replace or clear it. */
+  const autoCity = useRef<string | null>(null);
+
+  const errors = validate(v, usedIds);
   const valid = Object.keys(errors).length === 0;
   const done = created !== null;
-  const errOf = (k: keyof FormValues) => serverErr[k] ?? (touched[k] ? errors[k] : undefined);
+  const codeUsed = usedIds.has(v.store_id.trim().toUpperCase());
+  // "Already used" shows at once, as you type; other errors wait until you leave the field.
+  const errOf = (k: keyof FormValues) =>
+    serverErr[k] ?? (touched[k] || (k === 'store_id' && codeUsed) ? errors[k] : undefined);
 
   const set = (k: keyof FormValues, val: string) => {
     setV((p) => ({ ...p, [k]: val }));
@@ -85,19 +98,38 @@ export function AddStoreForm() {
     }
   }
 
+  /** Drop everything the last PIN or point filled in, so nothing stale is shown. */
+  function clearPlace(keepLatLng: boolean) {
+    setPlace(null);
+    setNearest([]);
+    const auto = autoCity.current;
+    autoCity.current = null;
+    setV((p) => {
+      const next = { ...p };
+      if (!keepLatLng) { next.lat = ''; next.lng = ''; }
+      if (auto !== null && p.city === auto) {
+        next.city = '';
+        if (!codeEdited) next.store_id = '';
+      }
+      return next;
+    });
+    if (auto !== null && v.city === auto && !codeEdited) setSuggested(false);
+  }
+
   async function onPin(pin: string) {
     set('pin', pin);
-    if (!/^\d{6}$/.test(pin)) return;
     const seq = ++pinSeq.current;
+    // A new PIN invalidates the old place, coordinates and any city it filled in.
+    clearPlace(false);
+    if (!/^\d{6}$/.test(pin)) return setLookup('idle');
     setLookup('looking');
     const r = await guard(lookupPin(pin));
-    if (seq !== pinSeq.current || !r) return setLookup('idle');
+    if (seq !== pinSeq.current) return;
+    if (!r) return setLookup('idle');
     if (!r.ok) {
       setLookup('not-found');
       setManual(true);
-      setPlace(null);
-      setNearest([]);
-      setV((p) => ({ ...p, lat: '', lng: '' }));
+      clearPlace(false);
       return;
     }
     const g = r.geo;
@@ -108,15 +140,26 @@ export function AddStoreForm() {
       sub: `PIN ${g.pin} · ${g.lat.toFixed(2)}° N, ${g.lng.toFixed(2)}° E`,
     });
     setNearest(g.nearest);
-    setV((p) => ({ ...p, lat: String(g.lat), lng: String(g.lng), city: p.city.trim() ? p.city : g.city }));
-    if (!v.city.trim()) suggestCode(g.city);
+    const fillCity = !v.city.trim() || v.city === autoCity.current;
+    if (fillCity) autoCity.current = g.city;
+    setV((p) => ({ ...p, lat: String(g.lat), lng: String(g.lng), city: fillCity ? g.city : p.city }));
+    if (fillCity) suggestCode(g.city);
+  }
+
+  /** Typing a coordinate makes the shown place and distances stale until the point is valid and looked up again. */
+  function onLatLng(k: 'lat' | 'lng', val: string) {
+    set(k, val);
+    pointSeq.current++;
+    setPlace(null);
+    setNearest([]);
   }
 
   async function onLatLngBlur(k: 'lat' | 'lng') {
     touch(k);
     if (errors.lat || errors.lng) return;
+    const seq = ++pointSeq.current;
     const r = await guard(nearestTo(Number(v.lat), Number(v.lng)));
-    if (r) {
+    if (r && seq === pointSeq.current) {
       setNearest(r.nearest);
       setPlace({ label: 'Place set by hand', sub: `PIN ${v.pin} · ${Number(v.lat).toFixed(2)}° N, ${Number(v.lng).toFixed(2)}° E` });
     }
@@ -240,10 +283,10 @@ export function AddStoreForm() {
                   </svg>
                   <div className="min-w-0">
                     <div className="text-xl font-bold">
-                      {lookup === 'looking' ? 'Looking up the PIN…' : place?.label ?? 'We could not find this PIN'}
+                      {lookup === 'looking' ? 'Looking up the PIN…' : place?.label ?? (lookup === 'not-found' ? 'We could not find this PIN' : 'Set the place by hand')}
                     </div>
                     <div className="mt-0.5 text-[15px] text-muted">
-                      {place?.sub ?? 'Type the latitude and longitude. You can copy them from a map.'}
+                      {place?.sub ?? 'Type a valid latitude and longitude. You can copy them from a map.'}
                     </div>
                   </div>
                 </div>
@@ -257,16 +300,18 @@ export function AddStoreForm() {
                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 border-t border-line px-5 py-6 md:grid-cols-2 md:px-8">
                   <Field id="lat" label="Latitude" error={errOf('lat')} hint="Degrees north, as shown on a map.">
                     <input id="lat" inputMode="decimal" className={inputCls(!!errOf('lat'))} value={v.lat} disabled={done}
-                      onChange={(e) => set('lat', e.target.value)} onBlur={() => onLatLngBlur('lat')} />
+                      onChange={(e) => onLatLng('lat', e.target.value)} onBlur={() => onLatLngBlur('lat')} />
                   </Field>
                   <Field id="lng" label="Longitude" error={errOf('lng')} hint="Degrees east, as shown on a map.">
                     <input id="lng" inputMode="decimal" className={inputCls(!!errOf('lng'))} value={v.lng} disabled={done}
-                      onChange={(e) => set('lng', e.target.value)} onBlur={() => onLatLngBlur('lng')} />
+                      onChange={(e) => onLatLng('lng', e.target.value)} onBlur={() => onLatLngBlur('lng')} />
                   </Field>
                 </div>
               )}
               {nearest.length > 0 && <NearestList rows={nearest} />}
-              <div className="border-t border-line px-5 py-4 text-[15px] text-muted md:px-8">{TRAVEL_RULE}.</div>
+              <div className="border-t border-line px-5 py-4 text-[15px] text-muted md:px-8">
+                {TRAVEL_RULE}.{nearest.length > 0 && <span className="block mt-1">{ESTIMATE_NOTE}</span>}
+              </div>
             </>
           )}
         </Card>

@@ -25,10 +25,12 @@ export type FormValues = {
 
 export type Errors = Partial<Record<keyof FormValues, string>>;
 
-export function validate(v: FormValues): Errors {
+/** `usedIds`: store ids already known on the client (today's list + WH-KOL). The server check stays the final word. */
+export function validate(v: FormValues, usedIds?: ReadonlySet<string>): Errors {
   const e: Errors = {};
   const id = v.store_id.trim().toUpperCase();
   if (!CODE.test(id)) e.store_id = 'Store code must look like ABC-01';
+  else if (usedIds?.has(id)) e.store_id = 'This code is already used';
   if (!v.city.trim()) e.city = 'City is required';
   if (!TIERS.some((t) => t.value === v.tier)) e.tier = 'Store type must be S++, S+, A or B';
   const cap = Number(v.capacity);
