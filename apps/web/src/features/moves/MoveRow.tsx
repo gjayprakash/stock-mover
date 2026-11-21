@@ -4,6 +4,9 @@ import { Chip, ConfidenceDot, KIND_LABEL, dateShort, days, inr } from './deps';
 import type { ApprovalStatus } from './filters';
 import { RowDistance } from './Distance';
 
+/** Pinned cell below 1024 px; bg-inherit takes the row's white / hover / open tint. */
+export const PIN = 'max-lg:sticky max-lg:z-[1] max-lg:bg-inherit';
+
 const KIND_COLOR: Record<Move['type'], string> = {
   WH_TO_STORE: 'text-ok',
   STORE_TO_STORE: 'text-[#17486A]',
@@ -41,14 +44,21 @@ export function MoveRow({ move: m, status, selected, open, onSelect, onToggle }:
       }}
       aria-current={open ? 'true' : undefined}
       className={`cursor-pointer scroll-mt-20 scroll-mb-24 border-t border-[#F3E8D2] align-top outline-none focus-visible:ring-2 focus-visible:ring-cta focus-visible:ring-inset md:scroll-mt-6 ${
-        open ? 'bg-tint' : 'hover:bg-[#FFFDF8]'
+        open ? 'bg-tint' : 'bg-white hover:bg-[#FFFDF8]'
       } ${status === 'skipped' && !open ? 'opacity-50' : ''}`}
     >
-      <td className={`py-5 pr-2 pl-5 xl:pl-7 ${open ? 'shadow-[inset_5px_0_0_var(--color-cta)]' : ''}`} onClick={(e) => e.stopPropagation()}>
+      {/* Under 1024 px the table scrolls sideways: the checkbox and product cells stay pinned (bg-inherit keeps the row's tint). */}
+      <td className={`${PIN} max-lg:left-0 max-lg:w-12 max-lg:max-w-12 max-lg:min-w-12 py-5 pr-2 pl-5 xl:pl-7 ${open ? 'shadow-[inset_5px_0_0_var(--color-cta)]' : ''}`} onClick={(e) => e.stopPropagation()}>
         {status === 'approved' ? (
-          <Chip tone="ok">Approved</Chip>
+          <>
+            <span className="max-lg:hidden"><Chip tone="ok">Approved</Chip></span>
+            <span className="text-lg font-bold text-ok lg:hidden" title="Approved" aria-label="Approved">✓</span>
+          </>
         ) : status === 'skipped' ? (
-          <span className="text-[13px] font-semibold text-[#5E4E42]">Skipped</span>
+          <>
+            <span className="text-[13px] font-semibold text-[#5E4E42] max-lg:hidden">Skipped</span>
+            <span className="text-lg font-bold text-muted lg:hidden" title="Skipped" aria-label="Skipped">–</span>
+          </>
         ) : (
           <input
             type="checkbox"
@@ -59,7 +69,7 @@ export function MoveRow({ move: m, status, selected, open, onSelect, onToggle }:
           />
         )}
       </td>
-      <td className={`${td} min-w-[120px] break-words xl:min-w-[160px]`}>
+      <td className={`${td} ${PIN} max-lg:left-12 max-lg:shadow-[6px_0_8px_-6px_rgba(81,29,0,0.22)] min-w-[120px] break-words xl:min-w-[160px]`}>
         <div className="font-bold">{m.style_name}, {m.size}</div>
         <div className="mt-0.5 text-sm text-[#5E4E42]"><span className="whitespace-nowrap">{m.sku_id}</span> · <span className="whitespace-nowrap">{inr(m.value_inr)}</span></div>
         {m.needs_signoff && <div className="mt-2"><Chip tone="orange">Needs sign-off</Chip></div>}
