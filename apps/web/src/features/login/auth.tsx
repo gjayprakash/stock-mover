@@ -22,6 +22,21 @@ export function safeNext(next: string | null): string {
 const loginUrl = (next: string) => (next === '/' || next.startsWith('/login') ? '/login' : `/login?next=${encodeURIComponent(next)}`);
 const PUBLIC_API = ['/api/me', '/api/auth/', '/api/run'];
 
+/** Shown while GET /api/me is in flight, so a page load never flashes blank. */
+function Loading() {
+  return (
+    <div role="status" aria-label="Loading Stock Mover" className="flex min-h-screen items-center justify-center bg-page font-body text-ink">
+      <div className="flex animate-pulse items-center gap-2.5">
+        <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+          <rect x="1" y="1" width="32" height="32" rx="8" fill="#511D00" />
+          <path d="M9 13h13m0 0-4-4m4 4-4 4M25 21H12m0 0 4-4m-4 4 4 4" fill="none" stroke="#F4A27C" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <span className="font-heading text-[22px]">Stock Mover</span>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Asks GET /api/me once. Sign-in off: renders children untouched. Signed out: only /login renders,
  * so no protected call is made before sign-in. Any later 401 from /api/* sends the user back to /login.
@@ -80,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const api: AuthApi = { status, email, signedIn, signOut };
   let body: ReactNode;
-  if (status === 'loading') body = null;
+  if (status === 'loading') body = <Loading />;
   else if (status === 'off') body = children;
   else if (pathname === '/login') body = status === 'in' ? <Navigate to={safeNext(params.get('next'))} replace /> : <LoginPage />;
   else body = status === 'in' ? children : <Navigate to={loginUrl(pathname + search)} replace />;

@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, HttpException, Post, Req, Res, UnauthorizedException } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { AuthService, COOKIE, SESSION_MS } from './auth.service';
+import { AuthService, COOKIE, MAX_EMAIL, MAX_PASSWORD, SESSION_MS } from './auth.service';
 import { clientIp, isHttps, sessionCookie } from './http';
 
 const WRONG = 'Email or password is wrong';
@@ -17,7 +17,9 @@ export class AuthController {
     if (this.auth.limited(ip)) throw new HttpException({ error: 'Too many tries, wait a minute' }, 429);
     const email = typeof body?.email === 'string' ? body.email : '';
     const password = typeof body?.password === 'string' ? body.password : '';
-    const who = await this.auth.check(email, password);
+    // Over-long input is answered as wrong details without spending a bcrypt compare on it.
+    const tooLong = email.length > MAX_EMAIL || password.length > MAX_PASSWORD;
+    const who = tooLong ? null : await this.auth.check(email, password);
     if (!who) {
       this.auth.recordFail(ip);
       throw new UnauthorizedException({ error: WRONG });
