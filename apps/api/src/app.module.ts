@@ -3,6 +3,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { DbModule } from './db/db.module';
 import { HealthController } from './health.controller';
+import { RunsModule } from './runs/runs.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { HealthController } from './health.controller';
       exclude: ['/api/{*path}'],
     }),
     DbModule,
+    RunsModule,
   ],
   controllers: [HealthController],
 })

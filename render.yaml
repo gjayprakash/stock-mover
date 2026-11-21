@@ -13,3 +13,5 @@ services:
         value: "22"
       - key: DATABASE_URL
         sync: false
+      - key: CRON_SECRET
+        sync: false
