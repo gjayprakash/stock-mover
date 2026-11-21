@@ -5,6 +5,7 @@ import { DbModule } from './db/db.module';
 import { HealthController } from './health.controller';
 import { RunsModule } from './runs/runs.module';
 import { AiModule } from './ai/ai.module';
+import { GeoModule } from './geo/geo.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { AiModule } from './ai/ai.module';
     DbModule,
     RunsModule,
     AiModule,
+    GeoModule,
   ],
   controllers: [HealthController],
 })

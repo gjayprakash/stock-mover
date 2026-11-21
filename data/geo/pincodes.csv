@@ -1,0 +1,71 @@
+pin,place,district,state,lat,lng
+226001,Lucknow GPO,Lucknow,Uttar Pradesh,26.8467,80.9462
+208001,Kanpur Head Office,Kanpur Nagar,Uttar Pradesh,26.4499,80.3319
+282001,Agra,Agra,Uttar Pradesh,27.1767,78.0081
+221001,Varanasi,Varanasi,Uttar Pradesh,25.3176,82.9739
+211001,Prayagraj,Prayagraj,Uttar Pradesh,25.4358,81.8463
+201001,Ghaziabad,Ghaziabad,Uttar Pradesh,28.6692,77.4538
+201301,Noida,Gautam Buddha Nagar,Uttar Pradesh,28.5355,77.3910
+250001,Meerut,Meerut,Uttar Pradesh,28.9845,77.7064
+243001,Bareilly,Bareilly,Uttar Pradesh,28.3670,79.4304
+202001,Aligarh,Aligarh,Uttar Pradesh,27.8974,78.0880
+244001,Moradabad,Moradabad,Uttar Pradesh,28.8386,78.7733
+273001,Gorakhpur,Gorakhpur,Uttar Pradesh,26.7606,83.3732
+284001,Jhansi,Jhansi,Uttar Pradesh,25.4484,78.5685
+281001,Mathura,Mathura,Uttar Pradesh,27.4924,77.6737
+224001,Ayodhya,Ayodhya,Uttar Pradesh,26.7730,82.1458
+247001,Saharanpur,Saharanpur,Uttar Pradesh,29.9680,77.5552
+251001,Muzaffarnagar,Muzaffarnagar,Uttar Pradesh,29.4727,77.7085
+242001,Shahjahanpur,Shahjahanpur,Uttar Pradesh,27.8815,79.9090
+261001,Sitapur,Sitapur,Uttar Pradesh,27.5680,80.6790
+229001,Rae Bareli,Rae Bareli,Uttar Pradesh,26.2309,81.2330
+225001,Barabanki,Barabanki,Uttar Pradesh,26.9268,81.1834
+228001,Sultanpur,Sultanpur,Uttar Pradesh,26.2648,82.0727
+276001,Azamgarh,Azamgarh,Uttar Pradesh,26.0739,83.1859
+231001,Mirzapur,Mirzapur,Uttar Pradesh,25.1460,82.5690
+222001,Jaunpur,Jaunpur,Uttar Pradesh,25.7464,82.6837
+233001,Ghazipur,Ghazipur,Uttar Pradesh,25.5878,83.5783
+277001,Ballia,Ballia,Uttar Pradesh,25.7600,84.1470
+274001,Deoria,Deoria,Uttar Pradesh,26.5024,83.7791
+272001,Basti,Basti,Uttar Pradesh,26.8140,82.7630
+271001,Gonda,Gonda,Uttar Pradesh,27.1339,81.9620
+206001,Etawah,Etawah,Uttar Pradesh,26.7855,79.0150
+800001,Patna GPO,Patna,Bihar,25.5941,85.1376
+823001,Gaya,Gaya,Bihar,24.7914,85.0002
+842001,Muzaffarpur,Muzaffarpur,Bihar,26.1209,85.3647
+812001,Bhagalpur,Bhagalpur,Bihar,25.2425,86.9842
+846004,Darbhanga,Darbhanga,Bihar,26.1542,85.8918
+854301,Purnia,Purnia,Bihar,25.7771,87.4753
+851101,Begusarai,Begusarai,Bihar,25.4182,86.1272
+802301,Arrah,Bhojpur,Bihar,25.5560,84.6630
+841301,Chapra,Saran,Bihar,25.7796,84.7499
+845401,Motihari,East Champaran,Bihar,26.6470,84.9160
+848101,Samastipur,Samastipur,Bihar,25.8630,85.7810
+844101,Hajipur,Vaishali,Bihar,25.6858,85.2146
+811201,Munger,Munger,Bihar,25.3750,86.4730
+854105,Katihar,Katihar,Bihar,25.5390,87.5710
+852201,Saharsa,Saharsa,Bihar,25.8800,86.6000
+803101,Bihar Sharif,Nalanda,Bihar,25.1970,85.5230
+821115,Sasaram,Rohtas,Bihar,24.9520,84.0310
+824101,Aurangabad,Aurangabad,Bihar,24.7520,84.3740
+802101,Buxar,Buxar,Bihar,25.5650,83.9780
+560001,Bengaluru GPO,Bengaluru Urban,Karnataka,12.9716,77.5946
+570001,Mysuru,Mysuru,Karnataka,12.2958,76.6394
+575001,Mangaluru,Dakshina Kannada,Karnataka,12.9141,74.8560
+580020,Hubballi,Dharwad,Karnataka,15.3647,75.1240
+580001,Dharwad,Dharwad,Karnataka,15.4589,75.0078
+590001,Belagavi,Belagavi,Karnataka,15.8497,74.4977
+585101,Kalaburagi,Kalaburagi,Karnataka,17.3297,76.8343
+583101,Ballari,Ballari,Karnataka,15.1394,76.9214
+586101,Vijayapura,Vijayapura,Karnataka,16.8302,75.7100
+577201,Shivamogga,Shivamogga,Karnataka,13.9299,75.5681
+572101,Tumakuru,Tumakuru,Karnataka,13.3409,77.1010
+577001,Davanagere,Davanagere,Karnataka,14.4644,75.9218
+576101,Udupi,Udupi,Karnataka,13.3409,74.7421
+573201,Hassan,Hassan,Karnataka,13.0072,76.0962
+571401,Mandya,Mandya,Karnataka,12.5218,76.8951
+577501,Chitradurga,Chitradurga,Karnataka,14.2251,76.3980
+563101,Kolar,Kolar,Karnataka,13.1367,78.1292
+584101,Raichur,Raichur,Karnataka,16.2076,77.3463
+585401,Bidar,Bidar,Karnataka,17.9104,77.5199
+700001,Kolkata GPO,Kolkata,West Bengal,22.5726,88.3639
