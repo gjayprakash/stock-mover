@@ -6,6 +6,7 @@ import { parse } from 'csv-parse/sync';
 import ExcelJS from 'exceljs';
 import type { StockCheckResult, StockCommitResult } from '@sm/contract';
 import { DbService } from '../db/db.service';
+import { AS_OF } from '../engine/params';
 import type { ExtraItem, Receipt } from '../engine/position';
 import { StoresService } from '../stores/stores.service';
 import {
@@ -170,7 +171,10 @@ export class StockService implements OnModuleInit {
     const added = this.stores.extraStores().map((s) => ({ store_id: s.store_id, capacity: s.stock_capacity_units }));
     const locations: CheckContext['locations'] = new Map([['WH-KOL', { capacity: null, stock_now: 0 }]]);
     for (const s of [...csvStores, ...added]) locations.set(s.store_id, { capacity: s.capacity, stock_now: stockNow.get(s.store_id) ?? 0 });
-    return { locations, items: new Map([...this.catalog, ...this.added]), today: new Date().toISOString().slice(0, 10) };
+    // asOf: the stock count's date, the same constant position.ts adds receipts on top of.
+    // today: the server's real date in India (UTC+5:30), so a receipt dated today is not refused before 05:30 IST.
+    const today = new Date(Date.now() + 330 * 60_000).toISOString().slice(0, 10);
+    return { locations, items: new Map([...this.catalog, ...this.added]), asOf: AS_OF, today };
   }
 }
 
