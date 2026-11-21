@@ -1,5 +1,5 @@
 // Single seam between this feature and the web shell (#3).
-export { inr, pieces, days, dateShort, KIND_LABEL } from '../../lib/format';
+export { inr, pieces, days, dateShort, KIND_LABEL, storeLabel } from '../../lib/format';
 export { useHistory } from '../../data/useHistory';
 export { Card } from '../../components/Card';
 export { Button } from '../../components/Button';

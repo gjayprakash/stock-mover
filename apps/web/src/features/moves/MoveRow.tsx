@@ -22,20 +22,29 @@ type Props = {
   move: Move;
   status: ApprovalStatus;
   selected: boolean;
-  expanded: boolean;
+  /** This row's detail panel is open. */
+  open: boolean;
   onSelect: (on: boolean) => void;
   onToggle: () => void;
 };
 
-export function MoveRow({ move: m, status, selected, expanded, onSelect, onToggle }: Props) {
+export function MoveRow({ move: m, status, selected, open, onSelect, onToggle }: Props) {
   const td = 'px-2.5 py-5 xl:px-3';
   return (
     <tr
+      id={`row-${m.id}`}
+      tabIndex={0}
       onClick={onToggle}
-      aria-expanded={expanded}
-      className={`cursor-pointer scroll-mt-20 border-t border-[#F3E8D2] align-top md:scroll-mt-6 hover:bg-[#FFFDF8] ${status === 'skipped' ? 'opacity-50' : ''} ${expanded ? 'bg-[#FFFDF8]' : ''}`}
+      onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return;
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); }
+      }}
+      aria-current={open ? 'true' : undefined}
+      className={`cursor-pointer scroll-mt-20 scroll-mb-24 border-t border-[#F3E8D2] align-top outline-none focus-visible:ring-2 focus-visible:ring-cta focus-visible:ring-inset md:scroll-mt-6 ${
+        open ? 'bg-tint' : 'hover:bg-[#FFFDF8]'
+      } ${status === 'skipped' && !open ? 'opacity-50' : ''}`}
     >
-      <td className="py-5 pr-2 pl-5 xl:pl-7" onClick={(e) => e.stopPropagation()}>
+      <td className={`py-5 pr-2 pl-5 xl:pl-7 ${open ? 'shadow-[inset_5px_0_0_var(--color-cta)]' : ''}`} onClick={(e) => e.stopPropagation()}>
         {status === 'approved' ? (
           <Chip tone="ok">Approved</Chip>
         ) : status === 'skipped' ? (
