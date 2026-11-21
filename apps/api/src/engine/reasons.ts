@@ -90,14 +90,22 @@ export function storeToStore(p: {
   return `${p.from} holds ${days(p.fromCover)} cover, ${p.to} has ${days(p.toCover)} (${days(p.days)} away); moving ${p.qty} ${leaves}.`;
 }
 
-export function ageing(p: { from: string; age: number; sold: number; instock: number; to: string; toV: number; toBasis: Basis; qty: number; days: number }) {
-  return `In ${p.from} for ${p.age} days, ${p.sold} sold in ${p.instock} days on the shelf; at ${p.to} (${days(p.days)} away) ${sells(p.toV, p.toBasis)}. Move ${p.qty}.`;
+/** With no own sales, a non-zero rate (and the cover built on it) comes from similar stores, held down by the empty days here. */
+const noSalesRate = (v: number, onHand: number, cover: number | null) =>
+  cover == null ? '' : `; its rate of ${rate(v)}/day comes from similar stores' sales, held down by none here: ${onHand} on hand = ${days(cover)} cover`;
+
+export function ageing(p: {
+  from: string; age: number; sold: number; instock: number; fromV: number; fromOnHand: number; fromCover: number | null;
+  to: string; toV: number; toBasis: Basis; qty: number; days: number;
+}) {
+  const src = p.sold === 0 ? noSalesRate(p.fromV, p.fromOnHand, p.fromCover) : '';
+  return `In ${p.from} for ${p.age} days, ${p.sold} sold in ${p.instock} days on the shelf${src}; at ${p.to} (${days(p.days)} away) ${sells(p.toV, p.toBasis)}. Move ${p.qty}.`;
 }
 
 export function pullBackAgeing(p: { qty: number; age: number | null; v: number; basis: Basis; sold: number; instock: number; onHand: number; cover: number | null }) {
   const sold = `${p.sold > 0 ? p.sold : 'None'} sold here in ${p.instock} days on the shelf`;
   const cover = p.cover == null ? ''
-    : p.sold === 0 ? `, so the ${rate(p.v)}/day rate is an estimate from other stores: ${p.onHand} on hand = ${days(p.cover)} cover`
+    : p.sold === 0 ? noSalesRate(p.v, p.onHand, p.cover)
     : `${p.basis === 'own' ? ` (${rate(p.v)}/day)` : ` (about ${rate(p.v)}/day with similar stores)`}: ${p.onHand} on hand = ${days(p.cover)} cover`;
   return `${sold}${cover}. No store needs more; ${p.qty} pieces, ${p.age ?? '?'} days old, back to WH to free display space.`;
 }

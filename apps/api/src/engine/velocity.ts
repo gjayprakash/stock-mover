@@ -113,7 +113,8 @@ export function computeVelocity(c: CleanData, pairs: Iterable<string>): Map<stri
     const velocity = (u + K * prior) / (d + K);
     out.set(k, {
       units_12w: u, instock_days: d, prior, velocity,
-      basis: d >= BASIS_OWN_DAYS ? 'own' : d >= BASIS_BLENDED_DAYS ? 'blended' : 'peer',
+      // 'own' needs own sales: with none in the window the rate is the peer prior shrunk by the empty days here.
+      basis: d >= BASIS_OWN_DAYS && u > 0 ? 'own' : d >= BASIS_BLENDED_DAYS ? 'blended' : 'peer',
       weekly_units: wu, weekly_days: wd, weekly_closing: closing.get(k) ?? new Array(nW).fill(0),
     });
   }
