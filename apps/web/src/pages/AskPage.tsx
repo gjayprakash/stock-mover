@@ -6,16 +6,18 @@ import { Banner } from '../components/Banner';
 import { useMovesFile } from '../data/useMovesFile';
 import { num } from '../lib/format';
 import { askChat, MAX_QUESTION, type ChatFinal, type Turn } from '../features/ask/chatClient';
+import { AboutLine, MAX_TAGS, TagChip, TagPicker, tagSuggestions, toChatTags, type Tag } from '../features/ask/tags';
 import { AnswerText, StatusLine, TypingDots, suggestions } from '../features/ask/parts';
 
 type Msg =
-  | { id: number; me: true; text: string }
-  | { id: number; me: false; text: string; pending: boolean; final: ChatFinal | null };
+  | { id: number; me: true; text: string; tags: Tag[] }
+  | { id: number; me: false; text: string; pending: boolean; final: ChatFinal | null; sentTags: Tag[] };
 
 // Conversation lives in memory for this browser session only (survives moving between screens).
 let saved: Msg[] = [];
 let nextId = 1;
 let savedPractice = false;
+let savedTags: Tag[] = [];
 
 export default function AskPage() {
   const { data, isSample } = useMovesFile();
@@ -24,6 +26,17 @@ export default function AskPage() {
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [practice, setPractice] = useState(savedPractice);
+  // Tagged stores/products stay for following questions until removed.
+  const [tags, setTags] = useState<Tag[]>(savedTags);
+  const [picker, setPicker] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { savedTags = tags; }, [tags]);
+  const addTag = (t: Tag) => {
+    setTags((cur) => (cur.length >= MAX_TAGS || cur.some((x) => x.kind === t.kind && x.id === t.id) ? cur : [...cur, t]));
+    setPicker(false);
+    inputRef.current?.focus();
+  };
+  const closePicker = () => { setPicker(false); inputRef.current?.focus(); };
   const [params, setParams] = useSearchParams();
   const sentQ = useRef<string | null>(null);
   // Only the message list scrolls. Follow the newest message unless the user has scrolled up to read.
@@ -40,7 +53,7 @@ export default function AskPage() {
     if (el && follow.current) el.scrollTop = el.scrollHeight;
   }, [msgs]);
 
-  const send = async (raw: string) => {
+  const send = async (raw: string, withTags: Tag[] = tags) => {
     const question = raw.trim().slice(0, MAX_QUESTION);
     if (!question || busy) return;
     const history: Turn[] = msgs
@@ -51,10 +64,10 @@ export default function AskPage() {
     setInput('');
     setBusy(true);
     follow.current = true;
-    setMsgs((cur) => [...cur, { id: aiId - 1, me: true, text: question }, { id: aiId, me: false, text: '', pending: true, final: null }]);
+    setMsgs((cur) => [...cur, { id: aiId - 1, me: true, text: question, tags: withTags }, { id: aiId, me: false, text: '', pending: true, final: null, sentTags: withTags }]);
     const patch = (p: Partial<Extract<Msg, { me: false }>>) =>
       setMsgs((cur) => cur.map((m) => (m.id === aiId && !m.me ? { ...m, ...p } : m)));
-    const res = await askChat(question, history, (text) => patch({ text }), data);
+    const res = await askChat(question, history, (text) => patch({ text }), data, toChatTags(withTags));
     patch({ text: res.text, final: res.final, pending: false });
     if (res.practice) { savedPractice = true; setPractice(true); }
     setBusy(false);
@@ -71,7 +84,7 @@ export default function AskPage() {
   }, [q, data]);
 
   const onSubmit = (e: FormEvent) => { e.preventDefault(); void send(input); };
-  const tries = suggestions(data);
+  const tries = tags.length ? tagSuggestions(data, tags) : suggestions(data);
 
   const canSee = (
     <div className="rounded-2xl bg-ok-bg p-5 text-[15px] leading-relaxed text-[#123D2E] lg:p-6">
@@ -114,6 +127,13 @@ export default function AskPage() {
               {msgs.map((m) =>
                 m.me ? (
                   <div key={m.id} className="ml-auto max-w-[85%] rounded-2xl rounded-br-sm bg-brown px-[18px] py-3.5 text-base leading-normal text-page md:max-w-[78%]">
+                    {m.tags.length > 0 && (
+                      <div className="mb-1.5 flex flex-wrap gap-1.5">
+                        {m.tags.map((t) => (
+                          <span key={`${t.kind}-${t.id}`} className="rounded-full bg-page/15 px-2.5 py-0.5 text-[13px] font-semibold">About: {t.label}</span>
+                        ))}
+                      </div>
+                    )}
                     {m.text}
                   </div>
                 ) : (
@@ -122,6 +142,8 @@ export default function AskPage() {
                       {m.pending && !m.text ? <TypingDots /> : <AnswerText text={m.text} m={data} />}
                     </div>
                     {!m.pending && <StatusLine final={m.final} />}
+                    {!m.pending && <AboutLine about={m.final?.about} sent={m.sentTags} m={data} />}
+                    {!m.pending && <NextQuestions m={m} fallback={suggestions(data)} busy={busy} onAsk={(t) => void send(t)} />}
                   </div>
                 ),
               )}
@@ -139,13 +161,37 @@ export default function AskPage() {
               ))}
             </div>
           )}
-          <form onSubmit={onSubmit} className="flex shrink-0 items-end gap-3 border-t border-line px-5 py-4 md:px-8 md:py-5">
+          <form onSubmit={onSubmit} className="relative flex shrink-0 flex-wrap items-end gap-3 border-t border-line px-5 py-4 md:px-8 md:py-5">
+            {picker && (
+              <div className="absolute inset-x-3 bottom-full md:inset-x-8">
+                <TagPicker m={data} taken={tags} onPick={addTag} onClose={closePicker} />
+              </div>
+            )}
+            {tags.length > 0 && (
+              <div className="flex w-full flex-wrap gap-2" aria-label="Tagged">
+                {tags.map((t) => (
+                  <TagChip key={`${t.kind}-${t.id}`} tag={t} onRemove={() => setTags((cur) => cur.filter((x) => x !== t))} />
+                ))}
+              </div>
+            )}
             <div className="flex min-w-0 flex-1 flex-col gap-1.5">
               <label htmlFor="ask-input" className="text-sm font-semibold max-md:sr-only">Your question</label>
               <input id="ask-input" type="text" value={input} maxLength={MAX_QUESTION} disabled={busy}
-                onChange={(e) => setInput(e.target.value)} placeholder="Type a question about today's list"
+                ref={inputRef}
+                onChange={(e) => {
+                  // Typing "@" opens the picker (checked on the value, since phone keyboards do not report the key).
+                  const v = e.target.value;
+                  if (v.length === input.length + 1 && v.endsWith('@') && tags.length < MAX_TAGS) { setInput(v.slice(0, -1)); setPicker(true); }
+                  else setInput(v);
+                }}
+                placeholder="Type a question, or @ to tag a store or product"
                 className="h-14 w-full min-w-0 rounded-xl border-[1.5px] border-[#D9C49C] bg-[#FFFDF8] px-4 text-[17px] text-ink disabled:opacity-60 md:px-[18px]" />
             </div>
+            <Button type="button" variant="outline" disabled={busy || tags.length >= MAX_TAGS} onClick={() => setPicker((o) => !o)}
+              aria-expanded={picker} aria-label="Tag a store or product" title={tags.length >= MAX_TAGS ? `At most ${MAX_TAGS} tags` : undefined}
+              className="h-14 shrink-0 px-4">
+              <span aria-hidden="true" className="text-xl xl:hidden">@</span><span aria-hidden="true" className="max-xl:hidden">Tag a store or product</span>
+            </Button>
             <Button type="submit" disabled={busy || !input.trim()} className="h-14 shrink-0 px-5 md:px-7">{busy ? 'Asking…' : 'Ask'}</Button>
           </form>
         </Card>
@@ -165,6 +211,27 @@ export default function AskPage() {
           )}
           <div className="shrink-0">{canSee}</div>
         </aside>
+      </div>
+    </div>
+  );
+}
+
+/** Questions under one answer: the server's `suggestions`, or (older server, dead-end reply) three from the general builder. */
+function NextQuestions({ m, fallback, busy, onAsk }: { m: Extract<Msg, { me: false }>; fallback: string[]; busy: boolean; onAsk: (q: string) => void }) {
+  const server = m.final?.suggestions ?? [];
+  const deadEnd = !m.final?.suggestions && m.text.trim().startsWith("That is not in today's data");
+  const list = server.length ? server.slice(0, 4) : deadEnd ? fallback.slice(0, 3) : [];
+  if (!list.length) return null;
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="text-[13px] font-semibold text-muted">Try asking</div>
+      <div className="flex flex-wrap gap-2">
+        {list.map((t) => (
+          <button key={t} type="button" onClick={() => onAsk(t)} disabled={busy}
+            className="rounded-full bg-tint px-3.5 py-1.5 text-left text-sm font-medium text-brown hover:bg-cta-bg disabled:opacity-50">
+            {t}
+          </button>
+        ))}
       </div>
     </div>
   );
