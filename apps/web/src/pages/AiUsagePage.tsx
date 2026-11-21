@@ -7,7 +7,7 @@ import { Skeleton } from '../components/Skeleton';
 import { useMovesFile } from '../data/useMovesFile';
 import { num, timeShort } from '../lib/format';
 import { CallsTable, HELD_LABEL } from '../features/ai-usage/CallsTable';
-import { NUMBER_RE, sampleCalls, totalsOf, type AiLog } from '../features/ai-usage/sample';
+import { activityOf, LOG_LIMIT, NUMBER_RE, sampleCalls } from '../features/ai-usage/sample';
 import { useAiLog } from '../features/ai-usage/useAiLog';
 
 const STEPS = [
@@ -58,16 +58,17 @@ export default function AiUsagePage() {
   // Moves file is live but the log call failed -> hide activity and table, keep the explanation.
   const hideActivity = error && !movesIsSample;
   const useSample = !hideActivity && !loading && (!liveLog || liveLog.calls.length === 0);
-  let log: AiLog | null = liveLog;
-  if (useSample && data) {
-    const calls = sampleCalls(data);
-    log = { calls, totals: totalsOf(calls) };
-  }
+  // Tiles, example and table all come from one list of calls, never from the backend totals
+  // (those count failed calls as briefings and answers).
+  const calls: AiCall[] | null = useSample && data ? sampleCalls(data) : liveLog?.calls ?? null;
 
   const blockedTotal = data ? Object.values(data.blocked).reduce((a, b) => a + b, 0) : 0;
-  const t = log?.totals;
-  const firstBrief = log?.calls.filter((c) => c.job === 'BRIEF').at(-1);
-  const example: AiCall | undefined = log?.calls.find((c) => c.job === 'ASK' && c.result === 'SHOWN');
+  const t = calls ? activityOf(calls) : null;
+  const capped = (calls?.length ?? 0) >= LOG_LIMIT;
+  // Newest shown answer that actually has numbers to highlight; the briefing first (Ask answers can be
+  // numbered lists whose "1." "2." would light up as numbers), else any job.
+  const withNumbers = calls?.filter((c) => c.result === 'SHOWN' && c.numbers_total > 0) ?? [];
+  const example = withNumbers.find((c) => c.job === 'BRIEF') ?? withNumbers[0];
 
   return (
     <div className="flex flex-col gap-10 md:gap-12">
@@ -126,7 +127,7 @@ export default function AiUsagePage() {
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
               <Tile
                 big={num(t.briefs)}
-                label={`morning ${t.briefs === 1 ? 'briefing' : 'briefings'} written${firstBrief ? `, ${timeShort(firstBrief.at)}` : ''}`}
+                label={`morning ${t.briefs === 1 ? 'briefing' : 'briefings'} written${t.latest_brief_at ? `, latest ${timeShort(t.latest_brief_at)}` : ''}`}
               />
               <Tile big={num(t.questions)} label="questions answered in Ask" />
               <Tile
@@ -140,6 +141,17 @@ export default function AiUsagePage() {
                 label={`${t.held_back === 1 ? 'answer' : 'answers'} held back${t.top_held_reason ? ` (${HELD_LABEL[t.top_held_reason]})` : ''}`}
               />
             </div>
+          )}
+          {t && !loading && (
+            <p className="m-0 text-[15px] text-muted">
+              {t.failed > 0 && (
+                <span className="font-semibold text-danger">
+                  {num(t.failed)} {t.failed === 1 ? 'call' : 'calls'} failed (AI service error, nothing shown).{' '}
+                </span>
+              )}
+              Counted from {capped ? `the last ${num(calls!.length)}` : `all ${num(calls!.length)}`} AI calls for this
+              run. Failed calls are not counted as briefings or answers.
+            </p>
           )}
         </Section>
       )}
@@ -159,7 +171,9 @@ export default function AiUsagePage() {
         {example && (
           <Card className="flex flex-col gap-3.5">
             <div className="text-sm text-muted">{useSample ? 'Example (sample)' : 'Example from today'}</div>
-            <div className="text-[17px] font-bold">{example.input_summary}</div>
+            <div className="text-[17px] font-bold">
+              {example.job === 'BRIEF' ? 'Morning briefing' : example.input_summary}
+            </div>
             <Highlighted text={example.output} />
             <div className="text-[15px] font-semibold text-ok">
               {example.numbers_found} of {example.numbers_total} numbers found in today's list. Shown to you.
@@ -174,7 +188,7 @@ export default function AiUsagePage() {
           explainer="Tap a row to see the full answer."
           action={useSample && <SampleBadge>Sample rows</SampleBadge>}
         >
-          {loading || !log ? <Skeleton className="h-48 w-full" /> : <CallsTable calls={log.calls.slice(0, 20)} />}
+          {loading || !calls ? <Skeleton className="h-48 w-full" /> : <CallsTable calls={calls.slice(0, 20)} />}
         </Section>
       )}
 
