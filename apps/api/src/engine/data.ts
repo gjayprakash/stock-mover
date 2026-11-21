@@ -50,15 +50,18 @@ function num(v: string, ctx: string): number {
 }
 const blank = (v: string) => (v === '' ? null : v);
 
-/** Load the 11 Stock Mover tables. IDs stay strings; numbers converted explicitly. Fails loudly. */
-export function loadData(dataDir: string): EngineData {
+/** Load the 11 Stock Mover tables. IDs stay strings; numbers converted explicitly. Fails loudly.
+ *  extraStores = stores added in the app (#21); appended after stores.csv, zero stock until stock arrives. */
+export function loadData(dataDir: string, extraStores: Store[] = []): EngineData {
   const t = (name: string, cols: string[]) => readTable(dataDir, name, cols);
+  const csvStores: Store[] = t('stores', ['store_id', 'city', 'state', 'zone', 'tier', 'size_sqft', 'stock_capacity_units', 'opened_on', 'area_manager_id']).map((r) => ({
+    store_id: r.store_id, city: r.city, state: r.state, zone: r.zone, tier: r.tier,
+    size_sqft: num(r.size_sqft, 'stores.size_sqft'), stock_capacity_units: num(r.stock_capacity_units, 'stores.stock_capacity_units'),
+    opened_on: r.opened_on, area_manager_id: r.area_manager_id,
+  }));
+  const known = new Set(csvStores.map((s) => s.store_id));
   return {
-    stores: t('stores', ['store_id', 'city', 'state', 'zone', 'tier', 'size_sqft', 'stock_capacity_units', 'opened_on', 'area_manager_id']).map((r) => ({
-      store_id: r.store_id, city: r.city, state: r.state, zone: r.zone, tier: r.tier,
-      size_sqft: num(r.size_sqft, 'stores.size_sqft'), stock_capacity_units: num(r.stock_capacity_units, 'stores.stock_capacity_units'),
-      opened_on: r.opened_on, area_manager_id: r.area_manager_id,
-    })),
+    stores: [...csvStores, ...extraStores.filter((s) => !known.has(s.store_id))],
     items: t('items', ['sku_id', 'style_id', 'style_name', 'category', 'size', 'mrp', 'cost_price', 'launch_date', 'is_core_style', 'is_packaging']).map((r) => ({
       sku_id: r.sku_id, style_id: r.style_id, style_name: r.style_name, category: r.category, size: r.size,
       mrp: num(r.mrp, 'items.mrp'), cost_price: num(r.cost_price, 'items.cost_price'), launch_date: r.launch_date,
