@@ -135,13 +135,13 @@ export function StoreDetail({ file, store }: { file: MovesFile; store: StoreSumm
                   <div className="min-w-0 flex-1 basis-60">
                     <div className="text-[17px] font-bold">{m.style_name}</div>
                     <div className="mt-0.5 text-sm text-muted">
-                      Size {m.size} · from {m.from === 'WH-KOL' ? 'the warehouse' : storeLabel(m.from, file.stores)} · arrives {dateShort(m.arrives_on)}
+                      Size {m.size} · from {m.from === 'WH-KOL' ? 'the warehouse' : storeLabel(m.from, file.stores)} · <span className="whitespace-nowrap">arrives {dateShort(m.arrives_on)}</span>
                     </div>
                   </div>
                   <div className="w-20 flex-none text-xl font-bold">+{num(m.qty)}</div>
                   <div className="min-w-0 flex-1 basis-48 text-[15px]">
-                    <span className="font-bold text-[#8A2C07]">{days(m.to_before.cover_days)}</span> of stock today,{' '}
-                    <span className="font-bold text-ok">{days(m.to_after.cover_days)}</span> after
+                    <span className="font-bold whitespace-nowrap text-[#8A2C07]">{days(m.to_before.cover_days)}</span> of stock today,{' '}
+                    <span className="font-bold whitespace-nowrap text-ok">{days(m.to_after.cover_days)}</span> after
                   </div>
                   <MoveChip status={approvals.statusOf(m.id)} signoff={m.needs_signoff} />
                 </Link>
@@ -181,7 +181,7 @@ export function StoreDetail({ file, store }: { file: MovesFile; store: StoreSumm
                   </span>
                   {signoff.map((m) => (
                     <Link key={m.id} to={`/moves?move=${m.id}`} className="text-page underline">
-                      {m.style_name}, size {m.size}: {pieces(m.qty)}, {inr(m.value_inr)}
+                      {m.style_name}, size {m.size}: <span className="whitespace-nowrap">{pieces(m.qty)}</span>, <span className="whitespace-nowrap">{inr(m.value_inr)}</span>
                     </Link>
                   ))}
                 </div>

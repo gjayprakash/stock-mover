@@ -23,7 +23,7 @@ export function StoreTiles({ stores, problems }: { stores: StoreSummary[]; probl
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {sorted.map((s) => {
           const fill = s.capacity > 0 ? s.stock_now / s.capacity : 0;
           return (
@@ -35,7 +35,7 @@ export function StoreTiles({ stores, problems }: { stores: StoreSummary[]; probl
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="truncate text-[17px] font-semibold">{s.city}</div>
-                  <div className="text-sm text-muted">{s.store_id}</div>
+                  <div className="text-sm whitespace-nowrap text-muted">{s.store_id}</div>
                 </div>
                 <StatusChip status={s.status} />
               </div>

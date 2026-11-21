@@ -63,7 +63,7 @@ export function Entries({ problemId, moves, stores }: { problemId: string; moves
                   {fromLabel(m, stores)} to {storeLabel(m.to, stores)}
                 </div>
                 <div className="mt-0.5 text-[15px] text-muted">
-                  {m.sku_id} · size {m.size} · arrives {dateShort(m.arrives_on)}
+                  {m.sku_id} · size {m.size} · <span className="whitespace-nowrap">arrives {dateShort(m.arrives_on)}</span>
                 </div>
               </div>
               <div className="w-24 flex-none">

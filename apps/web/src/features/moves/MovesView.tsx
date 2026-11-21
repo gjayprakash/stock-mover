@@ -95,7 +95,7 @@ export function MovesView(p: MovesViewProps) {
   };
 
   const nf = new Intl.NumberFormat('en-IN');
-  const th = 'px-3 py-4 font-bold';
+  const th = 'px-2.5 py-4 font-bold xl:px-3';
 
   return (
     <div className="flex flex-col gap-8">
@@ -128,10 +128,11 @@ export function MovesView(p: MovesViewProps) {
       <AllMovesContext.Provider value={file?.moves ?? []}>
       <Card padded={false} className="overflow-hidden">
         <div className="relative overflow-x-auto">
-          <table className="w-full min-w-[980px] border-collapse text-[15px]">
+          {/* Phone and tablet: the table scrolls inside the card. From 1024 px it fits: columns share the width. */}
+          <table className="w-full min-w-[860px] border-collapse text-[15px] lg:min-w-0">
             <thead>
               <tr className="bg-page text-left text-sm text-[#4A3A2E]">
-                <th className="w-11 py-4 pl-5 pr-3 md:pl-7">
+                <th className="w-11 py-4 pr-2 pl-5 xl:pl-7">
                   <input
                     type="checkbox"
                     aria-label="Select all on this page"
@@ -152,7 +153,7 @@ export function MovesView(p: MovesViewProps) {
                 <th className={th}>Pieces</th>
                 <th className={th}>Days of stock</th>
                 <th className={th}>Arrives</th>
-                <th className="py-4 pl-3 pr-5 font-bold md:pr-7">Why</th>
+                <th className="py-4 pr-5 pl-2.5 font-bold xl:pr-7">Why</th>
               </tr>
             </thead>
             <tbody>
@@ -178,8 +179,8 @@ export function MovesView(p: MovesViewProps) {
                     {open && (
                       <tr id={`move-${m.id}`}>
                         <td colSpan={7} className="p-0">
-                          {/* On a phone the table scrolls sideways; pin the detail to the card's width so it never gets cut off. */}
-                          <div className="sticky left-0 w-[calc(100vw-2rem)] md:static md:w-auto">
+                          {/* Below 1024 px the table scrolls sideways; pin the detail to the card's width so it never gets cut off. */}
+                          <div className="sticky left-0 w-[calc(100vw-2rem)] md:w-[calc(100vw-19rem)] lg:static lg:w-auto">
                           <MoveDetail
                             move={m}
                             status={status}
@@ -227,7 +228,7 @@ export function MovesView(p: MovesViewProps) {
       </AllMovesContext.Provider>
 
       {(chosen.length > 0 || note || undoIds.length > 0) && (
-        <section className="sticky bottom-20 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-2xl bg-brown px-6 py-4 text-[#FFFBF2] shadow-[0_16px_40px_rgba(81,29,0,0.35)] md:bottom-6">
+        <section className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-10 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-2xl bg-brown px-4 py-3 text-[#FFFBF2] shadow-[0_16px_40px_rgba(81,29,0,0.35)] md:bottom-6 md:px-6 md:py-4">
           <span className="text-base">
             {chosen.length > 0 ? (
               <>
@@ -246,11 +247,11 @@ export function MovesView(p: MovesViewProps) {
             )}
           </span>
           {chosen.length > 0 && (
-            <span className="flex flex-wrap gap-2.5">
-              <button type="button" onClick={skipSelected} className="h-12 rounded-[10px] border-[1.5px] border-[#8A5A3C] px-5 font-semibold">
+            <span className="flex w-full gap-2.5 sm:w-auto">
+              <button type="button" onClick={skipSelected} className="h-12 flex-1 rounded-[10px] border-[1.5px] border-[#8A5A3C] px-4 font-semibold whitespace-nowrap sm:flex-none sm:px-5">
                 Skip selected
               </button>
-              <button type="button" onClick={approveSelected} className="h-12 rounded-[10px] bg-cta px-6 font-semibold text-white">
+              <button type="button" onClick={approveSelected} className="h-12 flex-1 rounded-[10px] bg-cta px-4 font-semibold whitespace-nowrap text-white sm:flex-none sm:px-6">
                 Approve selected
               </button>
             </span>
