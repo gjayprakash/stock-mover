@@ -89,7 +89,7 @@ export class StockService implements OnModuleInit {
       v('category') || known?.category || '', v('mrp_inr') || (known ? String(known.mrp) : ''), v('qty'), v('received_on'),
     ];
     const hash = createHash('sha256').update(csvLine(cells)).digest('hex');
-    return this.keep(checkRows([cells], await this.context(), 1), hash);
+    return this.keep(checkRows([cells], await this.context(), 1, false), hash);
   }
 
   /** Append the good rows of a check to stock_receipts. Same file twice → 409. */

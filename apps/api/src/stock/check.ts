@@ -62,8 +62,9 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 /** 2026-10-31 → "31 Oct 2026" */
 const human = (iso: string) => `${Number(iso.slice(8, 10))} ${MONTHS[Number(iso.slice(5, 7)) - 1]} ${iso.slice(0, 4)}`;
 
-/** Row-level checks on data rows (header already checked). `firstRow` = file line of rows[0]. */
-export function checkRows(rows: string[][], ctx: CheckContext, firstRow = 2): CheckOutcome {
+/** Row-level checks on data rows (header already checked). `firstRow` = file line of rows[0].
+ *  `allowNewItems` false (one typed-in row) → a product code not in the catalogue is a single sku_id error. */
+export function checkRows(rows: string[][], ctx: CheckContext, firstRow = 2, allowNewItems = true): CheckOutcome {
   const errors: StockRowError[] = [];
   const warnings: StockRowError[] = [];
   const failed: CheckOutcome['failed'] = [];
@@ -83,6 +84,9 @@ export function checkRows(rows: string[][], ctx: CheckContext, firstRow = 2): Ch
     const m = SKU.exec(r.sku_id);
     let newItem: CatalogItem | null = null;
     if (!m) err('sku_id', `"${r.sku_id}" is not a product code`, 'Write it as STYLE-NN-SIZE, e.g. KUR-12-XL.');
+    else if (!allowNewItems && !ctx.items.has(r.sku_id))
+      // Type-it-in form: it has no name, category, size or price fields, so it cannot create a product.
+      err('sku_id', `Unknown product code "${r.sku_id}"`, 'New products can only be added with a file, which carries the name, category, size and price.');
     else {
       if (m[2] !== r.size) err('size', `Size "${r.size}" does not match the code's size "${m[2]}"`, `Set size to ${m[2]} or fix the product code.`);
       const known = ctx.items.get(r.sku_id);
