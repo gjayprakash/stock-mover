@@ -21,6 +21,23 @@ export class DbService implements OnModuleDestroy {
     return (await this.pool.query<T>(sql, params)).rows;
   }
 
+  /** Runs `fn` on one connection inside begin/commit (rollback on error). */
+  async tx<R>(fn: (q: <T extends QueryResultRow>(sql: string, params?: unknown[]) => Promise<T[]>) => Promise<R>): Promise<R> {
+    if (!this.pool) throw new Error('DATABASE_URL is not set');
+    const client = await this.pool.connect();
+    try {
+      await client.query('begin');
+      const out = await fn(async <T extends QueryResultRow>(sql: string, params: unknown[] = []) => (await client.query<T>(sql, params)).rows);
+      await client.query('commit');
+      return out;
+    } catch (e) {
+      await client.query('rollback').catch(() => undefined);
+      throw e;
+    } finally {
+      client.release();
+    }
+  }
+
   // Tiny schema bootstrap: CREATE ... IF NOT EXISTS, run once on boot.
   async migrate() {
     if (!this.pool) return;

@@ -43,7 +43,7 @@ const ADMIN_NAV: NavItem[] = [
   REQUESTS,
   SHIPMENTS,
   DRIVERS,
-  { to: '/managers', label: 'Store managers', icon: ICON.managers },
+  { to: '/managers', label: 'People', icon: ICON.managers },
   ASK,
   { to: '/ai', label: 'AI usage', icon: ICON.ai },
   { to: '/run', label: 'Daily run', icon: ICON.run },

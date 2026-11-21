@@ -14,7 +14,8 @@ export const AUTH_SCHEMA = `
     last_sign_in_at timestamptz,
     check (role = 'super_admin' or location_id is not null)
   );
-  create unique index if not exists one_super_admin on users ((true)) where role = 'super_admin';
+  -- More than one super admin is allowed now; drops the old one-only index on an existing database.
+  drop index if exists one_super_admin;
   create table if not exists sessions (
     token_hash bytea primary key,
     user_id uuid not null references users(id) on delete cascade,

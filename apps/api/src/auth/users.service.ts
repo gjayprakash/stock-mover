@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import type { UserRow } from '@sm/contract';
+import type { Role, UserRow } from '@sm/contract';
 import { DbService } from '../db/db.service';
 import { hashToken, newToken } from './sessions.service';
 
@@ -36,10 +36,9 @@ export class UsersService {
     return u;
   }
 
-  /** Store managers only: the one super admin is made by scripts/seed-admin.ts and cannot be changed here. */
-  private async manager(id: string) {
+  private async user(id: string) {
     const u = /^[0-9a-f-]{36}$/i.test(id) ? await this.row(id) : undefined;
-    if (!u || u.role !== 'store_manager') throw new NotFoundException({ error: 'No such store manager' });
+    if (!u) throw new NotFoundException({ error: 'No such user' });
     return u;
   }
 
@@ -50,43 +49,85 @@ export class UsersService {
     return id;
   }
 
-  async create(body: Record<string, unknown>, createdBy: string) {
-    const name = text(body.name);
-    const email = text(body.email).toLowerCase();
-    const mobile = text(body.mobile);
-    if (!name || name.length > 100) throw new BadRequestException({ error: 'Name is needed (at most 100 characters)' });
-    if (!EMAIL.test(email) || email.length > 254) throw new BadRequestException({ error: 'Email does not look right' });
-    if (!MOBILE.test(mobile)) throw new BadRequestException({ error: 'Mobile number does not look right' });
-    const location = await this.checkLocation(body.location_id);
-    const [taken] = await this.db.query(`select 1 from users where email = $1`, [email]);
-    if (taken) throw new ConflictException({ error: 'That email already has a user' });
-    const [{ id }] = await this.db.query<{ id: string }>(
-      `insert into users (email, name, mobile, role, location_id, created_by)
-       values ($1, $2, $3, 'store_manager', $4, $5) returning id`,
-      [email, name, mobile, location, createdBy],
+  /** One email, one role: a 409 that says which role the email already has, or null when it is free. */
+  private async taken(email: string) {
+    const [u] = await this.db.query<{ role: Role; location_id: string | null }>(
+      `select role, location_id from users where email = $1`,
+      [email],
     );
+    if (!u) return null;
+    return new ConflictException({
+      error: u.role === 'super_admin' ? 'That email is already a super admin' : `That email is already a store manager for ${u.location_id}`,
+    });
+  }
+
+  /** Adds a super admin or a store manager by email. Only the email is required, plus the store for a store manager. */
+  async create(body: Record<string, unknown>, createdBy: string) {
+    const role = body.role === undefined || body.role === null || body.role === '' ? 'store_manager' : body.role;
+    if (role !== 'super_admin' && role !== 'store_manager') throw new BadRequestException({ error: 'role must be super_admin or store_manager' });
+    const email = text(body.email).toLowerCase();
+    if (!EMAIL.test(email) || email.length > 254) throw new BadRequestException({ error: 'Email does not look right' });
+    const name = text(body.name) || email.split('@')[0];
+    if (name.length > 100) throw new BadRequestException({ error: 'Name is at most 100 characters' });
+    const mobile = text(body.mobile) || null;
+    if (mobile && !MOBILE.test(mobile)) throw new BadRequestException({ error: 'Mobile number does not look right' });
+    // A super admin sees everything: any location_id sent is ignored.
+    const location = role === 'store_manager' ? await this.checkLocation(body.location_id) : null;
+    const clash = await this.taken(email);
+    if (clash) throw clash;
+    let id: string;
+    try {
+      [{ id }] = await this.db.query<{ id: string }>(
+        `insert into users (email, name, mobile, role, location_id, created_by)
+         values ($1, $2, $3, $4, $5, $6) returning id`,
+        [email, name, mobile, role, location, createdBy],
+      );
+    } catch (e) {
+      // Two adds of one email at once: the unique email constraint lets only one through.
+      if ((e as { code?: string }).code === '23505') throw (await this.taken(email)) ?? new ConflictException({ error: 'That email already has a user' });
+      throw e;
+    }
     const token = await this.newInvite(id);
     return { user: await this.row(id), token };
   }
 
-  async update(id: string, body: Record<string, unknown>) {
-    await this.manager(id);
+  /**
+   * Change a store manager's store, or turn anyone off or on. Safety rules: you cannot turn yourself off,
+   * and the last active super admin can never be turned off (checked under a lock, so two requests cannot race past it).
+   */
+  async update(id: string, body: Record<string, unknown>, actorId: string) {
+    const u = await this.user(id);
     const hasLocation = body.location_id !== undefined;
     const hasActive = body.active !== undefined;
     if (!hasLocation && !hasActive) throw new BadRequestException({ error: 'Send location_id or active' });
     if (hasActive && typeof body.active !== 'boolean') throw new BadRequestException({ error: 'active must be true or false' });
+    if (hasLocation && u.role !== 'store_manager') throw new BadRequestException({ error: 'Only a store manager has a store' });
+    if (body.active === false && id === actorId) throw new ConflictException({ error: 'You cannot turn yourself off' });
     if (hasLocation) await this.db.query(`update users set location_id = $2 where id = $1`, [id, await this.checkLocation(body.location_id)]);
-    if (hasActive) {
-      await this.db.query(`update users set active = $2 where id = $1`, [id, body.active]);
-      // Turned off: signed out everywhere at once.
-      if (body.active === false) await this.db.query(`delete from sessions where user_id = $1`, [id]);
+    if (body.active === true) await this.db.query(`update users set active = true where id = $1`, [id]);
+    if (body.active === false) {
+      await this.db.tx(async (q) => {
+        // One turn-off at a time. The count is a later statement than the lock, so it sees every turn-off committed before it.
+        await q(`select pg_advisory_xact_lock(hashtext('stock-mover:users:turn-off'))`);
+        const [t] = await q<{ role: Role; others: number }>(
+          `select role, (select count(*)::int from users where role = 'super_admin' and active and id <> $1) as others
+             from users where id = $1`,
+          [id],
+        );
+        if (t?.role === 'super_admin' && t.others === 0) {
+          throw new ConflictException({ error: 'This is the last active super admin. Add or turn on another super admin first.' });
+        }
+        await q(`update users set active = false where id = $1`, [id]);
+        // Turned off: signed out everywhere at once.
+        await q(`delete from sessions where user_id = $1`, [id]);
+      });
     }
     return this.row(id);
   }
 
-  /** Fresh single-use link; any earlier unused link for this user stops working. */
+  /** Fresh single-use link; any earlier unused link for this user stops working. Super admins and store managers alike. */
   async invite(id: string) {
-    const u = await this.manager(id);
+    const u = await this.user(id);
     if (u.status === 'Turned off') throw new ConflictException({ error: 'Turn this user on first' });
     return this.newInvite(id);
   }

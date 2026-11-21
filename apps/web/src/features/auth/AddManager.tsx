@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from 'react';
-import type { StoreSummary } from '@sm/contract';
+import type { Role, StoreSummary } from '@sm/contract';
 import { Button } from '../../components/Button';
 import { storeLabel } from '../../lib/format';
-import { addManager, type Invite } from './users';
+import { addPerson, type Invite } from './users';
 
 type Loc = Pick<StoreSummary, 'store_id' | 'city'>;
 type Errors = Partial<Record<'name' | 'mobile' | 'email' | 'store' | 'form', string>>;
@@ -16,27 +16,40 @@ export function mobile10(raw: string): string | null {
   return /^[6-9]\d{9}$/.test(d) ? d : null;
 }
 
-export function AddManager({ stores, onAdded }: { stores: Loc[]; onAdded: (invite: Invite) => void }) {
+const ROLES: { value: Role; title: string; detail: string }[] = [
+  { value: 'store_manager', title: 'Store manager', detail: 'Sees one store' },
+  { value: 'super_admin', title: 'Super admin', detail: 'Sees everything and manages people' },
+];
+
+/** "Add a person": a super admin or a store manager, by work email. Name and mobile are optional. */
+export function AddPerson({ stores, onAdded }: { stores: Loc[]; onAdded: (invite: Invite) => void }) {
+  const [email, setEmail] = useState('');
+  const [role, setRole] = useState<Role>('store_manager');
+  const [store, setStore] = useState('');
   const [name, setName] = useState('');
   const [mobile, setMobile] = useState('');
-  const [email, setEmail] = useState('');
-  const [store, setStore] = useState('');
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     const v: Errors = {};
-    if (!name.trim()) v.name = 'Enter their full name';
-    if (!mobile10(mobile)) v.mobile = 'Enter a 10-digit mobile number';
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) v.email = 'Enter a work email like name@manyavar.com';
-    if (!store) v.store = 'Pick their store';
+    if (role === 'store_manager' && !store) v.store = 'Pick their store';
+    if (mobile.trim() && !mobile10(mobile)) v.mobile = 'Enter a 10-digit mobile number, or leave it empty';
+    if (name.trim().length > 100) v.name = 'At most 100 characters';
     setErrors(v);
     if (Object.keys(v).length) return;
     setBusy(true);
     try {
-      onAdded(await addManager({ name: name.trim(), mobile: mobile10(mobile)!, email: email.trim().toLowerCase(), location_id: store }));
-      setName(''); setMobile(''); setEmail(''); setStore('');
+      onAdded(await addPerson({
+        email: email.trim().toLowerCase(),
+        role,
+        ...(role === 'store_manager' ? { location_id: store } : {}),
+        ...(name.trim() ? { name: name.trim() } : {}),
+        ...(mobile.trim() ? { mobile: mobile10(mobile)! } : {}),
+      }));
+      setEmail(''); setStore(''); setName(''); setMobile('');
     } catch (err) {
       setErrors({ form: (err as Error).message });
     }
@@ -44,28 +57,51 @@ export function AddManager({ stores, onAdded }: { stores: Loc[]; onAdded: (invit
   }
 
   const label = 'flex flex-col gap-1.5 text-sm font-semibold text-ink';
+  const optional = <span className="font-normal text-muted">(optional)</span>;
   const err = (m?: string) => m && <span className="font-medium text-danger">{m}</span>;
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-6">
+      <label className={`${label} max-w-[520px]`}>Work email
+        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="off" aria-invalid={!!errors.email} className={field} />
+        {errors.email ? err(errors.email) : <span className="font-normal text-muted">They sign in with this email. One email has one role.</span>}
+      </label>
+
+      <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
+        <legend className="mb-1.5 p-0 text-sm font-semibold text-ink">Role</legend>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {ROLES.map((r) => {
+            const on = role === r.value;
+            return (
+              <label key={r.value}
+                className={`flex min-h-[64px] cursor-pointer items-center gap-3 rounded-xl border-[1.5px] px-4 py-3 ${on ? 'border-cta bg-cta-bg' : 'border-[#D9C49C] bg-[#FFFDF8] hover:border-cta'}`}>
+                <input type="radio" name="role" value={r.value} checked={on} onChange={() => setRole(r.value)} className="h-5 w-5 shrink-0 accent-cta" />
+                <span className="flex flex-col">
+                  <span className="text-base font-bold text-ink">{r.title}</span>
+                  <span className="text-sm text-[#4A3A2E]">{r.detail}</span>
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </fieldset>
+
       <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-x-6 gap-y-5">
-        <label className={label}>Full name
+        {role === 'store_manager' && (
+          <label className={label}>Store
+            <select value={store} onChange={(e) => setStore(e.target.value)} aria-invalid={!!errors.store} className={`${field} px-3`}>
+              <option value="">Pick a store</option>
+              {stores.map((s) => <option key={s.store_id} value={s.store_id}>{storeLabel(s)}</option>)}
+            </select>
+            {errors.store ? err(errors.store) : <span className="font-normal text-muted">They will see this store only.</span>}
+          </label>
+        )}
+        <label className={label}><span>Name {optional}</span>
           <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" aria-invalid={!!errors.name} className={field} />
-          {err(errors.name)}
+          {errors.name ? err(errors.name) : <span className="font-normal text-muted">Left empty: the part of the email before @.</span>}
         </label>
-        <label className={label}>Mobile (WhatsApp)
+        <label className={label}><span>Mobile (WhatsApp) {optional}</span>
           <input type="tel" inputMode="tel" value={mobile} onChange={(e) => setMobile(e.target.value)} placeholder="+91" aria-invalid={!!errors.mobile} className={field} />
-          {err(errors.mobile)}
-        </label>
-        <label className={label}>Work email
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="off" aria-invalid={!!errors.email} className={field} />
-          {err(errors.email)}
-        </label>
-        <label className={label}>Store
-          <select value={store} onChange={(e) => setStore(e.target.value)} aria-invalid={!!errors.store} className={`${field} px-3`}>
-            <option value="">Pick a store</option>
-            {stores.map((s) => <option key={s.store_id} value={s.store_id}>{storeLabel(s)}</option>)}
-          </select>
-          {errors.store ? err(errors.store) : <span className="font-normal text-muted">They will see this store only.</span>}
+          {errors.mobile ? err(errors.mobile) : <span className="font-normal text-muted">Lets you send the link on WhatsApp.</span>}
         </label>
       </div>
       <div className="flex flex-wrap items-center gap-3">

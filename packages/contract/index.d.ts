@@ -137,6 +137,15 @@ export type UserRow = Me & {
   mobile: string | null; status: "Active" | "Invite sent" | "Turned off";
   last_sign_in_at: string | null; created_at: string;
 };
+/**
+ * POST /api/users (super admin only). Only `email` is required (trimmed, lowercased; one email = one role, 409 otherwise).
+ * `role` defaults to store_manager; `location_id` is required for a store manager and ignored for a super admin.
+ * Blank `name` = the part of the email before the @. Answers `NewUserResponse`.
+ */
+export type NewUserRequest = { email: string; role?: Role; location_id?: string; name?: string; mobile?: string };
+export type NewUserResponse = { user: UserRow; invite_url: string };
+/** PATCH /api/users/:id. `location_id` for store managers only. You cannot turn yourself off, nor the last active super admin (409). */
+export type UserPatch = { location_id: string } | { active: boolean };
 
 // ---- Store scoping (#77) ----
 /** What one request may see: everything (super admin, no Viewing pick) or one location (store manager, or the picker). */
