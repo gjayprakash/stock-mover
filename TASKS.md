@@ -1,7 +1,7 @@
 # Tasks (tick when done, add your name when you take one)
 
 ## Setup
-- [ ] Dataset in `data/` (Jay)
+- [x] Dataset in `data/csv/` (Asjad)
 - [ ] GitHub repo + Asjad added (Jay)
 - [ ] Next.js app created and deployed to Vercel (Asjad)
 - [ ] MeshAPI key in `.env.local` and Vercel env (Asjad)
