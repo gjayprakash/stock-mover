@@ -15,6 +15,8 @@ export function FixCard({ problem, moves, stores }: { problem: Problem; moves: M
   const pending = t.signoff.filter((m) => statusOf(m.id) !== 'approved');
   const normal = t.entries - t.signoff.length;
   const approvedCount = moves.filter((m) => statusOf(m.id) === 'approved').length;
+  // What "Approve" will actually change: entries without sign-off that are not approved yet.
+  const toApprove = moves.filter((m) => !m.needs_signoff && statusOf(m.id) !== 'approved').length;
   // Approving the last big entry by hand also marks the problem approved.
   const approveOne = (id: string) => {
     approveMoves([id]);
@@ -69,9 +71,20 @@ export function FixCard({ problem, moves, stores }: { problem: Problem; moves: M
           )}
         </div>
       ) : !approved && normal === 0 ? null : !approved ? (
-        <Button full onClick={() => approveProblem(problem, moves)}>
-          {normal === t.entries ? `Approve all ${t.entries} ${t.entries === 1 ? 'entry' : 'entries'}` : `Approve ${normal} of ${t.entries} entries`}
-        </Button>
+        <>
+          <Button full onClick={() => approveProblem(problem, moves)}>
+            {approvedCount > 0
+              ? `Approve the remaining ${toApprove} ${toApprove === 1 ? 'entry' : 'entries'}`
+              : normal === t.entries
+                ? `Approve all ${t.entries} ${t.entries === 1 ? 'entry' : 'entries'}`
+                : `Approve ${normal} of ${t.entries} entries`}
+          </Button>
+          {approvedCount > 0 && (
+            <div className="text-[15px] text-tint">
+              {approvedCount} {approvedCount === 1 ? 'entry is' : 'entries are'} already approved from elsewhere.
+            </div>
+          )}
+        </>
       ) : (
         <div className="flex min-h-12 items-center justify-center rounded-xl bg-ok-bg px-4 text-center font-bold text-[#1D5B45]">
           {pending.length
