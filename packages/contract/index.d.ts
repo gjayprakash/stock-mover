@@ -158,3 +158,27 @@ export type Driver = {
 export type DriverPairLink = { driver: Driver; pair_url: string; message: string };
 /** GET /api/driver/me (device cookie). PATCH /api/driver/me {lang}. */
 export type DriverMe = { name: string; lang: "hi" | "en" | null; store: string; manager_name: string; manager_phone: string };
+
+// ---- Requests between stores (#79) ----
+export type RequestStatus =
+  | "waiting" | "needs_signoff" | "approved" | "driver_assigned" | "on_the_way" | "delivered" | "received" | "declined" | "cancelled";
+export type BlockedReason = "flagship_top20" | "under_30_days" | "under_display_min" | "none_in_stock";
+export type DeclineReason = "need_it_here" | "count_wrong" | "other";
+/** One row of GET /api/requests/sources?sku=&qty=: ranked by travel days, then km, then can_spare; WH-KOL last. */
+export type SourceOption = {
+  location_id: string; name: string; km: number; days: number;
+  can_spare: number; closest: boolean; blocked_reason: BlockedReason | null;
+};
+/** GET /api/requests/sources reply; on_hand / per_week are the asking store's own. */
+export type SourcesReply = { sources: SourceOption[]; on_hand: number; per_week: number };
+/** GET /api/requests?box=incoming|mine (array), POST /api/requests and every /:id/<action>. */
+export type TransferRequest = {
+  id: string; sku_id: string; style_name: string; size: string; qty: number;
+  from_location: string; to_location: string; status: RequestStatus;
+  value_mrp: number; needs_signoff: boolean;
+  reason: string | null;                   // decline reason
+  created_at: string; updated_at: string;
+  days: number;                            // lead_times route days
+  due_on: string | null;                   // approve date + days
+  giver_on_hand: number; giver_cover_days_after: number | null;
+};
