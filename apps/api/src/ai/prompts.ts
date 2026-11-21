@@ -34,3 +34,53 @@ export const correction = (missing: string[]) =>
 export const scopeRule = (loc: string) =>
   `This data covers only ${loc}: its own moves, store row and problems. You can only see ${loc}. ` +
   `If asked about any other store, city or the whole network, say you can only see ${loc} and answer only what the data shows for ${loc}.`;
+
+// ---------- Ask v2: general answers, mixed answers, wider data ----------
+
+/** The exact heading that starts the general part of a mixed answer. The screen labels everything under it. */
+export const GENERAL_HEADING = '**In general:**';
+/** Matches that heading at the start of a line (with or without the bold marks). */
+export const GENERAL_LINE = /^\s*\**\s*in general\s*:?\s*\**\s*:?/im;
+
+/** What the app does, for "how do I…" questions. Screens as in the sidebar. */
+const APP_GUIDE = [
+  'Stock Mover app, screens in the menu: Today (the morning brief and the problems found), All moves (the full list: approve or skip each move, then "Export approved CSV"),',
+  'Stores (each store\'s stock, what arrives and leaves), Requests (store to store requests between store managers), Shipments (transfers on the road, with the driver\'s phone),',
+  'Drivers, Store managers, Ask (this chat), AI usage (every AI answer and how its numbers were checked), Daily run (last and next run: the list is rebuilt every morning at 6:00 India time by itself),',
+  'Add stock (upload stock received) and Add store. Approvals are kept in this browser for the signed-in user. A move worth more than ₹1,00,000 needs sign-off.',
+].join(' ');
+
+/** General questions: no data is sent, and the answer must not state anything about this company's stock. */
+export const GENERAL_RULES = [
+  'You are Stock Mover, an assistant for merchandisers at Manyavar (Indian ethnic wear). This question is general.',
+  'Answer it briefly from general knowledge, in plain words and short sentences.',
+  'You have NO data about this company\'s stores, products, moves, sales or stock in this conversation. Never state a count, quantity, value, date or other figure about them, never name a store code, product code or move id, and never guess one.',
+  'If the question needs their data, say so in one line and suggest asking about a named store, product or move.',
+  'Never predict future numbers. Do not suggest new moves or change any move. You cannot approve anything.',
+  'For questions about the app itself, use this guide: ' + APP_GUIDE,
+].join('\n');
+
+/** Added to the data prompt for a mixed question: data part first (checked), general part under the heading. */
+export const MIXED_RULE =
+  'This question also has a general part. First answer the part about the data, using only the data. ' +
+  `Then write a line that starts with ${GENERAL_HEADING} and give the general part below it, in words only: ` +
+  'no figures about these stores, products or moves, no codes or ids. ' +
+  'For questions about the app itself, use this guide: ' + APP_GUIDE;
+
+/** Added for a forecast: past trend from the data (checked), outlook in words only. */
+export const FORECAST_RULE =
+  'The question asks about the future. Never give a future number, date or amount. ' +
+  'First say what the history shows for the last 12 weeks (copy its totals and trend), then write a line that starts with ' +
+  `${GENERAL_HEADING} and give any outlook in words only, with no numbers at all, saying it is not a forecast.`;
+
+/** Wider data: which section answers what. Added only when that section is in the data. */
+export const WIDER_RULES = {
+  history: 'The "history" section has 12 weeks of sales and stock. Quote a week only with its week_ending date and only for the store or product it belongs to; copy totals, never add weeks up yourself. Name the store and product code on each line.',
+  runs: 'The "past_runs" section lists earlier daily runs. Quote a run\'s figures only with that run\'s date.',
+  rules: 'The "rules" section has the company rules, lead times, minimum display per tier and category, and Stock Mover\'s settings. Quote a minimum display figure with its tier and category.',
+};
+
+/** Correction for a general answer that stated figures about the company's data. */
+export const generalCorrection = (missing: string[]) =>
+  `These figures about the company's stores, products or moves could not be checked: ${missing.join('; ')}. ` +
+  'Rewrite the answer without any figure, code or id about their stores, products or moves.';

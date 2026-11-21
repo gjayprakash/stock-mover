@@ -34,6 +34,8 @@ export class AiLogService implements OnModuleInit {
         latency_ms int not null
       )`);
     await this.db.query(`create index if not exists ai_calls_run on ai_calls (run_id, at desc)`);
+    // Ask v2: DATA / GENERAL / MIXED (null for briefs and older rows).
+    await this.db.query(`alter table ai_calls add column if not exists mode text`);
   }
 
   async add(call: Omit<AiCall, 'id' | 'at'>): Promise<AiCall> {
@@ -46,10 +48,10 @@ export class AiLogService implements OnModuleInit {
     await this.db
       .query(
         `insert into ai_calls (id, run_id, at, job, input_summary, output, numbers_found, numbers_total, result,
-           held_reason, model, tokens_in, tokens_out, latency_ms)
-         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+           held_reason, model, tokens_in, tokens_out, latency_ms, mode)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
         [row.id, row.run_id, row.at, row.job, row.input_summary, row.output, row.numbers_found, row.numbers_total,
-          row.result, row.held_reason ?? null, row.model, row.tokens_in ?? null, row.tokens_out ?? null, row.latency_ms],
+          row.result, row.held_reason ?? null, row.model, row.tokens_in ?? null, row.tokens_out ?? null, row.latency_ms, row.mode ?? null],
       )
       .catch((e) => this.log.error(`could not log AI call: ${(e as Error).message}`));
     return row;
@@ -87,7 +89,7 @@ export class AiLogService implements OnModuleInit {
       );
       calls = rows.map((r) => {
         const c: AiCall = { ...r, at: r.at.toISOString() };
-        for (const k of ['held_reason', 'tokens_in', 'tokens_out'] as const) if (c[k] === null) delete c[k];
+        for (const k of ['held_reason', 'tokens_in', 'tokens_out', 'mode'] as const) if (c[k] === null) delete c[k];
         return c;
       });
     }
