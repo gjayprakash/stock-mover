@@ -7,7 +7,10 @@ const FOUND: Record<string, [string, string]> = {
     'product that looks dead but was simply out of stock',
     'products that look dead but were simply out of stock',
   ],
-  over_capacity: ['store over its space limit', 'stores over their space limit'],
+  over_capacity: [
+    'store over its space limit on the counted stock (the count may be wrong; the plan uses the trusted count)',
+    'stores over their space limit on the counted stock (the count may be wrong; the plan uses the trusted count)',
+  ],
   data_flags: ['stock count that looks wrong', 'stock counts that look wrong'],
   below_min_display: ['store category below its display minimum', 'store categories below their display minimum'],
   ageing_units: ['old piece that is not selling', 'old pieces that are not selling'],
