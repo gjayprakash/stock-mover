@@ -76,6 +76,9 @@ function checkRows(ctx: FakeCtx, rows: string[][], firstRowNo: number, sampleLin
     pieces: by_location.reduce((s, l) => s + l.pieces, 0),
     by_location,
     errors,
+    warnings: [],
+    new_skus: [],
+    expires_at: new Date(Date.now() + 30 * 60_000).toISOString(),
   };
   pending.set(result.check_id, { result, hash: result.file_hash!, bad });
   return result;
@@ -108,13 +111,13 @@ export async function fakeCheckRow(ctx: FakeCtx, input: StockRowInput): Promise<
   return checkRows(ctx, [cells], 1, new Set(), `${JSON.stringify(input)}-${Date.now()}`);
 }
 
-export async function fakeCommit(checkId: string): Promise<{ status: number; body: { rows_added?: number; pieces_added?: number; message?: string } }> {
+export async function fakeCommit(checkId: string): Promise<{ status: number; body: { receipts?: number; pieces?: number; error?: string } }> {
   await new Promise((r) => setTimeout(r, 500));
   const p = pending.get(checkId);
-  if (!p) return { status: 404, body: { message: 'This check has expired. Upload the file again.' } };
-  if (committedHashes.has(p.hash)) return { status: 409, body: { message: 'This file was already added.' } };
+  if (!p) return { status: 404, body: { error: 'This check has expired. Upload the file again.' } };
+  if (committedHashes.has(p.hash)) return { status: 409, body: { error: 'This file was already added.' } };
   committedHashes.add(p.hash);
-  return { status: 200, body: { rows_added: p.result.ok_rows, pieces_added: p.result.pieces } };
+  return { status: 200, body: { receipts: p.result.ok_rows, pieces: p.result.pieces } };
 }
 
 export function fakeDownloadErrors(checkId: string) {

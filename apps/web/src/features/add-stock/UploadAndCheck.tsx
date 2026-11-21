@@ -105,7 +105,8 @@ export function UploadAndCheck({ ctx, nextRun }: { ctx: FakeCtx; nextRun: string
               <span className="font-bold break-all">{state.fileName}</span>: {state.message}
             </p>
             <p className="m-0 text-muted">
-              Nothing was added. The file needs these {STOCK_COLUMNS.length} columns in this order: {STOCK_COLUMNS.join(', ')}.
+              Nothing was added.
+              {/column/i.test(state.message) && ` The file needs these ${STOCK_COLUMNS.length} columns in this order: ${STOCK_COLUMNS.join(', ')}.`}
             </p>
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
               <a href="#sample-file" className={linkCls}>Go to the sample file</a>
@@ -199,9 +200,12 @@ function Checked({
             )}
           </div>
         )}
-        {r.warnings && r.warnings.length > 0 && (
-          <ul className="m-0 flex list-none flex-col gap-1 p-0 text-[15px] text-warn">
-            {r.warnings.map((w, i) => <li key={i}>{w.row ? `Row ${w.row}: ` : ''}{w.message}</li>)}
+        {/* Row 0 warnings are the over-capacity ones, already shown as chips above. */}
+        {r.warnings.some((w) => w.row > 0) && (
+          <ul className="m-0 flex list-none flex-col gap-1 p-0 text-[15px] text-[#6B4100]">
+            {r.warnings.filter((w) => w.row > 0).map((w, i) => (
+              <li key={i}><span className="font-semibold">Row {w.row}:</span> {w.message}. {w.fix}</li>
+            ))}
           </ul>
         )}
       </div>
