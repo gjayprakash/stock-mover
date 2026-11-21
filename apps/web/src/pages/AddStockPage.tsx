@@ -67,7 +67,7 @@ export default function AddStockPage() {
             <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-x-8 gap-y-4 leading-snug">
               <div><div className="font-bold">Columns are in order</div>Same {STOCK_COLUMNS.length} names, same order as the sample file</div>
               <div><div className="font-bold">The store exists</div>If not, add the store first</div>
-              <div><div className="font-bold">Pieces and dates make sense</div>A whole number above 0, a date after the stock count ({dateLong(data.run.as_of)}) and not in the future</div>
+              <div><div className="font-bold">Pieces and dates make sense</div>A whole number above 0, a date after the stock count (<span className="whitespace-nowrap">{dateLong(data.run.as_of)}</span>) and not in the future</div>
               <div><div className="font-bold">The store has room</div>We warn you before a store goes over its space</div>
             </div>
           </section>

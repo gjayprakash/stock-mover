@@ -74,7 +74,7 @@ export function SampleFile({ text }: { text: string | null }) {
                 <div className="font-bold">{g.label}</div>
                 <div className="mt-0.5 text-sm leading-snug text-muted">
                   {g.help}
-                  {first?.[i] ? <> Example: <span className="font-semibold text-ink">{first[i]}</span></> : null}
+                  {first?.[i] ? <> Example: <span className="font-semibold whitespace-nowrap text-ink">{first[i]}</span></> : null}
                 </div>
               </div>
             </div>
