@@ -25,6 +25,8 @@ export function StoreDetail({ file, store }: { file: MovesFile; store: StoreSumm
   const signoff = all.filter((m) => m.needs_signoff);
   const approvable = all.filter((m) => !m.needs_signoff);
   const open = approvable.filter((m) => approvals.statusOf(m.id) !== 'approved');
+  // stock_now counts pieces on the way; category rows count only pieces on the shelf.
+  const onTheWay = store.stock_now - store.categories.reduce((n, c) => n + c.now, 0);
   const belowMin = store.categories.filter((c) => c.now < c.min_display).length;
 
   const fromWh = incoming.filter((m) => m.from === 'WH-KOL').reduce((n, m) => n + m.qty, 0);
@@ -85,7 +87,13 @@ export function StoreDetail({ file, store }: { file: MovesFile; store: StoreSumm
           )}
         </div>
         <div className="flex min-w-0 flex-1 basis-80 flex-col gap-5 rounded-2xl bg-tint p-5 md:p-7">
-          <FillBar label="Today" value={store.stock_now} capacity={store.capacity} color="bg-[#2F6F95]" />
+          <FillBar
+            label="Today"
+            value={store.stock_now}
+            capacity={store.capacity}
+            color="bg-[#2F6F95]"
+            note={onTheWay > 0 ? `Includes ${pieces(onTheWay)} on the way, not on the shelf yet.` : undefined}
+          />
           <FillBar label="After today's plan" value={store.stock_after} capacity={store.capacity} color="bg-ok" />
           <div className="flex gap-8">
             <div><div className="font-heading text-3xl text-ok">+{num(store.in_units)}</div>coming in</div>
@@ -100,7 +108,7 @@ export function StoreDetail({ file, store }: { file: MovesFile; store: StoreSumm
         <Stat value={inrShort(store.at_risk_week_inr)} label="a week of sales at risk on empty shelves, at tag price" />
       </section>
 
-      <Section n={1} title="Shelves by category" explainer="Each category must keep a minimum on display. The line marks that minimum.">
+      <Section n={1} title="Shelves by category" explainer="Each category must keep a minimum on display. The line marks that minimum. These rows count pieces on the shelf, not pieces on the way.">
         <CategoryBars categories={store.categories} />
       </Section>
 
@@ -186,7 +194,7 @@ export function StoreDetail({ file, store }: { file: MovesFile; store: StoreSumm
   );
 }
 
-function FillBar({ label, value, capacity, color }: { label: string; value: number; capacity: number; color: string }) {
+function FillBar({ label, value, capacity, color, note }: { label: string; value: number; capacity: number; color: string; note?: string }) {
   const p = pct(value, capacity);
   return (
     <div className="flex flex-col gap-2">
@@ -194,6 +202,7 @@ function FillBar({ label, value, capacity, color }: { label: string; value: numb
         <span className="font-semibold">{label}</span>
         <span><span className="font-bold">{num(value)}</span> of {pieces(capacity)} · {p}%</span>
       </div>
+      {note && <p className="m-0 -mt-1 text-sm text-muted">{note}</p>}
       <div className="h-3.5 rounded-full bg-[#EADFC8]">
         <div className={`h-3.5 rounded-full ${p > 100 ? 'bg-danger' : color}`} style={{ width: `${Math.min(100, p)}%` }} />
       </div>
