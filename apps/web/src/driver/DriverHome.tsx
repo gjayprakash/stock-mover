@@ -16,6 +16,8 @@ type InstallEvent = Event & { prompt: () => Promise<void> };
 let installEvent: InstallEvent | null = null;
 window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvent = e as InstallEvent; });
 
+const AUTO_PING_MS = 2 * 60_000;
+
 function position(): Promise<GeolocationPosition> {
   return new Promise((res, rej) => {
     if (!navigator.geolocation) return rej({ code: 2 });
@@ -94,6 +96,30 @@ export function DriverHome() {
     doSend();
   };
   const okAsk = () => { try { localStorage.setItem(ASKED_KEY, '1'); } catch { /* ignore */ } doSend(); };
+
+  // While a trip is open: send where the phone is as soon as the screen opens, then every 2 minutes and on
+  // coming back to the app. Quiet (no "sent" screen); the big button still sends one by hand.
+  const hasTrip = !!trip && (trip.status === 'assigned' || trip.status === 'in_transit');
+  useEffect(() => {
+    if (!hasTrip) return;
+    const quiet = async () => {
+      if (document.visibilityState !== 'visible') return;
+      try {
+        const p = await position();
+        const ping = { lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy, taken_at: new Date(p.timestamp || Date.now()).toISOString() };
+        await sendPing(ping);
+        setTrip((x) => x && { ...x, last_ping_at: ping.taken_at });
+        setLoc((l) => (l === 'off' || l === 'fail' ? null : l));
+      } catch (e) {
+        const code = (e as GeolocationPositionError)?.code;
+        if (code === 1) setLoc('off');
+      }
+    };
+    quiet();
+    const id = window.setInterval(quiet, AUTO_PING_MS);
+    document.addEventListener('visibilitychange', quiet);
+    return () => { window.clearInterval(id); document.removeEventListener('visibilitychange', quiet); };
+  }, [hasTrip]);
 
   const delivered = () => act(async () => { await driverApi.delivered(photo); setPhoto(undefined); setView('done'); });
 
