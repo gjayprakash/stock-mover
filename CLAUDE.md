@@ -28,11 +28,14 @@ in 10 minutes and every move must make sense. Full brief: `docs/01-brief.md`.
 - "Zero sales isn't always a slow product" → velocity must be based on in-stock days.
 
 ## Decisions already made (do not reopen)
-- One Next.js (App Router, TypeScript, Tailwind) app, deployed on Vercel. No separate backend, no database.
+- npm-workspaces monorepo: `apps/web` (React + Vite + TypeScript + Tailwind) and `apps/api` (NestJS).
+  Postgres on Neon (project `stock-mover`, Singapore) via `pg`, `DATABASE_URL` env var.
+  Deployed on Render as ONE web service (`render.yaml`): Nest serves the built web app and `/api/*`.
+  Local: `npm install`, put `DATABASE_URL` in `.env`/shell, `npm run dev` (web :5173 proxies `/api` to :3000).
 - Data: workbook → `scripts/prepare` → small JSON in `data/derived/`. Engine is pure TypeScript in `lib/engine/`.
 - Engine output is one file, `moves.json`, shaped as in `shared/moves.schema.md`. UI reads only that.
 - Approvals live in the browser (localStorage) + "Export approved CSV". No auth, no users.
-- Daily run = Vercel Cron hitting `/api/run`. UI shows last run and next run.
+- Daily run = Render Cron Job hitting `/api/run`. UI shows last run and next run.
 - AI (MeshAPI) does three things only: morning brief, "Ask Stock Mover" chat grounded in moves.json, polishing nothing else.
 - Reason lines are built from templates with real numbers, not written by the LLM.
 
@@ -50,6 +53,7 @@ simple rates, mobile layout, settings pages, salesperson/roster/footfall analysi
 
 ## Decision log
 - (add: time, who, decision)
+- 2026-11-21, Jay: switched stack from Next.js/Vercel/no-DB to React Vite + NestJS + Neon Postgres on Render. Daily run = Render cron (to wire) hitting `/api/run`.
 
 ## Open questions (resolve as soon as the workbook is opened)
 - Exact column names in `rules`, `min_display`, `lead_times` tabs (the brief does not list them).
