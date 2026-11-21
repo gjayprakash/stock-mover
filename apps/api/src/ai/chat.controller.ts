@@ -6,7 +6,7 @@ import { AiLogService } from './ai-log.service';
 import { chatContext } from './context';
 import { AllowedSet, isForecastRequest } from './grounding';
 import { MeshClient, type ChatMessage } from './mesh.client';
-import { SYSTEM_RULES, correction } from './prompts';
+import { CHAT_RULES, SYSTEM_RULES, correction } from './prompts';
 
 const MAX_QUESTION = 2000;
 const MAX_TURNS = 6;
@@ -80,7 +80,7 @@ export class ChatController {
     const ctx = chatContext(m, question);
     const allowed = new AllowedSet(ctx, [m.run.as_of, TODAY]);
     const messages: ChatMessage[] = [
-      { role: 'system', content: `${SYSTEM_RULES}\n\nTODAY'S DATA (as of ${m.run.as_of}):\n${JSON.stringify(ctx)}` },
+      { role: 'system', content: `${SYSTEM_RULES}\n${CHAT_RULES}\n\nTODAY'S DATA (as of ${m.run.as_of}):\n${JSON.stringify(ctx)}` },
       ...history,
       { role: 'user', content: question },
     ];

@@ -83,5 +83,13 @@ export class AllowedSet {
   }
 }
 
-const FORECAST = /\b(forecast|predict(ion|ed)?|projection|will (we|it|they) sell|going to sell|expected (sales|demand)|next (week|month|quarter|year)'?s? (sales|demand))\b/i;
-export const isForecastRequest = (q: string) => FORECAST.test(q);
+// Forecast check (#18): any future-tense question about demand. Dates already in the data (arrivals,
+// stock after a move) must still be answered, so future words alone do not count: they need a demand word,
+// or a "will ... go up / drop" verb in a question that is not about stock, cover or a move.
+const FORECAST_WORD = /\b(forecast\w*|predict\w*|projection\w*|projected)\b/i;
+const DEMAND = /\b(sales?(?! at risk)|sell\w*|sold|demand|revenue|turnover|footfall)\b/i;
+const FUTURE = /\b(will|won't|going to|gonna|next (week|month|quarter|season|year)|coming (weeks?|months?|season)|upcoming|expect\w*|anticipat\w*|outlook|future|later this (month|year|season))\b/i;
+const WILL_CHANGE = /\b(will|going to)\b[^?.!]{0,60}\b(sell|go (up|down)|increase|decrease|drop|rise|grow|fall|pick up|improve|decline|slow down)\b/i;
+const ABOUT_DATA = /\b(stock|cover|on hand|pieces|units|move|moves|M\d{4}|arrive\w*|after)\b/i;
+export const isForecastRequest = (q: string) =>
+  FORECAST_WORD.test(q) || (DEMAND.test(q) && FUTURE.test(q)) || (WILL_CHANGE.test(q) && !ABOUT_DATA.test(q));
