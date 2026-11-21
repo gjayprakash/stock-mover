@@ -19,8 +19,6 @@ services:
         sync: false
       - key: MESH_MODEL
         sync: false
-      # Optional sign-in: off unless APP_USERS is set (see README).
-      - key: APP_USERS
-        sync: false
-      - key: AUTH_SECRET
+      # "true" makes every /api route except @Public() ones need sign-in (#78 turns it on).
+      - key: AUTH_REQUIRED
         sync: false

@@ -1,5 +1,6 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { Pool, QueryResultRow } from 'pg';
+import { AUTH_SCHEMA } from '../auth/schema';
 
 @Injectable()
 export class DbService implements OnModuleDestroy {
@@ -34,6 +35,7 @@ export class DbService implements OnModuleDestroy {
         violations int not null default 0,
         error text
       )`);
+    await this.query(AUTH_SCHEMA);
   }
 
   async onModuleDestroy() {

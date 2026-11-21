@@ -1,25 +1,40 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import type { Me } from '@sm/contract';
 import type { Request } from 'express';
-import { AuthService } from './auth.service';
-import { sessionCookie } from './http';
+import { authRequired, COOKIE, readCookie } from './http';
+import { IS_PUBLIC } from './public.decorator';
+import { SessionsService } from './sessions.service';
+
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace Express {
+    interface Request {
+      /** Set by AuthGuard when the `__Host-sid` cookie belongs to a live session of an active user. */
+      user?: Me;
+    }
+  }
+}
 
 /**
- * Global guard on every Nest route (all of them live under /api).
- * Open: /api/auth/*, /api/me (answers 401 itself), GET /api/health (Render health check),
- * POST /api/run (has its own X-Cron-Secret). Static files and the SPA fallback never reach Nest guards.
+ * Global guard (APP_GUARD). Always loads `req.user` from the session cookie.
+ * With AUTH_REQUIRED=true, every route without `@Public()` answers 401 to a caller without a session.
+ * Static files and the SPA fallback never reach Nest guards.
  */
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private readonly auth: AuthService) {}
+  constructor(
+    private readonly sessions: SessionsService,
+    private readonly reflector: Reflector,
+  ) {}
 
-  canActivate(ctx: ExecutionContext): boolean {
-    if (!this.auth.enabled || ctx.getType() !== 'http') return true;
+  async canActivate(ctx: ExecutionContext): Promise<boolean> {
+    if (ctx.getType() !== 'http') return true;
     const req = ctx.switchToHttp().getRequest<Request>();
-    const path = req.path.toLowerCase().replace(/\/+$/, '');
-    if (path.startsWith('/api/auth/') || path === '/api/me') return true;
-    if (req.method === 'GET' && path === '/api/health') return true;
-    if (req.method === 'POST' && path === '/api/run') return true;
-    if (this.auth.verify(sessionCookie(req))) return true;
+    const token = readCookie(req, COOKIE);
+    req.user = token ? ((await this.sessions.user(token)) ?? undefined) : undefined;
+    if (req.user || !authRequired()) return true;
+    if (this.reflector.getAllAndOverride<boolean>(IS_PUBLIC, [ctx.getHandler(), ctx.getClass()])) return true;
     throw new UnauthorizedException({ error: 'Sign in first' });
   }
 }

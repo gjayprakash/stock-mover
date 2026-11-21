@@ -1,5 +1,6 @@
 import { Controller, Get, Headers, HttpCode, Post, UnauthorizedException } from '@nestjs/common';
 import { timingSafeEqual } from 'crypto';
+import { Public } from '../auth/public.decorator';
 import { RunsService } from './runs.service';
 
 function secretOk(given: string | undefined) {
@@ -15,6 +16,7 @@ export class RunsController {
   constructor(private readonly runs: RunsService) {}
 
   // Daily trigger (GitHub Actions schedule). Runs in the background.
+  @Public()
   @Post('run')
   @HttpCode(202)
   async run(@Headers('x-cron-secret') secret?: string) {

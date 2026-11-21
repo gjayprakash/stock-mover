@@ -127,3 +127,13 @@ export type StockCheckResult = {
   new_skus: string[];                                        // SKUs that will be created on commit
 };
 export type StockCommitResult = { receipts: number; pieces: number; items_added: number; applies_from: "next run" };
+
+// ---- Roles and sign-in (#76) ----
+export type Role = "super_admin" | "store_manager";
+/** GET /api/me (plus `enabled: true`), and `req.user` on the API. location_id is null only for the super admin. */
+export type Me = { id: string; name: string; email: string; role: Role; location_id: string | null };
+/** GET /api/users (super admin only). */
+export type UserRow = Me & {
+  mobile: string | null; status: "Active" | "Invite sent" | "Turned off";
+  last_sign_in_at: string | null; created_at: string;
+};
