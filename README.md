@@ -24,7 +24,7 @@ This folder lives on Jay's Desktop. To share: `git init`, push to a private GitH
 repo, add Asjad. Both of us open the repo with Claude so `CLAUDE.md` loads automatically.
 Put the dataset in `data/` (see `data/README.md`). Never commit the MeshAPI key.
 
-## Sign-in (optional, off by default)
-1. Make a hash on your own machine: `node apps/api/scripts/hash-password.js 'your password'`.
-2. In Render → Environment, set `APP_USERS` to `you@example.com:<hash>` (comma-separate more users); optionally set `AUTH_SECRET` to a long random string.
-3. Save and redeploy. Remove `APP_USERS` (or leave it empty) to turn sign-in off again; `/api/health` and `POST /api/run` never need a cookie.
+## Sign-in
+1. Create the one super admin from your own machine (with `DATABASE_URL` in `.env`): `npm run seed:admin -- you@example.com "Your Name"`; it asks for the password.
+2. The super admin adds store managers in the app; each gets a one-time invite link to set a password.
+3. Set `AUTH_REQUIRED=true` on Render to make every `/api` route need sign-in. `/api/health`, `POST /api/run` and `/api/driver/*` never need a cookie.

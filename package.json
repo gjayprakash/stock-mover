@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "npm run dev -w apps/api & npm run dev -w apps/web",
     "build": "npm run build -w apps/web && npm run build -w apps/api",
-    "start": "npm run start -w apps/api"
+    "start": "npm run start -w apps/api",
+    "seed:admin": "node --experimental-strip-types --no-warnings scripts/seed-admin.ts"
   }
 }

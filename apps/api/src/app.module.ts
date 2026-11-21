@@ -23,7 +23,7 @@ import { AuthModule } from './auth/auth.module';
     GeoModule,
     StoresModule,
     StockModule,
-    AuthModule, // optional sign-in: off unless APP_USERS is set
+    AuthModule, // users + sessions; routes need sign-in only when AUTH_REQUIRED=true
   ],
   controllers: [HealthController],
 })
