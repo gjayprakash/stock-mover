@@ -7,7 +7,9 @@ import { Chip } from './deps';
 
 const nf = new Intl.NumberFormat('en-IN');
 const dayWord = (n: number) => `${n} ${n === 1 ? 'day' : 'days'}`;
-export const kmDays = (km: number, d: number) => `${nf.format(Math.round(km))} km · ${dayWord(d)}`;
+/** Same-city stores share one map point in the data, so 0 km reads as "Same city". */
+export const kmDays = (km: number, d: number) =>
+  `${Math.round(km) === 0 ? 'Same city' : `${nf.format(Math.round(km))} km`} · ${dayWord(d)}`;
 
 const alts = (m: Move) => m.alternatives ?? [];
 const hasDistance = (m: Move) => m.type === 'STORE_TO_STORE' && m.distance_km != null && m.travel_days != null;
@@ -105,7 +107,11 @@ export function AlternativesList({ move: m }: { move: Move }) {
             <li key={r.store_id} className={`flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg px-3 py-2 ${r.chosen ? 'bg-ok-bg' : 'bg-tint/50'}`}>
               <span className="w-5 text-muted">{i + 1}.</span>
               <span className="font-semibold">{r.store_id}</span>
-              <span className="text-muted">{kmDays(r.distance_km, r.travel_days)} from {m.from}</span>
+              <span className="text-muted">
+                {Math.round(r.distance_km) === 0
+                  ? `Same city as ${m.from} · ${dayWord(r.travel_days)}`
+                  : `${kmDays(r.distance_km, r.travel_days)} from ${m.from}`}
+              </span>
               {r.chosen ? (
                 <span className="font-semibold text-ok">gets these {m.qty}</span>
               ) : today.length ? (
