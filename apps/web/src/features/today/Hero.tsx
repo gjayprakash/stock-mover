@@ -6,7 +6,7 @@ import { inr, num } from '../../lib/format';
 import { movesById, problemStatus } from './problemStatus';
 import { useBrief } from './useBrief';
 
-/** Brown hero: "We found N stock problems today." + brief + progress (x of N fixes approved). */
+/** Brown hero: "We found N stock problems today." + brief + progress (x of N decided). */
 export function Hero({ file }: { file: MovesFile }) {
   const ap = useApprovals();
   const brief = useBrief(file.run.run_id);
@@ -27,7 +27,8 @@ export function Hero({ file }: { file: MovesFile }) {
     .join(', ');
   const allDone = total > 0 && decided === total;
   const atRisk = file.stores.reduce((s, x) => s + (x.at_risk_week_inr || 0), 0);
-  const pct = total ? Math.round((approved / total) * 100) : 0;
+  // Progress counts decisions (approved, seen or skipped), not approvals.
+  const pct = total ? Math.round((decided / total) * 100) : 0;
 
   return (
     <section className="flex flex-col gap-6 rounded-[20px] bg-brown p-6 text-page shadow-[0_12px_32px_rgba(81,29,0,0.25)] md:flex-row md:items-center md:justify-between md:gap-8 md:p-11">
@@ -69,12 +70,12 @@ export function Hero({ file }: { file: MovesFile }) {
           ) : (
             <>
               <div className="font-heading text-[36px] leading-none">
-                {num(approved)} of {num(total)}
+                {num(decided)} of {num(total)}
               </div>
               <div className="h-2.5 overflow-hidden rounded-full bg-white/20">
                 <div className="h-full rounded-full bg-[#F4A27C]" style={{ width: `${pct}%` }} />
               </div>
-              <div className="text-sm text-page/80">fixes approved</div>
+              <div className="text-sm text-page/80">decided{decided > 0 && ` · ${summary}`}</div>
             </>
           )}
         </div>
