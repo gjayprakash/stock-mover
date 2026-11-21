@@ -181,6 +181,8 @@ export type TransferRequest = {
   days: number;                            // lead_times route days
   due_on: string | null;                   // approve date + days
   giver_on_hand: number; giver_cover_days_after: number | null;
+};
+
 // ---- Shipments and driver trips (#82) ----
 export type ShipmentStatus = "approved" | "assigned" | "in_transit" | "delivered" | "received";
 /** One location ping from the driver's phone. `place` = nearest town from the bundled PIN table. */

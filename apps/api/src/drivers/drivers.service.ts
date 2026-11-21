@@ -26,7 +26,7 @@ const ROW = `
     left join lateral (
       select sum(l.qty)::int as pieces, min(r.to_location) as to_location
         from shipments s join transfer_requests r on r.id = s.request_id join transfer_lines l on l.request_id = r.id
-       where s.driver_id = d.id and r.status in ('assigned', 'in_transit')
+       where s.driver_id = d.id and r.status in ('driver_assigned', 'on_the_way')
     ) ld on true`;
 
 type Row = {
