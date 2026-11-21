@@ -6,6 +6,7 @@ import { scopeLocation } from '../runs/scoped';
 import { RunsService, TODAY } from '../runs/runs.service';
 import { AiLogService } from './ai-log.service';
 import { chatContext } from './context';
+import { cleanTags, recognise, suggestions } from './entities';
 import { AllowedSet, isForecastRequest } from './grounding';
 import { MeshClient, type ChatMessage } from './mesh.client';
 import { CHAT_RULES, SYSTEM_RULES, correction, scopeRule } from './prompts';
@@ -15,12 +16,15 @@ const MAX_TURNS = 6;
 const UNAVAILABLE = 'Ask is not available right now. Everything else works.';
 
 type Turn = { role: 'user' | 'assistant'; content: string };
-type ChatBody = { question?: unknown; history?: unknown };
+type ChatBody = { question?: unknown; history?: unknown; tags?: unknown };
 
 /**
  * POST /api/chat → text/plain stream of answer chunks, then a newline and one JSON line:
  * {"done":true,"numbers_found":n,"numbers_total":n,"result":"SHOWN"|"HELD_BACK"|"ERROR","held_reason"?,"text"?}
  * When "text" is present it REPLACES everything streamed before (grounding failed or retry fixed it).
+ * Request may carry tags: { stores?, skus?, moves? } (exact ids, max 5). The final line also carries
+ * about: { stores, skus, moves } (everything recognised, tags included) and, when the answer is a refusal or
+ * held back, suggestions: up to 4 template questions the context can answer (#13).
  */
 @Controller('chat')
 export class ChatController {
@@ -61,6 +65,11 @@ export class ChatController {
     }
     const m = run.moves;
     const started = Date.now();
+    // `m` is already the scoped file (#77), so recognition, tags, focus, checks and suggestions only see this scope.
+    const about = recognise(m, question, cleanTags(m, body.tags));
+    // Every final line says what was recognised; refusals and held-back answers also get follow-up questions.
+    const finishAbout = (extra: Record<string, unknown>, suggest = false) =>
+      finish({ ...extra, about, ...(suggest ? { suggestions: suggestions(m, about) } : {}) });
     const base = { run_id: m.run.run_id, job: 'ASK' as const, model: this.mesh.model, input_summary: ((loc ? `location ${loc}: ` : '') + question).slice(0, 300) };
     const log = (c: Omit<AiCall, 'id' | 'at' | 'run_id' | 'job' | 'model' | 'input_summary' | 'latency_ms'>) =>
       this.aiLog.add({ ...base, ...c, latency_ms: Date.now() - started });
@@ -71,16 +80,16 @@ export class ChatController {
         `${m.summary.moves} moves on today's list and ${m.summary.stores_at_risk} stores at risk. Ask about any of those.`;
       write(text);
       await log({ output: text, numbers_found: 0, numbers_total: 0, result: 'HELD_BACK', held_reason: 'FORECAST_REQUEST' });
-      return finish({ numbers_found: 0, numbers_total: 0, result: 'HELD_BACK', held_reason: 'FORECAST_REQUEST' });
+      return finishAbout({ numbers_found: 0, numbers_total: 0, result: 'HELD_BACK', held_reason: 'FORECAST_REQUEST' }, true);
     }
 
     if (!this.mesh.available) {
       write(UNAVAILABLE);
       await log({ output: 'MESH_API_KEY not set', numbers_found: 0, numbers_total: 0, result: 'ERROR', held_reason: 'MODEL_ERROR' });
-      return finish({ numbers_found: 0, numbers_total: 0, result: 'ERROR', held_reason: 'MODEL_ERROR' });
+      return finishAbout({ numbers_found: 0, numbers_total: 0, result: 'ERROR', held_reason: 'MODEL_ERROR' });
     }
 
-    const ctx = chatContext(m, question);
+    const ctx = chatContext(m, question, about);
     const allowed = new AllowedSet(ctx, [m.run.as_of, TODAY], m);
     const messages: ChatMessage[] = [
       { role: 'system', content: `${SYSTEM_RULES}\n${CHAT_RULES}${loc ? '\n' + scopeRule(loc) : ''}\n\nTODAY'S DATA (as of ${m.run.as_of}):\n${JSON.stringify(ctx)}` },
@@ -104,16 +113,17 @@ export class ChatController {
       }
       const usage = { tokens_in: tokensIn, tokens_out: tokensOut };
       if (!g.ok) {
-        const text = `That is not in today's data. What it does have: ${m.summary.moves} moves on today's list (as of ${m.run.as_of}). Try naming a store, SKU or style.`;
+        const text = `That is not in today's data. What it does have: ${m.summary.moves} moves on today's list (as of ${m.run.as_of}). Try one of the questions below, or tag a store, product or move.`;
         await log({ ...usage, output: out.text, numbers_found: g.found, numbers_total: g.total, result: 'HELD_BACK', held_reason: 'UNGROUNDED_NUMBER' });
-        return finish({ numbers_found: g.found, numbers_total: g.total, result: 'HELD_BACK', held_reason: 'UNGROUNDED_NUMBER', text });
+        return finishAbout({ numbers_found: g.found, numbers_total: g.total, result: 'HELD_BACK', held_reason: 'UNGROUNDED_NUMBER', text }, true);
       }
       await log({ ...usage, output: out.text, numbers_found: g.found, numbers_total: g.total, result: 'SHOWN' });
-      return finish({ numbers_found: g.found, numbers_total: g.total, result: 'SHOWN', ...(replaced ? { text: out.text } : {}) });
+      const refused = /not in today'?s data/i.test(out.text);
+      return finishAbout({ numbers_found: g.found, numbers_total: g.total, result: 'SHOWN', ...(replaced ? { text: out.text } : {}) }, refused);
     } catch (e) {
       await log({ output: (e as Error).message.slice(0, 300), numbers_found: 0, numbers_total: 0, result: 'ERROR', held_reason: 'MODEL_ERROR' });
       write(UNAVAILABLE);
-      return finish({ numbers_found: 0, numbers_total: 0, result: 'ERROR', held_reason: 'MODEL_ERROR', text: UNAVAILABLE });
+      return finishAbout({ numbers_found: 0, numbers_total: 0, result: 'ERROR', held_reason: 'MODEL_ERROR', text: UNAVAILABLE });
     }
   }
 }

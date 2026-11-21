@@ -1,6 +1,7 @@
 import type { Move, MovesFile } from '@sm/contract';
+import { recognise, isEmpty, type About } from './entities';
 
-const MAX_CHAT_MOVES = 150;
+const MAX_CHAT_MOVES = 20; // full detail; every matching move is also a compact row in focus and move_index
 const DEFAULT_CHAT_MOVES = 8; // full detail only; move_index already lists every move
 
 const problemLines = (m: MovesFile) => m.problems.map(({ tag, title, seen, fix }) => ({ tag, title, seen, fix }));
@@ -105,34 +106,68 @@ export function storeFlows(m: MovesFile): StoreFlow[] {
   });
 }
 
-/** Chat input: run + summary + problems + blocked + complete lists/totals + only the moves/stores/flags the question names. */
-export function chatContext(m: MovesFile, question: string) {
-  const q = question.toLowerCase();
-  const has = (s: string | undefined) => !!s && q.includes(s.toLowerCase());
-  const storeIds = new Set(
-    m.stores.filter((s) => has(s.store_id) || has(s.city)).map((s) => s.store_id),
-  );
-  const moveIds = new Set((question.toUpperCase().match(/\bM\d{4}\b/g) ?? []));
+/**
+ * Full detail for every tagged or recognised entity (#13), so vague questions ("what is not going right?")
+ * are answered from the data for that entity.
+ */
+function focusOn(m: MovesFile, about: About) {
+  const flows = new Map(storeFlows(m).map((f) => [f.store, f]));
+  const problemsOf = (pred: (p: MovesFile['problems'][number]) => boolean) =>
+    m.problems.filter(pred).map(({ id, tag, title, seen, fix }) => ({ id, tag, title, seen, fix }));
+  const row = (mv: Move) => [mv.id, mv.type, mv.trigger, mv.from, mv.to, mv.sku_id, mv.qty, mv.value_inr, mv.arrives_on, mv.needs_signoff ? 1 : 0];
+  const ofProduct = (id: string) => (mv: Move) => mv.sku_id === id || mv.style_id === id;
+  return {
+    note: 'The question is about these stores, products and moves (tagged or typed), even if it is vague or misspelt. Answer from here.',
+    moves: about.moves.map((id) => {
+      const mv = m.moves.find((x) => x.id === id)!;
+      return {
+        move: mv,
+        problems: problemsOf((p) => p.move_ids.includes(id)),
+        // Flags for its product anywhere, and flags for the same style at its two stores.
+        flags: m.flags.filter((f) => f.sku_id === mv.sku_id ||
+          ((f.store_id === mv.from || f.store_id === mv.to) && f.sku_id.startsWith(mv.style_id + '-'))),
+      };
+    }),
+    stores: about.stores.map((id) => ({
+      store: m.stores.find((s) => s.store_id === id) ?? { store_id: id },
+      flow: flows.get(id) ?? null,
+      // WH-KOL is on most moves: its rows are already in move_index, so they are not repeated here.
+      moves: id === 'WH-KOL'
+        ? 'every move_index row with from or to WH-KOL'
+        : { cols: 'as move_index', rows: m.moves.filter((mv) => mv.from === id || mv.to === id).map(row) },
+      problems: problemsOf((p) => p.subject.store_id === id || p.move_ids.some((x) => { const mv = m.moves.find((y) => y.id === x); return mv?.from === id || mv?.to === id; })),
+      flags: m.flags.filter((f) => f.store_id === id),
+    })),
+    products: about.skus.map((id) => ({
+      product: id,
+      moves: { cols: 'as move_index', rows: m.moves.filter(ofProduct(id)).map(row) },
+      problems: problemsOf((p) => p.subject.sku_id === id || p.subject.style_id === id || (!!p.subject.sku_id && p.subject.sku_id.startsWith(id + '-'))),
+      flags: m.flags.filter((f) => f.sku_id === id || f.sku_id.startsWith(id + '-')),
+    })),
+  };
+}
+
+/** Chat input: run + summary + problems + blocked + complete lists/totals + full detail for the entities in `about`. */
+export function chatContext(m: MovesFile, question: string, about: About = recognise(m, question)) {
+  const storeIds = new Set(about.stores.filter((id) => id !== 'WH-KOL')); // WH-KOL alone would match most moves
+  const moveIds = new Set(about.moves);
+  const productIds = new Set(about.skus);
   const movesHit = m.moves.filter(
-    (mv) =>
-      moveIds.has(mv.id) ||
-      storeIds.has(mv.from) || storeIds.has(mv.to) || has(mv.from) || has(mv.to) ||
-      has(mv.sku_id) || has(mv.style_id) || has(mv.style_name),
+    (mv) => moveIds.has(mv.id) || storeIds.has(mv.from) || storeIds.has(mv.to) || productIds.has(mv.sku_id) || productIds.has(mv.style_id),
   );
   // Moves named by id go first so the cap never drops them.
   movesHit.sort((a, b) => Number(moveIds.has(b.id)) - Number(moveIds.has(a.id)));
-  const named = movesHit.length > 0 || storeIds.size > 0;
+  const named = movesHit.length > 0;
   const pool = named ? movesHit : [...m.moves].sort((a, b) => b.priority - a.priority);
-  const moves = pool.slice(0, named ? MAX_CHAT_MOVES : DEFAULT_CHAT_MOVES).map(compactMove);
+  const moves = pool.slice(0, named ? Math.max(MAX_CHAT_MOVES, moveIds.size) : DEFAULT_CHAT_MOVES).map(compactMove);
   // Label every partial list with its true total, so the model can say "showing N of M".
   const moves_note = named
     ? moves.length < pool.length
       ? `full detail for ${moves.length} of ${pool.length} moves that match the question; move_index has all ${m.moves.length}`
       : `full detail for all ${moves.length} moves that match the question; move_index has all ${m.moves.length}`
     : `full detail for the top ${moves.length} of ${m.moves.length} moves by priority; move_index has all ${m.moves.length}`;
-  const flags = m.flags.filter((f) => storeIds.has(f.store_id) || has(f.store_id) || has(f.sku_id) || has(f.sku_id.split('-').slice(0, 2).join('-')));
-  const stores = m.stores.filter((s) => storeIds.has(s.store_id));
   return {
+    ...(isEmpty(about) ? {} : { focus: focusOn(m, about) }),
     run: { run_id: m.run.run_id, as_of: m.run.as_of, generated_at: m.run.generated_at, next_run_at: m.run.next_run_at },
     summary: m.summary,
     problems: m.problems.map(({ id, kind, tag, title, seen, fix, subject, move_ids, impact_inr, needs_signoff_count }) => ({
@@ -142,7 +177,5 @@ export function chatContext(m: MovesFile, question: string) {
     ...completeLists(m),
     moves_note,
     moves,
-    stores,
-    flags,
   };
 }

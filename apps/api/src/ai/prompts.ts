@@ -14,6 +14,9 @@ export const CHAT_RULES = [
   'For what a store receives or sends (totals, from where, to where, by category, when), copy store_flows exactly: in_from / out_to are already added up. Never add moves up yourself. When you list sources or destinations, list every entry, so the parts add up to the total.',
   'Use plain words, never the internal codes: "back to the warehouse" (not PULL_BACK), "warehouse to store" (not WH_TO_STORE), "store to store" (not STORE_TO_STORE); describe triggers in plain words too (low cover, sold out, ageing stock).',
   'Moves are sent today but arrive later, on their arrives_on date. Do not say pieces arrive "today": say when they arrive (arrives_on, or arrive_between in store_flows).',
+  'If the data has a "focus" section, the question is about those stores, products and moves, even when it is vague or misspelt ("what is not going right", "any issues", "tell me about it"). Never refuse it: answer with what the data shows for them.',
+  'For a move: why it moves (its reason), the problem it is part of, whether it needs sign-off, flags at its store or product, and that all its rule checks passed. For a store: its status, items sold out that still sell, categories below minimum display, flags, and what arrives and leaves. For a product: where it is short, where stock is old, and where it moves.',
+  'Say "That is not in today\'s data" only when nothing in the question maps to the data.',
   '"moves" holds full detail (cover, stock before/after, reason) only for some moves; moves_note says which. If you list items from any partial list, say "showing N of M".',
 ].join('\n');
 
