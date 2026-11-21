@@ -168,8 +168,12 @@ export function generateMoves(P: Positions): GenerateResult {
   const restockTrigger = (p: Position): MoveTrigger => (p.velocity > 0 && p.instock_days < WINDOW_DAYS - STOCKOUT_DAYS ? 'STOCKOUT' : 'LOW_COVER');
   const restockReason = (p: Position, from: string, qty: number) => (x: { arrives: string; toBefore: Side; toAfter: Side }) =>
     restockTrigger(p) === 'STOCKOUT'
-      ? R.stockout({ outDays: Math.round(WINDOW_DAYS - p.instock_days), v: p.velocity, qty, from: from === WAREHOUSE_ID ? 'WH' : from, arrives: x.arrives })
-      : R.whLowCover({ v: p.velocity, available: x.toBefore.on_hand + x.toBefore.in_transit, coverBefore: x.toBefore.cover_days, qty, coverAfter: x.toAfter.cover_days, arrives: x.arrives });
+      ? R.stockout({
+        instockDays: p.instock_days, launch: c.items.get(p.sku_id)!.launch_date, opened: c.storeById.get(p.store_id)!.opened_on, v: p.velocity, basis: p.basis,
+        qty, from: from === WAREHOUSE_ID ? 'WH' : from, arrives: x.arrives,
+        available: x.toBefore.on_hand + x.toBefore.in_transit, coverBefore: x.toBefore.cover_days, coverAfter: x.toAfter.cover_days,
+      })
+      : R.whLowCover({ v: p.velocity, basis: p.basis, available: x.toBefore.on_hand + x.toBefore.in_transit, coverBefore: x.toBefore.cover_days, qty, coverAfter: x.toAfter.cover_days, arrives: x.arrives });
 
   // Rule 1 outranks restocking: keep enough room for the pieces other categories still need to reach min display.
   const whHasCat = (cat: string) => [...c.items.values()].some((it) => displayCategory(it.category) === cat && L.whLeft(it.sku_id) > 0);
@@ -235,7 +239,7 @@ export function generateMoves(P: Positions): GenerateResult {
       emit({
         type: 'STORE_TO_STORE', trigger: 'AGEING', sku: a.sku_id, from: a.store_id, to: t.store_id, qty: q,
         geo: { distance_km: o.km, travel_days: o.days, alternatives: takers.filter((x) => x !== o).slice(0, 5).map(altOf) },
-        reason: () => R.ageing({ from: a.store_id, age: a.stock_age_days!, sold: a.units_12w, to: t.store_id, toV: t.velocity, qty: q, days: o.days }),
+        reason: () => R.ageing({ from: a.store_id, age: a.stock_age_days!, sold: a.units_12w, instock: a.instock_days, to: t.store_id, toV: t.velocity, toBasis: t.basis, qty: q, days: o.days }),
         priority: () => ageingPriority({ qty: q, mrp: a.mrp, age: a.stock_age_days }),
       });
       spare -= q;
@@ -338,10 +342,11 @@ export function generateMoves(P: Positions): GenerateResult {
       }
       for (const [sku, q] of plan) {
         const p = row(st.store_id, sku);
+        const rank = best.findIndex((b) => b.sku_id === sku) + 1;
         const v = p?.velocity ?? netVelocity(sku), mrp = c.items.get(sku)!.mrp;
         emit({
           type: 'WH_TO_STORE', trigger: 'MIN_DISPLAY', sku, from: WAREHOUSE_ID, to: st.store_id, qty: q,
-          reason: ({ arrives }) => R.minDisplay({ category: cat, now: nowCat, min, qty: q, v, arrives }),
+          reason: ({ arrives }) => R.minDisplay({ category: cat, now: nowCat, min, qty: q, v, own: !!p && p.basis !== 'peer', rank, of: best.length, whAge: P.wh.get(sku)?.stock_age_days ?? null, arrives }),
           priority: ({ lead }) => restockPriority({ v, available: p?.available ?? 0, leadTime: lead, qty: q, mrp }) + Math.round(0.1 * q * mrp),
         });
       }
@@ -401,10 +406,13 @@ export function generateMoves(P: Positions): GenerateResult {
           type: 'STORE_TO_STORE', trigger: restockTrigger(r), sku, from: d.store_id, to: r.store_id, qty: q,
           geo: { distance_km: o.km, travel_days: o.days, alternatives },
           reason: ({ fromAfter }) => R.storeToStore({
-            from: d.store_id, to: r.store_id, qty: q, fromCover: coverFrom, toCover: coverTo, fromAfter: fromAfter.cover_days, days: o.days,
+            from: d.store_id, to: r.store_id, qty: q, fromCover: coverFrom, toCover: coverTo, fromAfter: fromAfter.cover_days, days: o.days, km: o.km,
             jumped: o.jumped ? { store: o.jumped.r.store_id, cover: L.cover(o.jumped.r) } : null,
             closer: closer ? { store: closer.r.store_id, days: closer.days } : null,
-            farther: !closer && alternatives.length ? { store: alternatives[0].store_id, days: alternatives[0].travel_days } : null,
+            farther: !closer && alternatives.length ? {
+              store: alternatives[0].store_id, days: alternatives[0].travel_days, km: alternatives[0].distance_km,
+              cover: L.cover(ordered.find((x) => x.r.store_id === alternatives[0].store_id)!.r),
+            } : null,
           }),
           priority: ({ lead }) => restockPriority({ v: r.velocity, available: r.available, leadTime: lead, qty: q, mrp: r.mrp }),
         });
@@ -425,7 +433,10 @@ export function generateMoves(P: Positions): GenerateResult {
     if (q < MIN_PULL_BACK) continue;
     emit({
       type: 'PULL_BACK', trigger: 'AGEING', sku: a.sku_id, from: a.store_id, to: WAREHOUSE_ID, qty: q,
-      reason: () => R.pullBackAgeing({ qty: q, age: a.stock_age_days, v: a.velocity, sold: a.units_12w }),
+      reason: ({ fromBefore }) => R.pullBackAgeing({
+        qty: q, age: a.stock_age_days, v: fromBefore.velocity, basis: a.basis, sold: a.units_12w, instock: a.instock_days,
+        onHand: fromBefore.on_hand + fromBefore.in_transit, cover: fromBefore.cover_days,
+      }),
       priority: () => ageingPriority({ qty: q, mrp: a.mrp, age: a.stock_age_days }),
     });
   }

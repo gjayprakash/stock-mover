@@ -79,11 +79,19 @@ export function buildProblems(P: Positions, moves: Move[], stores: StoreSummary[
       const rs = hitRows.filter((p) => p.store_id === st);
       return rs.length ? sumArr(rs.map((p) => sumArr(p.v.weekly_days.slice(nW - 3)))) / rs.length : 0;
     });
+    // Days it could have been on the shelf in the last 21: not before the style launched or the store opened.
+    const launch = c.items.get(s.rows[0].sku_id)!.launch_date, from21 = addDays(AS_OF, -20);
+    const possible = storesHit.map((st) => {
+      const start = [from21, launch, c.storeById.get(st)!.opened_on].reduce((x, y) => (y > x ? y : x));
+      return Math.max(0, daysBetween(start, AS_OF) + 1);
+    });
+    const avgPossible = Math.round(sumArr(possible) / possible.length);
+    const shelfOf = avgPossible >= 21 ? 'the last 21 days' : `a possible ${avgPossible} days (some stores opened or the style launched within 21 days)`;
     const perStoreRate = storesHit.map((st) => hitRows.filter((p) => p.store_id === st).reduce((a, p) => a + p.velocity, 0));
     push('STARVED_BESTSELLER', {
       tag: 'Best-seller running out',
       title: `${s.name} is selling out across ${storesHit.length} stores`,
-      seen: `On the shelf only ${Math.round(sumArr(shelf) / shelf.length)} of the last 21 days at ${storesHit.length} stores, while it sells ${rate(sumArr(perStoreRate) / perStoreRate.length)} a day per store when it is there.`,
+      seen: `On the shelf on average only ${Math.round(sumArr(shelf) / shelf.length)} of ${shelfOf} at ${storesHit.length} stores, while it sells ${rate(sumArr(perStoreRate) / perStoreRate.length)} a day per store when it is there.`,
       fix: fixLine(fix),
       subject: { style_id: s.style_id },
       move_ids: fix.map((m) => m.id), impact_inr: priority(fix), chart: chartFor(s),
