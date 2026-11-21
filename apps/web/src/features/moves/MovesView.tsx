@@ -5,7 +5,7 @@ import { applyFilters, EMPTY_FILTERS, type ApprovalStatus, type Filters } from '
 import { MovesFilters } from './MovesFilters';
 import { MoveRow } from './MoveRow';
 import { MoveDetail } from './MoveDetail';
-import { AlternativesList, ClosestBanner } from './Distance';
+import { AllMovesContext, AlternativesList, ClosestBanner } from './Distance';
 
 const PAGE = 50;
 
@@ -37,6 +37,12 @@ export function MovesView(p: MovesViewProps) {
     setPage(i >= 0 ? Math.floor(i / PAGE) : 0);
     setSelected(new Set());
   }, [filterKey, file]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // In-app links to ?move=<id> (e.g. from the closer-stores note): jump to the page holding that row.
+  useEffect(() => {
+    const i = filters.move ? rows.findIndex((m) => m.id === filters.move) : -1;
+    if (i >= 0) setPage(Math.floor(i / PAGE));
+  }, [filters.move]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Bring the expanded row into view once it is on screen (deep links land before the file loads).
   const scrolledTo = useRef('');
@@ -119,6 +125,7 @@ export function MovesView(p: MovesViewProps) {
 
       {file && <ClosestBanner file={file} />}
 
+      <AllMovesContext.Provider value={file?.moves ?? []}>
       <Card padded={false} className="overflow-hidden">
         <div className="relative overflow-x-auto">
           <table className="w-full min-w-[980px] border-collapse text-[15px]">
@@ -217,6 +224,7 @@ export function MovesView(p: MovesViewProps) {
           </div>
         )}
       </Card>
+      </AllMovesContext.Provider>
 
       {(chosen.length > 0 || note || undoIds.length > 0) && (
         <section className="sticky bottom-20 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-2xl bg-brown px-6 py-4 text-[#FFFBF2] shadow-[0_16px_40px_rgba(81,29,0,0.35)] md:bottom-6">
