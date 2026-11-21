@@ -12,6 +12,7 @@ import AddStorePage from './pages/AddStorePage';
 import ShipmentsPage from './pages/ShipmentsPage';
 import DriversPage from './pages/DriversPage';
 import RequestsPage from './pages/RequestsPage';
+import ManagersPage from './pages/ManagersPage';
 import { EmptyState } from './components/EmptyState';
 
 export default function App() {
@@ -31,6 +32,7 @@ export default function App() {
         <Route path="shipments" element={<ShipmentsPage />} />
         <Route path="drivers" element={<DriversPage />} />
         <Route path="requests" element={<RequestsPage />} />
+        <Route path="managers" element={<ManagersPage />} />
         <Route path="*" element={<EmptyState title="Page not found" body="Use the menu to get back to today's moves." />} />
       </Route>
     </Routes>

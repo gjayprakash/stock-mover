@@ -5,7 +5,7 @@ import './index.css';
 import App from './App';
 import { MovesFileProvider } from './data/useMovesFile';
 import { ApprovalsProvider } from './data/approvals';
-import { AuthProvider } from './features/login/auth';
+import { AuthProvider } from './features/auth/auth';
 
 // Driver phone app (/pair, /driver): its own minimal UI, no sidebar, loaded on its own.
 const DriverApp = lazy(() => import('./driver/DriverApp'));

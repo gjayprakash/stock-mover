@@ -10,7 +10,7 @@ const field =
   'min-h-12 w-full rounded-xl border border-line bg-white px-4 text-base text-ink outline-none focus:border-cta focus:ring-2 focus:ring-cta-bg disabled:bg-page disabled:text-muted';
 
 export function LoginForm() {
-  const { signedIn } = useAuth();
+  const { refresh } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [email, setEmail] = useState('');
@@ -45,7 +45,7 @@ export function LoginForm() {
         body: JSON.stringify({ email: email.trim(), password }),
       });
       if (r.ok) {
-        signedIn(email.trim().toLowerCase());
+        await refresh();
         navigate(safeNext(params.get('next')), { replace: true });
         return;
       }

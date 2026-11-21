@@ -1,11 +1,13 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation, useSearchParams } from 'react-router-dom';
 import { useMovesFile } from '../data/useMovesFile';
-import { useAuth } from '../features/login/auth';
-import { dateLong, dateShort, timeShort } from '../lib/format';
+import { useAuth } from '../features/auth/auth';
+import { useLocations } from '../features/auth/viewing';
+import { useWaitingCount } from '../features/requests/useWaitingCount';
+import { dateLong, dateShort, storeLabel, timeShort } from '../lib/format';
 import manyavarLogo from '../assets/manyavar.png';
 
-type NavItem = { to: string; label: string; icon: ReactNode; end?: boolean };
+type NavItem = { to: string; label: string; icon: ReactNode; end?: boolean; short?: string };
 
 const I = (d: ReactNode) => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -22,18 +24,51 @@ const ICON = {
   more: I(<><circle cx="5" cy="12" r="1.2" /><circle cx="12" cy="12" r="1.2" /><circle cx="19" cy="12" r="1.2" /></>),
   addStock: I(<><path d="M3 8l9-5 9 5v8l-9 5-9-5z" /><path d="M12 9v6M9 12h6" /></>),
   addStore: I(<><path d="M4 9l1.5-5h13L20 9M4 9v11h9M4 9h16v3" /><path d="M18 15v6M15 18h6" /></>),
+  requests: I(<><path d="M4 13h4l2 3h4l2-3h4" /><path d="M4 13l2.5-7h11L20 13v6H4z" /></>),
+  shipments: I(<><path d="M2 7h12v9H2zM14 10h4l3 3v3h-7z" /><circle cx="6" cy="18" r="2" /><circle cx="17" cy="18" r="2" /></>),
+  drivers: I(<><rect x="7" y="2.5" width="10" height="19" rx="2.5" /><path d="M11 18h2" /></>),
+  managers: I(<><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" /><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.3c2.2.7 3.5 2.8 3.5 5.7" /></>),
 };
 
-const NAV: NavItem[] = [
-  { to: '/', label: 'Today', icon: ICON.today, end: true },
-  { to: '/moves', label: 'All moves', icon: ICON.moves },
+const TODAY: NavItem = { to: '/', label: 'Today', icon: ICON.today, end: true };
+const REQUESTS: NavItem = { to: '/requests', label: 'Requests', icon: ICON.requests };
+const SHIPMENTS: NavItem = { to: '/shipments', label: 'Shipments', icon: ICON.shipments };
+const DRIVERS: NavItem = { to: '/drivers', label: 'Drivers', icon: ICON.drivers };
+const ASK: NavItem = { to: '/ask', label: 'Ask', icon: ICON.ask };
+
+const ADMIN_NAV: NavItem[] = [
+  TODAY,
+  { to: '/moves', label: 'All moves', short: 'Moves', icon: ICON.moves },
   { to: '/stores', label: 'Stores', icon: ICON.stores },
-  { to: '/ask', label: 'Ask', icon: ICON.ask },
+  REQUESTS,
+  SHIPMENTS,
+  DRIVERS,
+  { to: '/managers', label: 'Store managers', icon: ICON.managers },
+  ASK,
   { to: '/ai', label: 'AI usage', icon: ICON.ai },
   { to: '/run', label: 'Daily run', icon: ICON.run },
   { to: '/add-stock', label: 'Add stock', icon: ICON.addStock },
   { to: '/add-store', label: 'Add store', icon: ICON.addStore },
 ];
+/** A store manager: their own store only, no Add store / Daily run / AI usage. */
+const MANAGER_NAV: NavItem[] = [
+  TODAY,
+  { to: '/moves', label: 'My moves', short: 'Moves', icon: ICON.moves },
+  REQUESTS,
+  SHIPMENTS,
+  DRIVERS,
+  ASK,
+];
+/** Phone tab bar; the rest of the role's links sit under More. */
+const ADMIN_TABS = ['/', '/moves', '/stores', '/ask'];
+const MANAGER_TABS = ['/', '/moves', '/requests', '/ask'];
+
+function useNav() {
+  const admin = useAuth().isAdmin;
+  const nav = admin ? ADMIN_NAV : MANAGER_NAV;
+  const tabs = admin ? ADMIN_TABS : MANAGER_TABS;
+  return { nav, tabs: nav.filter((n) => tabs.includes(n.to)), rest: nav.filter((n) => !tabs.includes(n.to)) };
+}
 
 /** The Manyavar wordmark (cropped from the brand logo Asjad supplied). Intrinsic size 319 × 77. */
 function Logo({ small }: { small?: boolean }) {
@@ -64,20 +99,60 @@ function RunCard() {
   );
 }
 
+const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('');
+
 /** Only when sign-in is on and someone is signed in. */
-function SignOut() {
-  const { email, signOut } = useAuth();
-  if (!email) return null;
+function UserCard() {
+  const { status, me, signOut } = useAuth();
+  if (status !== 'in' || !me) return null;
   return (
-    <div className="flex flex-col gap-1 px-3 pt-2 text-sm text-muted">
-      <span className="truncate" title={email}>{email}</span>
-      <button className="min-h-10 self-start bg-transparent p-0 font-bold text-cta" onClick={signOut}>Sign out</button>
+    <div className="flex items-center gap-3 px-2 pt-3">
+      <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brown text-[13px] font-bold text-page">{initials(me.name || me.email)}</span>
+      <span className="flex min-w-0 flex-col text-[15px] leading-snug">
+        <span className="truncate font-semibold text-ink" title={me.email}>{me.name || me.email}</span>
+        <button className="self-start bg-transparent p-0 text-left text-[#4A3A2E] hover:text-cta" onClick={signOut}>Sign out</button>
+      </span>
+    </div>
+  );
+}
+
+/** Super admin: look at every location or one store. Every API call then carries ?location=. */
+function ViewingPicker() {
+  const { isAdmin, viewing, setViewing } = useAuth();
+  const locations = useLocations();
+  if (!isAdmin) return null;
+  return (
+    <label className="flex flex-col gap-1.5 px-2 text-[13px] font-bold text-muted">
+      Viewing
+      <select
+        value={viewing ?? ''}
+        onChange={(e) => setViewing(e.target.value || null)}
+        className="min-h-11 rounded-[10px] border-[1.5px] border-[#D9C49C] bg-[#FFFDF8] px-2.5 text-[15px] font-normal text-ink"
+      >
+        <option value="">All locations ({locations.length})</option>
+        {locations.map((l) => <option key={l.store_id} value={l.store_id}>{storeLabel(l)}</option>)}
+      </select>
+    </label>
+  );
+}
+
+function YourStore() {
+  const { me, isAdmin } = useAuth();
+  const locations = useLocations();
+  if (isAdmin || !me?.location_id) return null;
+  return (
+    <div className="mx-2 rounded-xl bg-tint px-3.5 py-3 text-sm leading-snug text-brown">
+      <span className="block text-xs font-bold text-[#6B4A33]">Your store</span>
+      <span className="text-base font-bold">{storeLabel(me.location_id, locations)}</span>
     </div>
   );
 }
 
 function Sidebar() {
   const { data, isSample } = useMovesFile();
+  const { nav } = useNav();
+  const { isAdmin } = useAuth();
+  const waiting = useWaitingCount();
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col gap-7 overflow-y-auto overscroll-contain bg-white px-4 py-6 shadow-[1px_0_0_#EFE2C8,8px_0_24px_rgba(81,29,0,0.04)] md:flex">
       <div className="px-2"><Logo /></div>
@@ -85,8 +160,10 @@ function Sidebar() {
         <span>{data ? `Stock as of close ${dateLong(data.run.as_of)}` : ' '}</span>
         {isSample && <span><SampleBadge /></span>}
       </div>
+      <ViewingPicker />
+      <YourStore />
       <nav aria-label="Main" className="flex flex-col gap-1">
-        {NAV.map((n) => (
+        {nav.map((n) => (
           <NavLink
             key={n.to}
             to={n.to}
@@ -97,10 +174,13 @@ function Sidebar() {
           >
             {n.icon}
             {n.label}
+            {n.to === '/requests' && waiting > 0 && (
+              <span className="ml-auto rounded-full bg-cta px-2 py-0.5 text-xs font-bold text-white" aria-label={`${waiting} waiting for you`}>{waiting}</span>
+            )}
           </NavLink>
         ))}
       </nav>
-      <div className="mt-auto"><RunCard /><SignOut /></div>
+      <div className="mt-auto">{isAdmin && <RunCard />}<UserCard /></div>
     </aside>
   );
 }
@@ -118,18 +198,12 @@ function MobileHeader() {
   );
 }
 
-const TABS: NavItem[] = [
-  { to: '/', label: 'Today', icon: ICON.today, end: true },
-  { to: '/moves', label: 'Moves', icon: ICON.moves },
-  { to: '/stores', label: 'Stores', icon: ICON.stores },
-  { to: '/ask', label: 'Ask', icon: ICON.ask },
-];
-
 function TabBar() {
   const [more, setMore] = useState(false);
   const { pathname } = useLocation();
+  const { tabs, rest } = useNav();
   useEffect(() => setMore(false), [pathname]);
-  const moreActive = NAV.slice(4).some((n) => pathname.startsWith(n.to));
+  const moreActive = rest.some((n) => pathname.startsWith(n.to));
   const tab = (active: boolean) =>
     `flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-xs no-underline ${active ? 'font-bold text-cta' : 'font-medium text-[#4A3A2E]'}`;
   const pill = (active: boolean) => `flex h-8 w-14 items-center justify-center rounded-full ${active ? 'bg-cta-bg' : ''}`;
@@ -140,7 +214,9 @@ function TabBar() {
         <>
           <button aria-label="Close menu" className="fixed inset-0 z-30 bg-black/20 md:hidden" onClick={() => setMore(false)} />
           <div className="fixed right-3 bottom-[76px] z-40 flex w-52 flex-col gap-1 rounded-2xl bg-white p-2 shadow-card md:hidden">
-            {NAV.slice(4).map((n) => (
+            <ViewingPicker />
+            <YourStore />
+            {rest.map((n) => (
               <NavLink
                 key={n.to}
                 to={n.to}
@@ -152,7 +228,7 @@ function TabBar() {
                 {n.label}
               </NavLink>
             ))}
-            <SignOut />
+            <UserCard />
           </div>
         </>
       )}
@@ -160,12 +236,12 @@ function TabBar() {
         aria-label="Main"
         className="fixed inset-x-0 bottom-0 z-40 flex bg-white px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-1px_0_#EFE2C8,0_-8px_24px_rgba(81,29,0,0.06)] md:hidden"
       >
-        {TABS.map((t) => (
+        {tabs.map((t) => (
           <NavLink key={t.to} to={t.to} end={t.end} className={({ isActive }) => tab(isActive)}>
             {({ isActive }) => (
               <>
                 <span className={pill(isActive)}>{t.icon}</span>
-                {t.label}
+                {t.short ?? t.label}
               </>
             )}
           </NavLink>
