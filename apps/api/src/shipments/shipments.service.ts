@@ -13,14 +13,19 @@ import { StoresService } from '../stores/stores.service';
 const DATA_DIR = join(__dirname, '..', '..', '..', '..', 'data', 'csv');
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LATE_PING_MS = 24 * 3600_000;
+/** Shipment status (API, web) → transfer_requests.status (#79 names). */
+const DB: Record<ShipmentStatus, string> = {
+  approved: 'approved', assigned: 'driver_assigned', in_transit: 'on_the_way', delivered: 'delivered', received: 'received',
+};
 /** Request statuses that have a shipment (#79 creates it on approve). */
-const SHIPPING: ShipmentStatus[] = ['approved', 'assigned', 'in_transit', 'delivered', 'received'];
+const SHIPPING = Object.values(DB);
 
 const APPROVED_AT = `coalesce(r.approved_at, r.updated_at)`;
 
 /** One row per shipment: the request, its lines folded (one SKU per request today), driver, last 20 pings. */
 const ROW = `
-  select s.id, s.request_id, r.from_location, r.to_location, r.status, r.value_mrp, r.created_at as requested_at,
+  select s.id, s.request_id, r.from_location, r.to_location, r.value_mrp,
+         case r.status when 'driver_assigned' then 'assigned' when 'on_the_way' then 'in_transit' else r.status end as status, r.created_at as requested_at,
          ${APPROVED_AT} as approved_at, s.picked_up_at, s.delivered_at, s.received_at, s.qty_received,
          l.sku_id, l.qty, d.id as driver_id, d.name as driver_name, d.phone_e164 as driver_phone, p.pings
     from shipments s
@@ -113,12 +118,12 @@ export class ShipmentsService {
       `update transfer_requests r set status = $3, updated_at = now()
          from (select id, status as was from transfer_requests where id = $1 for update) o
         where r.id = o.id and o.was = any($2) returning o.was`,
-      [requestId, from, to],
+      [requestId, from.map((f) => DB[f]), DB[to]],
     );
     if (!hit) return false;
     await this.db.query(
       `insert into transfer_events (request_id, actor, from_status, to_status, at, note) values ($1, $2, $3, $4, now(), $5)`,
-      [requestId, actor, hit.was, to, note],
+      [requestId, actor, hit.was, DB[to], note],
     );
     return true;
   }
@@ -140,7 +145,7 @@ export class ShipmentsService {
     } else if (s.status === 'assigned') {
       if (s.driver_id === driverId) return this.asShipment(s);
       await this.db.query(
-        `insert into transfer_events (request_id, actor, from_status, to_status, at, note) values ($1, $2, 'assigned', 'assigned', now(), 'driver changed')`,
+        `insert into transfer_events (request_id, actor, from_status, to_status, at, note) values ($1, $2, 'driver_assigned', 'driver_assigned', now(), 'driver changed')`,
         [s.request_id, actor],
       );
     } else {
@@ -171,7 +176,7 @@ export class ShipmentsService {
 
   async trips(driverId: string): Promise<DriverTrip[]> {
     const rows = await this.db.query<{
-      id: string; status: 'assigned' | 'in_transit'; from_location: string; to_location: string; pieces: number;
+      id: string; status: string; from_location: string; to_location: string; pieces: number;
       manager_phone: string | null; last_ping_at: Date | null;
     }>(
       `select s.id, r.status, r.from_location, r.to_location,
@@ -180,12 +185,12 @@ export class ShipmentsService {
                 order by u.created_at limit 1) as manager_phone,
               (select max(taken_at) from location_pings where shipment_id = s.id) as last_ping_at
          from shipments s join transfer_requests r on r.id = s.request_id
-        where s.driver_id = $1 and r.status in ('assigned', 'in_transit')
-        order by r.status = 'assigned', s.assigned_at`,
+        where s.driver_id = $1 and r.status in ('driver_assigned', 'on_the_way')
+        order by r.status = 'driver_assigned', s.assigned_at`,
       [driverId],
     );
     return rows.map((r) => ({
-      id: r.id, status: r.status,
+      id: r.id, status: r.status === 'on_the_way' ? 'in_transit' : 'assigned',
       from_store_id: r.from_location, from_store_name: this.stores.cityOf(r.from_location),
       to_store_id: r.to_location, to_store_name: this.stores.cityOf(r.to_location),
       pieces: r.pieces, manager_phone: r.manager_phone ?? '', last_ping_at: iso(r.last_ping_at),
@@ -193,11 +198,11 @@ export class ShipmentsService {
   }
 
   /** The driver's oldest shipment in this status. */
-  private async driverShipment(driverId: string, status: ShipmentStatus) {
+  private async driverShipment(driverId: string, status: 'assigned' | 'in_transit') {
     const [s] = await this.db.query<{ id: string; request_id: string }>(
       `select s.id, s.request_id from shipments s join transfer_requests r on r.id = s.request_id
         where s.driver_id = $1 and r.status = $2 order by s.assigned_at limit 1`,
-      [driverId, status],
+      [driverId, DB[status]],
     );
     return s ?? null;
   }
@@ -224,7 +229,7 @@ export class ShipmentsService {
     await this.db.query(
       `insert into location_pings (shipment_id, device_id, lat, lng, accuracy_m, place, taken_at)
        select s.id, $2, $3, $4, $5, $6, $7 from shipments s join transfer_requests r on r.id = s.request_id
-        where s.driver_id = $1 and r.status = 'in_transit'`,
+        where s.driver_id = $1 and r.status = 'on_the_way'`,
       [driverId, deviceId, lat, lng, Number.isFinite(accuracy) ? accuracy : null, this.geo.placeNear({ lat, lng }), takenAt],
     );
   }
