@@ -234,7 +234,7 @@ export class ShipmentsService {
     await this.db.query(
       `insert into location_pings (shipment_id, device_id, lat, lng, accuracy_m, place, taken_at)
        select s.id, $2, $3, $4, $5, $6, $7 from shipments s join transfer_requests r on r.id = s.request_id
-        where s.driver_id = $1 and r.status = 'on_the_way'`,
+        where s.driver_id = $1 and r.status in ('driver_assigned', 'on_the_way')`,
       [driverId, deviceId, lat, lng, Number.isFinite(accuracy) ? accuracy : null, this.geo.placeNear({ lat, lng }), takenAt],
     );
   }

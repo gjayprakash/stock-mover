@@ -16,9 +16,9 @@ import { ShipmentsTable } from '../features/shipments/ShipmentsTable';
 import { AdminStorePicker, useNeedsStore } from '../features/auth/AdminStorePicker';
 import type { Shipment } from '../features/shipments/api';
 
-const POLL_MS = 60_000;
+const POLL_MS = 20_000;
 
-/** Shipments (#83): coming in / going out, selected shipment card, list. Polls every 60 s while open. */
+/** Shipments (#83): coming in / going out, selected shipment card, list. Polls every 20 s while open. */
 export default function ShipmentsPage() {
   const [dir, setDir] = useState<Dir>('in');
   const [data, setData] = useState<Record<Dir, ShipmentsReply | null>>({ in: null, out: null });

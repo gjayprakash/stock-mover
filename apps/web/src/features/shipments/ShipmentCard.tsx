@@ -56,11 +56,19 @@ export function ShipmentCard({ s, dir, drivers, onAssign, onReceive }: Props) {
             {last ? (
               <>
                 <div className="text-[17px] font-bold">Last seen near {last.place}</div>
-                <div className="text-[15px] text-[#4A3A2E]">{timeAgo(last.taken_at)} · sent by the driver</div>
+                <div className="text-[15px] text-[#4A3A2E]">{timeAgo(last.taken_at)} · from the driver's phone</div>
+                <a
+                  href={`https://www.google.com/maps?q=${last.lat},${last.lng}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-1 inline-flex min-h-11 items-center self-start font-semibold"
+                >
+                  Open in Google Maps
+                </a>
               </>
             ) : (
               <div className="text-[15px] text-[#4A3A2E]">
-                {s.driver ? 'No place sent yet. It shows here once the driver picks it up.' : 'Not picked up yet.'}
+                {s.driver ? 'No location yet. It shows here as soon as the driver opens the Stock Mover app.' : 'No driver yet.'}
               </div>
             )}
           </div>
