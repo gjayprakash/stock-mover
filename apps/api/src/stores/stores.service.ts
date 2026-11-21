@@ -59,7 +59,7 @@ export class StoresService implements OnModuleInit {
     return [...this.csvStores, ...this.added];
   }
 
-  private cityOf(id: string) {
+  cityOf(id: string) {
     return id === WAREHOUSE.id ? WAREHOUSE.city : this.allStores().find((s) => s.store_id === id)?.city ?? id;
   }
 

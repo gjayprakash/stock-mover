@@ -141,3 +141,20 @@ export type UserRow = Me & {
 // ---- Store scoping (#77) ----
 /** What one request may see: everything (super admin, no Viewing pick) or one location (store manager, or the picker). */
 export type Scope = { all: true } | { locationId: string };
+
+// ---- Drivers and phone pairing (#81) ----
+export type DriverStatus = "PAIRED" | "LINK_SENT" | "LINK_EXPIRED" | "TURNED_OFF";
+/** GET /api/drivers (array), GET /api/drivers/:id, POST /api/drivers/:id/revoke. Scoped to the manager's store. */
+export type Driver = {
+  id: string; name: string;
+  mobile: string;                          // 10 digits, no +91
+  phone_e164: string;                      // "+919807311426"
+  status: DriverStatus;
+  link_expires_at: string | null;          // LINK_SENT / LINK_EXPIRED only: when the latest link stops (stopped) working
+  last_ping_at: string | null; last_ping_place: string | null;  // #82
+  load: { pieces: number; to: string } | null;                  // #82
+};
+/** POST /api/drivers {name, mobile} and POST /api/drivers/:id/pair-link. `message` = WhatsApp text (Hindi + English + link + manager, store). */
+export type DriverPairLink = { driver: Driver; pair_url: string; message: string };
+/** GET /api/driver/me (device cookie). PATCH /api/driver/me {lang}. */
+export type DriverMe = { name: string; lang: "hi" | "en" | null; store: string; manager_name: string; manager_phone: string };
