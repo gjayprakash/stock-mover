@@ -35,3 +35,4 @@ export const SLOW_BOTTOM_SHARE = 0.1;
 export const UNDER_STOCKED_FILL = 0.5;
 export const UNDER_STOCKED_SOLD_OUT = 10;
 export const LAUNCH_DAYS = 60;
+export const JUMP_AHEAD_MIN_COVER = 14; // a fully-out store may jump ahead of a closer store holding ≥ this many days (#25)

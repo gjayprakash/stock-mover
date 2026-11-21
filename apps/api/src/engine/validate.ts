@@ -1,7 +1,7 @@
 // Validator (docs/02-engine.md §4). Trusts nothing in the move list: recomputes every rule from the
 // raw positions and the moves' own from/to/qty. Failing moves are dropped and logged with the rule.
 import type { Move } from '@sm/contract';
-import { displayCategory, key, leadTime } from './clean';
+import { displayCategory, key, leadTime, storeDistance } from './clean';
 import type { Positions } from './position';
 import { MIN_DONOR_COVER, TODAY, WAREHOUSE_ID } from './params';
 import { addDays } from './dates';
@@ -74,8 +74,12 @@ export function findViolations(P: Positions, moves: Move[]): Violation[] {
 
     // 7 · arrival = today + lead time, reason present
     if (fromStore || toStore) {
-      const lead = toStore ? leadTime(m.from, m.to, c.storeById, c.leadTimes) : leadTime(WAREHOUSE_ID, m.from, c.storeById, c.leadTimes);
+      const lead = toStore ? leadTime(m.from, m.to, c.storeById, c.leadTimes, c.locations) : leadTime(WAREHOUSE_ID, m.from, c.storeById, c.leadTimes);
       if (m.lead_time_days !== lead || m.arrives_on !== addDays(TODAY, lead)) v(m, 'arrival_reason', `lead ${m.lead_time_days}/${m.arrives_on}, expected ${lead}/${addDays(TODAY, lead)}`);
+      if (m.type === 'STORE_TO_STORE') {
+        const dist = storeDistance(m.from, m.to, c.locations);
+        if (dist && (m.travel_days !== dist.days || m.distance_km !== dist.km)) v(m, 'arrival_reason', `travel ${m.travel_days} d / ${m.distance_km} km, expected ${dist.days} / ${dist.km}`);
+      }
     }
     if (!m.reason || !m.reason.trim()) v(m, 'arrival_reason', 'no reason line');
   }

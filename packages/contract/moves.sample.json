@@ -79,7 +79,10 @@
         "flagship": true,
         "in_transit": true,
         "donor_cover_30": true
-      }
+      },
+      "distance_km": null,
+      "travel_days": null,
+      "alternatives": []
     },
     {
       "id": "M0002",
@@ -132,7 +135,10 @@
         "flagship": true,
         "in_transit": true,
         "donor_cover_30": true
-      }
+      },
+      "distance_km": null,
+      "travel_days": null,
+      "alternatives": []
     },
     {
       "id": "M0003",
@@ -185,7 +191,10 @@
         "flagship": true,
         "in_transit": true,
         "donor_cover_30": true
-      }
+      },
+      "distance_km": null,
+      "travel_days": null,
+      "alternatives": []
     },
     {
       "id": "M0004",
@@ -238,7 +247,10 @@
         "flagship": true,
         "in_transit": true,
         "donor_cover_30": true
-      }
+      },
+      "distance_km": null,
+      "travel_days": null,
+      "alternatives": []
     },
     {
       "id": "M0005",
@@ -291,7 +303,10 @@
         "flagship": true,
         "in_transit": true,
         "donor_cover_30": true
-      }
+      },
+      "distance_km": null,
+      "travel_days": null,
+      "alternatives": []
     },
     {
       "id": "M0006",
@@ -308,7 +323,7 @@
       "qty": 6,
       "lead_time_days": 7,
       "arrives_on": "2026-11-08",
-      "reason": "BLR-01 sold out while selling 0.30/day; warehouse has none; LKO-02 keeps 80 days cover after giving 6 (arrives 8 Nov). Worth ₹1,07,994, needs sign-off.",
+      "reason": "BLR-01 is 7 days away, BLR-03 7; moving 6 to BLR-01 leaves LKO-02 at 80 days.",
       "from_before": {
         "on_hand": 14,
         "in_transit": 0,
@@ -344,7 +359,21 @@
         "flagship": true,
         "in_transit": true,
         "donor_cover_30": true
-      }
+      },
+      "distance_km": 2056,
+      "travel_days": 7,
+      "alternatives": [
+        {
+          "store_id": "BLR-03",
+          "distance_km": 2056,
+          "travel_days": 7
+        },
+        {
+          "store_id": "BLR-04",
+          "distance_km": 2056,
+          "travel_days": 7
+        }
+      ]
     },
     {
       "id": "M0007",
@@ -359,9 +388,9 @@
       "from": "PAT-03",
       "to": "PAT-01",
       "qty": 5,
-      "lead_time_days": 2,
-      "arrives_on": "2026-11-03",
-      "reason": "PAT-01 has 6 days cover at 0.35/day; PAT-03 keeps 110 days after giving 5 (same city, arrives 3 Nov).",
+      "lead_time_days": 1,
+      "arrives_on": "2026-11-02",
+      "reason": "PAT-01 is 1 days away, MZF-01 2; moving 5 to PAT-01 leaves PAT-03 at 110 days.",
       "from_before": {
         "on_hand": 16,
         "in_transit": 0,
@@ -397,7 +426,21 @@
         "flagship": true,
         "in_transit": true,
         "donor_cover_30": true
-      }
+      },
+      "distance_km": 0,
+      "travel_days": 1,
+      "alternatives": [
+        {
+          "store_id": "MZF-01",
+          "distance_km": 82,
+          "travel_days": 2
+        },
+        {
+          "store_id": "LKO-01",
+          "distance_km": 573,
+          "travel_days": 3
+        }
+      ]
     },
     {
       "id": "M0008",
@@ -412,9 +455,9 @@
       "from": "KNP-03",
       "to": "LKO-04",
       "qty": 4,
-      "lead_time_days": 4,
-      "arrives_on": "2026-11-05",
-      "reason": "In KNP-03 for 168 days with no sales on 70 in-stock days; LKO-04 sells 0.15/day and has 1. Re-home 4 (arrives 5 Nov).",
+      "lead_time_days": 2,
+      "arrives_on": "2026-11-03",
+      "reason": "In KNP-03 for 168 days, 0 sold in 12 wks; LKO-04 (2 days away) sells 0.15/day. Move 4.",
       "from_before": {
         "on_hand": 6,
         "in_transit": 0,
@@ -450,7 +493,21 @@
         "flagship": true,
         "in_transit": true,
         "donor_cover_30": true
-      }
+      },
+      "distance_km": 98,
+      "travel_days": 2,
+      "alternatives": [
+        {
+          "store_id": "LKO-01",
+          "distance_km": 98,
+          "travel_days": 2
+        },
+        {
+          "store_id": "PAT-02",
+          "distance_km": 636,
+          "travel_days": 3
+        }
+      ]
     },
     {
       "id": "M0009",
@@ -465,9 +522,9 @@
       "from": "MYS-01",
       "to": "BLR-03",
       "qty": 4,
-      "lead_time_days": 4,
-      "arrives_on": "2026-11-05",
-      "reason": "BLR-03 has 3 days cover; MYS-01 keeps 133 days after giving 4 (same zone, arrives 5 Nov).",
+      "lead_time_days": 2,
+      "arrives_on": "2026-11-03",
+      "reason": "BLR-03 is 2 days away, BLR-01 2; moving 4 to BLR-03 leaves MYS-01 at 133 days.",
       "from_before": {
         "on_hand": 20,
         "in_transit": 0,
@@ -503,7 +560,16 @@
         "flagship": true,
         "in_transit": true,
         "donor_cover_30": true
-      }
+      },
+      "distance_km": 166,
+      "travel_days": 2,
+      "alternatives": [
+        {
+          "store_id": "BLR-01",
+          "distance_km": 166,
+          "travel_days": 2
+        }
+      ]
     },
     {
       "id": "M0010",
@@ -556,7 +622,10 @@
         "flagship": true,
         "in_transit": true,
         "donor_cover_30": true
-      }
+      },
+      "distance_km": null,
+      "travel_days": null,
+      "alternatives": []
     },
     {
       "id": "M0011",
@@ -609,7 +678,10 @@
         "flagship": true,
         "in_transit": true,
         "donor_cover_30": true
-      }
+      },
+      "distance_km": null,
+      "travel_days": null,
+      "alternatives": []
     },
     {
       "id": "M0012",
@@ -662,7 +734,10 @@
         "flagship": true,
         "in_transit": true,
         "donor_cover_30": true
-      }
+      },
+      "distance_km": null,
+      "travel_days": null,
+      "alternatives": []
     }
   ],
   "flags": [

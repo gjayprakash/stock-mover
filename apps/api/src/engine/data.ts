@@ -96,3 +96,11 @@ export function loadData(dataDir: string, extraStores: Store[] = []): EngineData
     })),
   };
 }
+
+/** Fallback store locations (#20) when the API does not pass them: data/geo/store_locations.csv next to data/csv. */
+export function loadLocations(dataDir: string): Record<string, { lat: number; lng: number }> | null {
+  const file = join(dataDir, '..', 'geo', 'store_locations.csv');
+  if (!existsSync(file)) return null;
+  const rows: Raw[] = parse(readFileSync(file), { columns: true, skip_empty_lines: true, trim: true });
+  return Object.fromEntries(rows.map((r) => [r.location_id, { lat: num(r.lat, 'store_locations.lat'), lng: num(r.lng, 'store_locations.lng') }]));
+}
