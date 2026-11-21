@@ -1,0 +1,40 @@
+import { Link } from 'react-router-dom';
+import type { StoreSummary } from '@sm/contract';
+import { StatusChip } from '../../components/StatusChip';
+import { num, pieces } from '../../lib/format';
+
+const ORDER: Record<StoreSummary['status'], number> = { TOO_FULL: 0, RUNNING_EMPTY: 1, NORMAL: 2 };
+const BAR: Record<StoreSummary['status'], string> = { TOO_FULL: 'bg-danger', RUNNING_EMPTY: 'bg-warn', NORMAL: 'bg-ok' };
+
+/** One tile per store: city, id, status chip, fill bar. Too full first, then Running empty, then by store_id. */
+export function StoreTiles({ stores }: { stores: StoreSummary[] }) {
+  const sorted = [...stores].sort((a, b) => ORDER[a.status] - ORDER[b.status] || a.store_id.localeCompare(b.store_id));
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {sorted.map((s) => {
+        const fill = s.capacity > 0 ? s.stock_now / s.capacity : 0;
+        return (
+          <Link
+            key={s.store_id}
+            to={`/stores/${encodeURIComponent(s.store_id)}`}
+            className="flex flex-col gap-3 rounded-2xl bg-white p-4 text-ink no-underline shadow-card hover:bg-tint hover:text-ink"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <div className="truncate text-[17px] font-semibold">{s.city}</div>
+                <div className="text-sm text-muted">{s.store_id}</div>
+              </div>
+              <StatusChip status={s.status} />
+            </div>
+            <div className="h-2.5 overflow-hidden rounded-full bg-tint" role="img" aria-label={`${Math.round(fill * 100)}% full`}>
+              <div className={`h-full rounded-full ${BAR[s.status]}`} style={{ width: `${Math.min(100, Math.round(fill * 100))}%` }} />
+            </div>
+            <div className="text-sm text-muted">
+              {pieces(s.stock_now)}, room for {num(s.capacity)}
+            </div>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
