@@ -1,7 +1,7 @@
 {
   "name": "stock-mover",
   "private": true,
-  "workspaces": ["apps/*"],
+  "workspaces": ["apps/*", "packages/*"],
   "engines": { "node": ">=22" },
   "scripts": {
     "dev": "npm run dev -w apps/api & npm run dev -w apps/web",

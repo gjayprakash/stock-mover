@@ -1,0 +1,11 @@
+{
+  "name": "@sm/contract",
+  "version": "2.0.0",
+  "private": true,
+  "types": "index.d.ts",
+  "exports": {
+    ".": { "types": "./index.d.ts" },
+    "./moves.sample.json": "./moves.sample.json",
+    "./history.sample.json": "./history.sample.json"
+  }
+}

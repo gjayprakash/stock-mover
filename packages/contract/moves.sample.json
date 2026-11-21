@@ -1,0 +1,2021 @@
+{
+  "run": {
+    "run_id": "sample-2026-11-01",
+    "status": "FINISHED",
+    "as_of": "2026-10-31",
+    "generated_at": "2026-11-01T06:00:00+05:30",
+    "next_run_at": "2026-11-02T06:00:00+05:30",
+    "engine_version": "sample"
+  },
+  "summary": {
+    "moves": 12,
+    "units": 88,
+    "value_inr": 744212,
+    "by_type": {
+      "WH_TO_STORE": 5,
+      "STORE_TO_STORE": 4,
+      "PULL_BACK": 3
+    },
+    "stores_at_risk": 4,
+    "violations": 0,
+    "found": {
+      "stockout_masked_demand": 7,
+      "over_capacity": 1,
+      "data_flags": 1,
+      "below_min_display": 2,
+      "ageing_units": 41,
+      "starved_bestseller": 1
+    }
+  },
+  "moves": [
+    {
+      "id": "M0001",
+      "type": "WH_TO_STORE",
+      "trigger": "STOCKOUT",
+      "sku_id": "KUR-02-M",
+      "style_id": "KUR-02",
+      "style_name": "Mustard Embroidered Yoke Kurta Set",
+      "category": "Kurta Set",
+      "size": "M",
+      "mrp": 6299,
+      "from": "WH-KOL",
+      "to": "PAT-02",
+      "qty": 14,
+      "lead_time_days": 3,
+      "arrives_on": "2026-11-04",
+      "reason": "Sold out 9 of last 14 days while selling 0.38/day on days in stock; +14 from warehouse gives 37 days (arrives 4 Nov).",
+      "from_before": {
+        "on_hand": 120,
+        "in_transit": 0,
+        "velocity": 0,
+        "cover_days": null
+      },
+      "from_after": {
+        "on_hand": 106,
+        "in_transit": 0,
+        "velocity": 0,
+        "cover_days": null
+      },
+      "to_before": {
+        "on_hand": 0,
+        "in_transit": 0,
+        "velocity": 0.38,
+        "cover_days": 0
+      },
+      "to_after": {
+        "on_hand": 0,
+        "in_transit": 14,
+        "velocity": 0.38,
+        "cover_days": 36.8
+      },
+      "priority": 96,
+      "value_inr": 88186,
+      "needs_signoff": false,
+      "velocity_basis": "own",
+      "stock_age_days": null,
+      "checks": {
+        "min_display": true,
+        "capacity": true,
+        "flagship": true,
+        "in_transit": true,
+        "donor_cover_30": true
+      }
+    },
+    {
+      "id": "M0002",
+      "type": "WH_TO_STORE",
+      "trigger": "LOW_COVER",
+      "sku_id": "KUR-12-XL",
+      "style_id": "KUR-12",
+      "style_name": "Teal Cotton Silk Kurta Set",
+      "category": "Kurta Set",
+      "size": "XL",
+      "mrp": 6799,
+      "from": "WH-KOL",
+      "to": "LKO-03",
+      "qty": 12,
+      "lead_time_days": 4,
+      "arrives_on": "2026-11-05",
+      "reason": "Sells 0.42/day, 3 left = 7 days cover; +12 from warehouse takes it to 36 days (arrives 5 Nov).",
+      "from_before": {
+        "on_hand": 80,
+        "in_transit": 0,
+        "velocity": 0,
+        "cover_days": null
+      },
+      "from_after": {
+        "on_hand": 68,
+        "in_transit": 0,
+        "velocity": 0,
+        "cover_days": null
+      },
+      "to_before": {
+        "on_hand": 3,
+        "in_transit": 0,
+        "velocity": 0.42,
+        "cover_days": 7.1
+      },
+      "to_after": {
+        "on_hand": 3,
+        "in_transit": 12,
+        "velocity": 0.42,
+        "cover_days": 35.7
+      },
+      "priority": 92,
+      "value_inr": 81588,
+      "needs_signoff": false,
+      "velocity_basis": "own",
+      "stock_age_days": null,
+      "checks": {
+        "min_display": true,
+        "capacity": true,
+        "flagship": true,
+        "in_transit": true,
+        "donor_cover_30": true
+      }
+    },
+    {
+      "id": "M0003",
+      "type": "WH_TO_STORE",
+      "trigger": "UNDER_STOCKED",
+      "sku_id": "SHW-01-L",
+      "style_id": "SHW-01",
+      "style_name": "Wine Velvet Embroidered Sherwani",
+      "category": "Sherwani",
+      "size": "L",
+      "mrp": 24599,
+      "from": "WH-KOL",
+      "to": "BLR-04",
+      "qty": 6,
+      "lead_time_days": 6,
+      "arrives_on": "2026-11-07",
+      "reason": "BLR-04 has 1 left at 0.20/day = 5 days cover; +6 from warehouse gives 35 days (arrives 7 Nov). Worth ₹1,47,594, needs sign-off.",
+      "from_before": {
+        "on_hand": 40,
+        "in_transit": 0,
+        "velocity": 0,
+        "cover_days": null
+      },
+      "from_after": {
+        "on_hand": 34,
+        "in_transit": 0,
+        "velocity": 0,
+        "cover_days": null
+      },
+      "to_before": {
+        "on_hand": 1,
+        "in_transit": 0,
+        "velocity": 0.2,
+        "cover_days": 5
+      },
+      "to_after": {
+        "on_hand": 1,
+        "in_transit": 6,
+        "velocity": 0.2,
+        "cover_days": 35
+      },
+      "priority": 84,
+      "value_inr": 147594,
+      "needs_signoff": true,
+      "velocity_basis": "blended",
+      "stock_age_days": null,
+      "checks": {
+        "min_display": true,
+        "capacity": true,
+        "flagship": true,
+        "in_transit": true,
+        "donor_cover_30": true
+      }
+    },
+    {
+      "id": "M0004",
+      "type": "WH_TO_STORE",
+      "trigger": "MIN_DISPLAY",
+      "sku_id": "JKT-04-M",
+      "style_id": "JKT-04",
+      "style_name": "Mustard Brocade Nehru Jacket",
+      "category": "Jacket",
+      "size": "M",
+      "mrp": 4099,
+      "from": "WH-KOL",
+      "to": "MZF-02",
+      "qty": 8,
+      "lead_time_days": 3,
+      "arrives_on": "2026-11-04",
+      "reason": "MZF-02 Jacket display is below the B-tier minimum of 8; +8 Jackets restores it (arrives 4 Nov).",
+      "from_before": {
+        "on_hand": 60,
+        "in_transit": 0,
+        "velocity": 0,
+        "cover_days": null
+      },
+      "from_after": {
+        "on_hand": 52,
+        "in_transit": 0,
+        "velocity": 0,
+        "cover_days": null
+      },
+      "to_before": {
+        "on_hand": 1,
+        "in_transit": 0,
+        "velocity": 0.1,
+        "cover_days": 10
+      },
+      "to_after": {
+        "on_hand": 1,
+        "in_transit": 8,
+        "velocity": 0.1,
+        "cover_days": 90
+      },
+      "priority": 70,
+      "value_inr": 32792,
+      "needs_signoff": false,
+      "velocity_basis": "peer",
+      "stock_age_days": null,
+      "checks": {
+        "min_display": true,
+        "capacity": true,
+        "flagship": true,
+        "in_transit": true,
+        "donor_cover_30": true
+      }
+    },
+    {
+      "id": "M0005",
+      "type": "WH_TO_STORE",
+      "trigger": "UNDER_STOCKED",
+      "sku_id": "KUR-05-L",
+      "style_id": "KUR-05",
+      "style_name": "Peach Cotton Silk Kurta Set",
+      "category": "Kurta Set",
+      "size": "L",
+      "mrp": 7499,
+      "from": "WH-KOL",
+      "to": "BLR-05",
+      "qty": 10,
+      "lead_time_days": 6,
+      "arrives_on": "2026-11-07",
+      "reason": "New store BLR-05 (opened 10 Oct) has none; similar B stores sell 0.25/day; +10 gives 40 days (arrives 7 Nov).",
+      "from_before": {
+        "on_hand": 90,
+        "in_transit": 0,
+        "velocity": 0,
+        "cover_days": null
+      },
+      "from_after": {
+        "on_hand": 80,
+        "in_transit": 0,
+        "velocity": 0,
+        "cover_days": null
+      },
+      "to_before": {
+        "on_hand": 0,
+        "in_transit": 0,
+        "velocity": 0.25,
+        "cover_days": 0
+      },
+      "to_after": {
+        "on_hand": 0,
+        "in_transit": 10,
+        "velocity": 0.25,
+        "cover_days": 40
+      },
+      "priority": 78,
+      "value_inr": 74990,
+      "needs_signoff": false,
+      "velocity_basis": "peer",
+      "stock_age_days": null,
+      "checks": {
+        "min_display": true,
+        "capacity": true,
+        "flagship": true,
+        "in_transit": true,
+        "donor_cover_30": true
+      }
+    },
+    {
+      "id": "M0006",
+      "type": "STORE_TO_STORE",
+      "trigger": "STOCKOUT",
+      "sku_id": "IW-03-M",
+      "style_id": "IW-03",
+      "style_name": "Teal Jacket-style Indo-Western",
+      "category": "Indo-Western",
+      "size": "M",
+      "mrp": 17999,
+      "from": "LKO-02",
+      "to": "BLR-01",
+      "qty": 6,
+      "lead_time_days": 7,
+      "arrives_on": "2026-11-08",
+      "reason": "BLR-01 sold out while selling 0.30/day; warehouse has none; LKO-02 keeps 80 days cover after giving 6 (arrives 8 Nov). Worth ₹1,07,994, needs sign-off.",
+      "from_before": {
+        "on_hand": 14,
+        "in_transit": 0,
+        "velocity": 0.1,
+        "cover_days": 140
+      },
+      "from_after": {
+        "on_hand": 8,
+        "in_transit": 0,
+        "velocity": 0.1,
+        "cover_days": 80
+      },
+      "to_before": {
+        "on_hand": 0,
+        "in_transit": 0,
+        "velocity": 0.3,
+        "cover_days": 0
+      },
+      "to_after": {
+        "on_hand": 0,
+        "in_transit": 6,
+        "velocity": 0.3,
+        "cover_days": 20
+      },
+      "priority": 88,
+      "value_inr": 107994,
+      "needs_signoff": true,
+      "velocity_basis": "blended",
+      "stock_age_days": 74,
+      "checks": {
+        "min_display": true,
+        "capacity": true,
+        "flagship": true,
+        "in_transit": true,
+        "donor_cover_30": true
+      }
+    },
+    {
+      "id": "M0007",
+      "type": "STORE_TO_STORE",
+      "trigger": "LOW_COVER",
+      "sku_id": "KUR-12-M",
+      "style_id": "KUR-12",
+      "style_name": "Teal Cotton Silk Kurta Set",
+      "category": "Kurta Set",
+      "size": "M",
+      "mrp": 6799,
+      "from": "PAT-03",
+      "to": "PAT-01",
+      "qty": 5,
+      "lead_time_days": 2,
+      "arrives_on": "2026-11-03",
+      "reason": "PAT-01 has 6 days cover at 0.35/day; PAT-03 keeps 110 days after giving 5 (same city, arrives 3 Nov).",
+      "from_before": {
+        "on_hand": 16,
+        "in_transit": 0,
+        "velocity": 0.1,
+        "cover_days": 160
+      },
+      "from_after": {
+        "on_hand": 11,
+        "in_transit": 0,
+        "velocity": 0.1,
+        "cover_days": 110
+      },
+      "to_before": {
+        "on_hand": 2,
+        "in_transit": 0,
+        "velocity": 0.35,
+        "cover_days": 5.7
+      },
+      "to_after": {
+        "on_hand": 2,
+        "in_transit": 5,
+        "velocity": 0.35,
+        "cover_days": 20
+      },
+      "priority": 82,
+      "value_inr": 33995,
+      "needs_signoff": false,
+      "velocity_basis": "own",
+      "stock_age_days": 40,
+      "checks": {
+        "min_display": true,
+        "capacity": true,
+        "flagship": true,
+        "in_transit": true,
+        "donor_cover_30": true
+      }
+    },
+    {
+      "id": "M0008",
+      "type": "STORE_TO_STORE",
+      "trigger": "AGEING",
+      "sku_id": "MOJ-02-9",
+      "style_id": "MOJ-02",
+      "style_name": "Lilac Zari Mojari",
+      "category": "Mojari",
+      "size": "9",
+      "mrp": 3399,
+      "from": "KNP-03",
+      "to": "LKO-04",
+      "qty": 4,
+      "lead_time_days": 4,
+      "arrives_on": "2026-11-05",
+      "reason": "In KNP-03 for 168 days with no sales on 70 in-stock days; LKO-04 sells 0.15/day and has 1. Re-home 4 (arrives 5 Nov).",
+      "from_before": {
+        "on_hand": 6,
+        "in_transit": 0,
+        "velocity": 0,
+        "cover_days": null
+      },
+      "from_after": {
+        "on_hand": 2,
+        "in_transit": 0,
+        "velocity": 0,
+        "cover_days": null
+      },
+      "to_before": {
+        "on_hand": 1,
+        "in_transit": 0,
+        "velocity": 0.15,
+        "cover_days": 6.7
+      },
+      "to_after": {
+        "on_hand": 1,
+        "in_transit": 4,
+        "velocity": 0.15,
+        "cover_days": 33.3
+      },
+      "priority": 55,
+      "value_inr": 13596,
+      "needs_signoff": false,
+      "velocity_basis": "own",
+      "stock_age_days": 168,
+      "checks": {
+        "min_display": true,
+        "capacity": true,
+        "flagship": true,
+        "in_transit": true,
+        "donor_cover_30": true
+      }
+    },
+    {
+      "id": "M0009",
+      "type": "STORE_TO_STORE",
+      "trigger": "UNDER_STOCKED",
+      "sku_id": "KUR-02-L",
+      "style_id": "KUR-02",
+      "style_name": "Mustard Embroidered Yoke Kurta Set",
+      "category": "Kurta Set",
+      "size": "L",
+      "mrp": 6299,
+      "from": "MYS-01",
+      "to": "BLR-03",
+      "qty": 4,
+      "lead_time_days": 4,
+      "arrives_on": "2026-11-05",
+      "reason": "BLR-03 has 3 days cover; MYS-01 keeps 133 days after giving 4 (same zone, arrives 5 Nov).",
+      "from_before": {
+        "on_hand": 20,
+        "in_transit": 0,
+        "velocity": 0.12,
+        "cover_days": 166.7
+      },
+      "from_after": {
+        "on_hand": 16,
+        "in_transit": 0,
+        "velocity": 0.12,
+        "cover_days": 133.3
+      },
+      "to_before": {
+        "on_hand": 1,
+        "in_transit": 0,
+        "velocity": 0.3,
+        "cover_days": 3.3
+      },
+      "to_after": {
+        "on_hand": 1,
+        "in_transit": 4,
+        "velocity": 0.3,
+        "cover_days": 16.7
+      },
+      "priority": 74,
+      "value_inr": 25196,
+      "needs_signoff": false,
+      "velocity_basis": "blended",
+      "stock_age_days": 35,
+      "checks": {
+        "min_display": true,
+        "capacity": true,
+        "flagship": true,
+        "in_transit": true,
+        "donor_cover_30": true
+      }
+    },
+    {
+      "id": "M0010",
+      "type": "PULL_BACK",
+      "trigger": "AGEING",
+      "sku_id": "IW-03-XXXL",
+      "style_id": "IW-03",
+      "style_name": "Teal Jacket-style Indo-Western",
+      "category": "Indo-Western",
+      "size": "XXXL",
+      "mrp": 17999,
+      "from": "PAT-03",
+      "to": "WH-KOL",
+      "qty": 3,
+      "lead_time_days": 3,
+      "arrives_on": "2026-11-04",
+      "reason": "In PAT-03 for 150 days, none sold in 12 weeks while in stock; no store needs this size. Pull back 3.",
+      "from_before": {
+        "on_hand": 3,
+        "in_transit": 0,
+        "velocity": 0,
+        "cover_days": null
+      },
+      "from_after": {
+        "on_hand": 0,
+        "in_transit": 0,
+        "velocity": 0,
+        "cover_days": null
+      },
+      "to_before": {
+        "on_hand": 0,
+        "in_transit": 0,
+        "velocity": 0,
+        "cover_days": null
+      },
+      "to_after": {
+        "on_hand": 0,
+        "in_transit": 3,
+        "velocity": 0,
+        "cover_days": null
+      },
+      "priority": 35,
+      "value_inr": 53997,
+      "needs_signoff": false,
+      "velocity_basis": "own",
+      "stock_age_days": 150,
+      "checks": {
+        "min_display": true,
+        "capacity": true,
+        "flagship": true,
+        "in_transit": true,
+        "donor_cover_30": true
+      }
+    },
+    {
+      "id": "M0011",
+      "type": "PULL_BACK",
+      "trigger": "OVER_CAPACITY",
+      "sku_id": "KUR-05-XXL",
+      "style_id": "KUR-05",
+      "style_name": "Peach Cotton Silk Kurta Set",
+      "category": "Kurta Set",
+      "size": "XXL",
+      "mrp": 7499,
+      "from": "KNP-02",
+      "to": "WH-KOL",
+      "qty": 9,
+      "lead_time_days": 4,
+      "arrives_on": "2026-11-05",
+      "reason": "KNP-02 holds 372 units against capacity 350; this size sells 0.05/day and has 300 days cover. Pull back 9.",
+      "from_before": {
+        "on_hand": 15,
+        "in_transit": 0,
+        "velocity": 0.05,
+        "cover_days": 300
+      },
+      "from_after": {
+        "on_hand": 6,
+        "in_transit": 0,
+        "velocity": 0.05,
+        "cover_days": 120
+      },
+      "to_before": {
+        "on_hand": 0,
+        "in_transit": 0,
+        "velocity": 0,
+        "cover_days": null
+      },
+      "to_after": {
+        "on_hand": 0,
+        "in_transit": 9,
+        "velocity": 0,
+        "cover_days": null
+      },
+      "priority": 40,
+      "value_inr": 67491,
+      "needs_signoff": false,
+      "velocity_basis": "own",
+      "stock_age_days": 120,
+      "checks": {
+        "min_display": true,
+        "capacity": true,
+        "flagship": true,
+        "in_transit": true,
+        "donor_cover_30": true
+      }
+    },
+    {
+      "id": "M0012",
+      "type": "PULL_BACK",
+      "trigger": "AGEING",
+      "sku_id": "SAF-02-FS",
+      "style_id": "SAF-02",
+      "style_name": "Teal Bandhani Safa",
+      "category": "Safa",
+      "size": "FS",
+      "mrp": 2399,
+      "from": "MZF-01",
+      "to": "WH-KOL",
+      "qty": 7,
+      "lead_time_days": 3,
+      "arrives_on": "2026-11-04",
+      "reason": "In MZF-01 for 190 days with no sales on 84 in-stock days. Pull back 7, keeping the Accessories minimum.",
+      "from_before": {
+        "on_hand": 9,
+        "in_transit": 0,
+        "velocity": 0,
+        "cover_days": null
+      },
+      "from_after": {
+        "on_hand": 2,
+        "in_transit": 0,
+        "velocity": 0,
+        "cover_days": null
+      },
+      "to_before": {
+        "on_hand": 0,
+        "in_transit": 0,
+        "velocity": 0,
+        "cover_days": null
+      },
+      "to_after": {
+        "on_hand": 0,
+        "in_transit": 7,
+        "velocity": 0,
+        "cover_days": null
+      },
+      "priority": 30,
+      "value_inr": 16793,
+      "needs_signoff": false,
+      "velocity_basis": "own",
+      "stock_age_days": 190,
+      "checks": {
+        "min_display": true,
+        "capacity": true,
+        "flagship": true,
+        "in_transit": true,
+        "donor_cover_30": true
+      }
+    }
+  ],
+  "flags": [
+    {
+      "kind": "BLOCKED_FLAGSHIP",
+      "store_id": "LKO-01",
+      "sku_id": "KUR-02-M",
+      "note": "LKO-01 has 95 days cover but KUR-02 is a protected top-20 style; not used as donor."
+    },
+    {
+      "kind": "COVERED_BY_TRANSIT",
+      "store_id": "PAT-01",
+      "sku_id": "KUR-05-L",
+      "note": "Only 2 on hand but 6 arriving 1 Nov; no extra stock sent."
+    },
+    {
+      "kind": "DATA_COUNT_MISMATCH",
+      "store_id": "MYS-02",
+      "sku_id": "KUR-02-M",
+      "note": "Shows 6 on hand but billed 9 since last receipt; recount before sending."
+    }
+  ],
+  "problems": [
+    {
+      "id": "P1",
+      "kind": "STARVED_BESTSELLER",
+      "rank": 1,
+      "tag": "Hidden demand",
+      "title": "KUR-02 Mustard Embroidered Yoke Kurta Set is selling out, not slow",
+      "seen": "PAT-02 sold 0 in the last 2 weeks but was out of stock on 9 of 14 days; on in-stock days it sells 0.38/day.",
+      "fix": "Send 14 from WH-KOL and 4 from MYS-01 to BLR-03.",
+      "subject": {
+        "style_id": "KUR-02"
+      },
+      "move_ids": [
+        "M0001",
+        "M0009"
+      ],
+      "impact_inr": 113382,
+      "needs_signoff_count": 0,
+      "chart": {
+        "label": "KUR-02 at PAT-02, last 12 weeks",
+        "weeks": [
+          "2026-08-09",
+          "2026-08-16",
+          "2026-08-23",
+          "2026-08-30",
+          "2026-09-06",
+          "2026-09-13",
+          "2026-09-20",
+          "2026-09-27",
+          "2026-10-04",
+          "2026-10-11",
+          "2026-10-18",
+          "2026-10-25"
+        ],
+        "series": [
+          {
+            "name": "Units sold",
+            "values": [
+              3,
+              4,
+              2,
+              5,
+              3,
+              4,
+              2,
+              1,
+              0,
+              1,
+              0,
+              0
+            ]
+          },
+          {
+            "name": "Days in stock",
+            "values": [
+              7,
+              7,
+              7,
+              7,
+              7,
+              7,
+              5,
+              3,
+              2,
+              3,
+              0,
+              0
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "P2",
+      "kind": "UNDER_STOCKED_STORE",
+      "rank": 2,
+      "tag": "Running empty",
+      "title": "BLR-04 is running empty on Sherwanis",
+      "seen": "BLR-04 holds 1 SHW-01-L at 0.20/day = 5 days cover.",
+      "fix": "Send 6 from WH-KOL (arrives 7 Nov).",
+      "subject": {
+        "store_id": "BLR-04"
+      },
+      "move_ids": [
+        "M0003"
+      ],
+      "impact_inr": 147594,
+      "needs_signoff_count": 1
+    },
+    {
+      "id": "P3",
+      "kind": "NEW_STORE",
+      "rank": 3,
+      "tag": "Under-stocked store",
+      "title": "MZF-02 is below minimum display on Jackets",
+      "seen": "MZF-02 (B tier) shows 1 Jacket against a minimum of 8.",
+      "fix": "Send 8 JKT-04-M from WH-KOL (arrives 4 Nov).",
+      "subject": {
+        "store_id": "MZF-02"
+      },
+      "move_ids": [
+        "M0004"
+      ],
+      "impact_inr": 32792,
+      "needs_signoff_count": 0
+    },
+    {
+      "id": "P4",
+      "kind": "DATA_FLAG",
+      "rank": 4,
+      "tag": "Check the count",
+      "title": "MYS-02 count for KUR-02-M does not match sales",
+      "seen": "MYS-02 shows 6 on hand for KUR-02-M but billed 9 since the last receipt.",
+      "fix": "No move. Ask the store to recount before stock is sent.",
+      "subject": {
+        "store_id": "MYS-02",
+        "sku_id": "KUR-02-M",
+        "style_id": "KUR-02"
+      },
+      "move_ids": [],
+      "impact_inr": 0,
+      "needs_signoff_count": 0
+    }
+  ],
+  "stores": [
+    {
+      "store_id": "LKO-01",
+      "city": "Lucknow",
+      "zone": "North",
+      "tier": "S++",
+      "capacity": 1200,
+      "opened_on": "2014-05-01",
+      "stock_now": 720,
+      "stock_after": 720,
+      "in_units": 0,
+      "out_units": 0,
+      "low_cover_skus": 0,
+      "sold_out_with_demand": 0,
+      "at_risk_week_inr": 0,
+      "categories": [
+        {
+          "category": "Kurta Set",
+          "min_display": 120,
+          "now": 288,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Sherwani",
+          "min_display": 30,
+          "now": 86,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Indo-Western",
+          "min_display": 25,
+          "now": 72,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Jacket",
+          "min_display": 40,
+          "now": 115,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Mojari",
+          "min_display": 25,
+          "now": 86,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Accessories (Safa/Mala/Stole)",
+          "min_display": 20,
+          "now": 72,
+          "incoming": 0,
+          "outgoing": 0
+        }
+      ],
+      "status": "NORMAL"
+    },
+    {
+      "store_id": "LKO-02",
+      "city": "Lucknow",
+      "zone": "North",
+      "tier": "S+",
+      "capacity": 800,
+      "opened_on": "2017-07-01",
+      "stock_now": 520,
+      "stock_after": 514,
+      "in_units": 0,
+      "out_units": 6,
+      "low_cover_skus": 1,
+      "sold_out_with_demand": 1,
+      "at_risk_week_inr": 6500,
+      "categories": [
+        {
+          "category": "Kurta Set",
+          "min_display": 70,
+          "now": 208,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Sherwani",
+          "min_display": 18,
+          "now": 62,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Indo-Western",
+          "min_display": 15,
+          "now": 52,
+          "incoming": 0,
+          "outgoing": 6
+        },
+        {
+          "category": "Jacket",
+          "min_display": 25,
+          "now": 83,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Mojari",
+          "min_display": 15,
+          "now": 62,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Accessories (Safa/Mala/Stole)",
+          "min_display": 12,
+          "now": 52,
+          "incoming": 0,
+          "outgoing": 0
+        }
+      ],
+      "status": "NORMAL"
+    },
+    {
+      "store_id": "LKO-03",
+      "city": "Lucknow",
+      "zone": "North",
+      "tier": "A",
+      "capacity": 350,
+      "opened_on": "2022-01-01",
+      "stock_now": 245,
+      "stock_after": 257,
+      "in_units": 12,
+      "out_units": 0,
+      "low_cover_skus": 2,
+      "sold_out_with_demand": 0,
+      "at_risk_week_inr": 13000,
+      "categories": [
+        {
+          "category": "Kurta Set",
+          "min_display": 35,
+          "now": 98,
+          "incoming": 12,
+          "outgoing": 0
+        },
+        {
+          "category": "Sherwani",
+          "min_display": 8,
+          "now": 29,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Indo-Western",
+          "min_display": 6,
+          "now": 25,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Jacket",
+          "min_display": 12,
+          "now": 39,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Mojari",
+          "min_display": 8,
+          "now": 29,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Accessories (Safa/Mala/Stole)",
+          "min_display": 6,
+          "now": 25,
+          "incoming": 0,
+          "outgoing": 0
+        }
+      ],
+      "status": "NORMAL"
+    },
+    {
+      "store_id": "LKO-04",
+      "city": "Lucknow",
+      "zone": "North",
+      "tier": "S+",
+      "capacity": 700,
+      "opened_on": "2022-05-01",
+      "stock_now": 525,
+      "stock_after": 529,
+      "in_units": 4,
+      "out_units": 0,
+      "low_cover_skus": 3,
+      "sold_out_with_demand": 1,
+      "at_risk_week_inr": 19500,
+      "categories": [
+        {
+          "category": "Kurta Set",
+          "min_display": 70,
+          "now": 210,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Sherwani",
+          "min_display": 18,
+          "now": 63,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Indo-Western",
+          "min_display": 15,
+          "now": 53,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Jacket",
+          "min_display": 25,
+          "now": 84,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Mojari",
+          "min_display": 15,
+          "now": 63,
+          "incoming": 4,
+          "outgoing": 0
+        },
+        {
+          "category": "Accessories (Safa/Mala/Stole)",
+          "min_display": 12,
+          "now": 53,
+          "incoming": 0,
+          "outgoing": 0
+        }
+      ],
+      "status": "NORMAL"
+    },
+    {
+      "store_id": "KNP-01",
+      "city": "Kanpur",
+      "zone": "North",
+      "tier": "S+",
+      "capacity": 850,
+      "opened_on": "2017-09-01",
+      "stock_now": 680,
+      "stock_after": 680,
+      "in_units": 0,
+      "out_units": 0,
+      "low_cover_skus": 0,
+      "sold_out_with_demand": 0,
+      "at_risk_week_inr": 0,
+      "categories": [
+        {
+          "category": "Kurta Set",
+          "min_display": 70,
+          "now": 272,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Sherwani",
+          "min_display": 18,
+          "now": 82,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Indo-Western",
+          "min_display": 15,
+          "now": 68,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Jacket",
+          "min_display": 25,
+          "now": 109,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Mojari",
+          "min_display": 15,
+          "now": 82,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Accessories (Safa/Mala/Stole)",
+          "min_display": 12,
+          "now": 68,
+          "incoming": 0,
+          "outgoing": 0
+        }
+      ],
+      "status": "NORMAL"
+    },
+    {
+      "store_id": "KNP-02",
+      "city": "Kanpur",
+      "zone": "North",
+      "tier": "A",
+      "capacity": 350,
+      "opened_on": "2014-01-01",
+      "stock_now": 372,
+      "stock_after": 363,
+      "in_units": 0,
+      "out_units": 9,
+      "low_cover_skus": 1,
+      "sold_out_with_demand": 1,
+      "at_risk_week_inr": 6500,
+      "categories": [
+        {
+          "category": "Kurta Set",
+          "min_display": 35,
+          "now": 149,
+          "incoming": 0,
+          "outgoing": 9
+        },
+        {
+          "category": "Sherwani",
+          "min_display": 8,
+          "now": 45,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Indo-Western",
+          "min_display": 6,
+          "now": 37,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Jacket",
+          "min_display": 12,
+          "now": 60,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Mojari",
+          "min_display": 8,
+          "now": 45,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Accessories (Safa/Mala/Stole)",
+          "min_display": 6,
+          "now": 37,
+          "incoming": 0,
+          "outgoing": 0
+        }
+      ],
+      "status": "TOO_FULL"
+    },
+    {
+      "store_id": "KNP-03",
+      "city": "Kanpur",
+      "zone": "North",
+      "tier": "B",
+      "capacity": 250,
+      "opened_on": "2018-12-01",
+      "stock_now": 163,
+      "stock_after": 159,
+      "in_units": 0,
+      "out_units": 4,
+      "low_cover_skus": 2,
+      "sold_out_with_demand": 0,
+      "at_risk_week_inr": 13000,
+      "categories": [
+        {
+          "category": "Kurta Set",
+          "min_display": 25,
+          "now": 65,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Sherwani",
+          "min_display": 5,
+          "now": 20,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Indo-Western",
+          "min_display": 4,
+          "now": 16,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Jacket",
+          "min_display": 8,
+          "now": 26,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Mojari",
+          "min_display": 6,
+          "now": 20,
+          "incoming": 0,
+          "outgoing": 4
+        },
+        {
+          "category": "Accessories (Safa/Mala/Stole)",
+          "min_display": 4,
+          "now": 16,
+          "incoming": 0,
+          "outgoing": 0
+        }
+      ],
+      "status": "NORMAL"
+    },
+    {
+      "store_id": "PAT-01",
+      "city": "Patna",
+      "zone": "East",
+      "tier": "S++",
+      "capacity": 1250,
+      "opened_on": "2019-07-01",
+      "stock_now": 875,
+      "stock_after": 880,
+      "in_units": 5,
+      "out_units": 0,
+      "low_cover_skus": 3,
+      "sold_out_with_demand": 1,
+      "at_risk_week_inr": 19500,
+      "categories": [
+        {
+          "category": "Kurta Set",
+          "min_display": 120,
+          "now": 350,
+          "incoming": 5,
+          "outgoing": 0
+        },
+        {
+          "category": "Sherwani",
+          "min_display": 30,
+          "now": 105,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Indo-Western",
+          "min_display": 25,
+          "now": 88,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Jacket",
+          "min_display": 40,
+          "now": 140,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Mojari",
+          "min_display": 25,
+          "now": 105,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Accessories (Safa/Mala/Stole)",
+          "min_display": 20,
+          "now": 88,
+          "incoming": 0,
+          "outgoing": 0
+        }
+      ],
+      "status": "NORMAL"
+    },
+    {
+      "store_id": "PAT-02",
+      "city": "Patna",
+      "zone": "East",
+      "tier": "S+",
+      "capacity": 850,
+      "opened_on": "2015-06-01",
+      "stock_now": 298,
+      "stock_after": 312,
+      "in_units": 14,
+      "out_units": 0,
+      "low_cover_skus": 20,
+      "sold_out_with_demand": 5,
+      "at_risk_week_inr": 52000,
+      "categories": [
+        {
+          "category": "Kurta Set",
+          "min_display": 70,
+          "now": 119,
+          "incoming": 14,
+          "outgoing": 0
+        },
+        {
+          "category": "Sherwani",
+          "min_display": 18,
+          "now": 36,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Indo-Western",
+          "min_display": 15,
+          "now": 30,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Jacket",
+          "min_display": 25,
+          "now": 48,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Mojari",
+          "min_display": 15,
+          "now": 36,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Accessories (Safa/Mala/Stole)",
+          "min_display": 12,
+          "now": 30,
+          "incoming": 0,
+          "outgoing": 0
+        }
+      ],
+      "status": "RUNNING_EMPTY"
+    },
+    {
+      "store_id": "PAT-03",
+      "city": "Patna",
+      "zone": "East",
+      "tier": "A",
+      "capacity": 350,
+      "opened_on": "2014-02-01",
+      "stock_now": 280,
+      "stock_after": 272,
+      "in_units": 0,
+      "out_units": 8,
+      "low_cover_skus": 1,
+      "sold_out_with_demand": 1,
+      "at_risk_week_inr": 6500,
+      "categories": [
+        {
+          "category": "Kurta Set",
+          "min_display": 35,
+          "now": 112,
+          "incoming": 0,
+          "outgoing": 5
+        },
+        {
+          "category": "Sherwani",
+          "min_display": 8,
+          "now": 34,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Indo-Western",
+          "min_display": 6,
+          "now": 28,
+          "incoming": 0,
+          "outgoing": 3
+        },
+        {
+          "category": "Jacket",
+          "min_display": 12,
+          "now": 45,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Mojari",
+          "min_display": 8,
+          "now": 34,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Accessories (Safa/Mala/Stole)",
+          "min_display": 6,
+          "now": 28,
+          "incoming": 0,
+          "outgoing": 0
+        }
+      ],
+      "status": "NORMAL"
+    },
+    {
+      "store_id": "PAT-04",
+      "city": "Patna",
+      "zone": "East",
+      "tier": "B",
+      "capacity": 250,
+      "opened_on": "2015-01-01",
+      "stock_now": 150,
+      "stock_after": 150,
+      "in_units": 0,
+      "out_units": 0,
+      "low_cover_skus": 2,
+      "sold_out_with_demand": 0,
+      "at_risk_week_inr": 13000,
+      "categories": [
+        {
+          "category": "Kurta Set",
+          "min_display": 25,
+          "now": 60,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Sherwani",
+          "min_display": 5,
+          "now": 18,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Indo-Western",
+          "min_display": 4,
+          "now": 15,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Jacket",
+          "min_display": 8,
+          "now": 24,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Mojari",
+          "min_display": 6,
+          "now": 18,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Accessories (Safa/Mala/Stole)",
+          "min_display": 4,
+          "now": 15,
+          "incoming": 0,
+          "outgoing": 0
+        }
+      ],
+      "status": "NORMAL"
+    },
+    {
+      "store_id": "MZF-01",
+      "city": "Muzaffarpur",
+      "zone": "East",
+      "tier": "A",
+      "capacity": 350,
+      "opened_on": "2017-11-01",
+      "stock_now": 228,
+      "stock_after": 221,
+      "in_units": 0,
+      "out_units": 7,
+      "low_cover_skus": 3,
+      "sold_out_with_demand": 1,
+      "at_risk_week_inr": 19500,
+      "categories": [
+        {
+          "category": "Kurta Set",
+          "min_display": 35,
+          "now": 91,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Sherwani",
+          "min_display": 8,
+          "now": 27,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Indo-Western",
+          "min_display": 6,
+          "now": 23,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Jacket",
+          "min_display": 12,
+          "now": 36,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Mojari",
+          "min_display": 8,
+          "now": 27,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Accessories (Safa/Mala/Stole)",
+          "min_display": 6,
+          "now": 23,
+          "incoming": 0,
+          "outgoing": 7
+        }
+      ],
+      "status": "NORMAL"
+    },
+    {
+      "store_id": "MZF-02",
+      "city": "Muzaffarpur",
+      "zone": "East",
+      "tier": "B",
+      "capacity": 250,
+      "opened_on": "2019-08-01",
+      "stock_now": 88,
+      "stock_after": 96,
+      "in_units": 8,
+      "out_units": 0,
+      "low_cover_skus": 24,
+      "sold_out_with_demand": 3,
+      "at_risk_week_inr": 58000,
+      "categories": [
+        {
+          "category": "Kurta Set",
+          "min_display": 25,
+          "now": 35,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Sherwani",
+          "min_display": 5,
+          "now": 11,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Indo-Western",
+          "min_display": 4,
+          "now": 9,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Jacket",
+          "min_display": 8,
+          "now": 1,
+          "incoming": 8,
+          "outgoing": 0
+        },
+        {
+          "category": "Mojari",
+          "min_display": 6,
+          "now": 11,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Accessories (Safa/Mala/Stole)",
+          "min_display": 4,
+          "now": 9,
+          "incoming": 0,
+          "outgoing": 0
+        }
+      ],
+      "status": "RUNNING_EMPTY"
+    },
+    {
+      "store_id": "BLR-01",
+      "city": "Bengaluru",
+      "zone": "South",
+      "tier": "S++",
+      "capacity": 1250,
+      "opened_on": "2014-10-01",
+      "stock_now": 938,
+      "stock_after": 944,
+      "in_units": 6,
+      "out_units": 0,
+      "low_cover_skus": 1,
+      "sold_out_with_demand": 1,
+      "at_risk_week_inr": 6500,
+      "categories": [
+        {
+          "category": "Kurta Set",
+          "min_display": 120,
+          "now": 375,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Sherwani",
+          "min_display": 30,
+          "now": 113,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Indo-Western",
+          "min_display": 25,
+          "now": 94,
+          "incoming": 6,
+          "outgoing": 0
+        },
+        {
+          "category": "Jacket",
+          "min_display": 40,
+          "now": 150,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Mojari",
+          "min_display": 25,
+          "now": 113,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Accessories (Safa/Mala/Stole)",
+          "min_display": 20,
+          "now": 94,
+          "incoming": 0,
+          "outgoing": 0
+        }
+      ],
+      "status": "NORMAL"
+    },
+    {
+      "store_id": "BLR-02",
+      "city": "Bengaluru",
+      "zone": "South",
+      "tier": "S++",
+      "capacity": 1150,
+      "opened_on": "2021-05-01",
+      "stock_now": 920,
+      "stock_after": 920,
+      "in_units": 0,
+      "out_units": 0,
+      "low_cover_skus": 2,
+      "sold_out_with_demand": 0,
+      "at_risk_week_inr": 13000,
+      "categories": [
+        {
+          "category": "Kurta Set",
+          "min_display": 120,
+          "now": 368,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Sherwani",
+          "min_display": 30,
+          "now": 110,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Indo-Western",
+          "min_display": 25,
+          "now": 92,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Jacket",
+          "min_display": 40,
+          "now": 147,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Mojari",
+          "min_display": 25,
+          "now": 110,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Accessories (Safa/Mala/Stole)",
+          "min_display": 20,
+          "now": 92,
+          "incoming": 0,
+          "outgoing": 0
+        }
+      ],
+      "status": "NORMAL"
+    },
+    {
+      "store_id": "BLR-03",
+      "city": "Bengaluru",
+      "zone": "South",
+      "tier": "S+",
+      "capacity": 800,
+      "opened_on": "2020-01-01",
+      "stock_now": 480,
+      "stock_after": 484,
+      "in_units": 4,
+      "out_units": 0,
+      "low_cover_skus": 3,
+      "sold_out_with_demand": 1,
+      "at_risk_week_inr": 19500,
+      "categories": [
+        {
+          "category": "Kurta Set",
+          "min_display": 70,
+          "now": 192,
+          "incoming": 4,
+          "outgoing": 0
+        },
+        {
+          "category": "Sherwani",
+          "min_display": 18,
+          "now": 58,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Indo-Western",
+          "min_display": 15,
+          "now": 48,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Jacket",
+          "min_display": 25,
+          "now": 77,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Mojari",
+          "min_display": 15,
+          "now": 58,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Accessories (Safa/Mala/Stole)",
+          "min_display": 12,
+          "now": 48,
+          "incoming": 0,
+          "outgoing": 0
+        }
+      ],
+      "status": "NORMAL"
+    },
+    {
+      "store_id": "BLR-04",
+      "city": "Bengaluru",
+      "zone": "South",
+      "tier": "S+",
+      "capacity": 750,
+      "opened_on": "2022-03-01",
+      "stock_now": 263,
+      "stock_after": 269,
+      "in_units": 6,
+      "out_units": 0,
+      "low_cover_skus": 28,
+      "sold_out_with_demand": 4,
+      "at_risk_week_inr": 64000,
+      "categories": [
+        {
+          "category": "Kurta Set",
+          "min_display": 70,
+          "now": 105,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Sherwani",
+          "min_display": 18,
+          "now": 32,
+          "incoming": 6,
+          "outgoing": 0
+        },
+        {
+          "category": "Indo-Western",
+          "min_display": 15,
+          "now": 26,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Jacket",
+          "min_display": 25,
+          "now": 42,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Mojari",
+          "min_display": 15,
+          "now": 32,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Accessories (Safa/Mala/Stole)",
+          "min_display": 12,
+          "now": 26,
+          "incoming": 0,
+          "outgoing": 0
+        }
+      ],
+      "status": "RUNNING_EMPTY"
+    },
+    {
+      "store_id": "BLR-05",
+      "city": "Bengaluru",
+      "zone": "South",
+      "tier": "B",
+      "capacity": 250,
+      "opened_on": "2026-10-10",
+      "stock_now": 88,
+      "stock_after": 98,
+      "in_units": 10,
+      "out_units": 0,
+      "low_cover_skus": 29,
+      "sold_out_with_demand": 5,
+      "at_risk_week_inr": 65500,
+      "categories": [
+        {
+          "category": "Kurta Set",
+          "min_display": 25,
+          "now": 35,
+          "incoming": 10,
+          "outgoing": 0
+        },
+        {
+          "category": "Sherwani",
+          "min_display": 5,
+          "now": 11,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Indo-Western",
+          "min_display": 4,
+          "now": 9,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Jacket",
+          "min_display": 8,
+          "now": 14,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Mojari",
+          "min_display": 6,
+          "now": 11,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Accessories (Safa/Mala/Stole)",
+          "min_display": 4,
+          "now": 9,
+          "incoming": 0,
+          "outgoing": 0
+        }
+      ],
+      "status": "RUNNING_EMPTY"
+    },
+    {
+      "store_id": "MYS-01",
+      "city": "Mysuru",
+      "zone": "South",
+      "tier": "A",
+      "capacity": 350,
+      "opened_on": "2019-08-01",
+      "stock_now": 263,
+      "stock_after": 259,
+      "in_units": 0,
+      "out_units": 4,
+      "low_cover_skus": 2,
+      "sold_out_with_demand": 0,
+      "at_risk_week_inr": 13000,
+      "categories": [
+        {
+          "category": "Kurta Set",
+          "min_display": 35,
+          "now": 105,
+          "incoming": 0,
+          "outgoing": 4
+        },
+        {
+          "category": "Sherwani",
+          "min_display": 8,
+          "now": 32,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Indo-Western",
+          "min_display": 6,
+          "now": 26,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Jacket",
+          "min_display": 12,
+          "now": 42,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Mojari",
+          "min_display": 8,
+          "now": 32,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Accessories (Safa/Mala/Stole)",
+          "min_display": 6,
+          "now": 26,
+          "incoming": 0,
+          "outgoing": 0
+        }
+      ],
+      "status": "NORMAL"
+    },
+    {
+      "store_id": "MYS-02",
+      "city": "Mysuru",
+      "zone": "South",
+      "tier": "B",
+      "capacity": 250,
+      "opened_on": "2022-11-01",
+      "stock_now": 200,
+      "stock_after": 200,
+      "in_units": 0,
+      "out_units": 0,
+      "low_cover_skus": 3,
+      "sold_out_with_demand": 1,
+      "at_risk_week_inr": 19500,
+      "categories": [
+        {
+          "category": "Kurta Set",
+          "min_display": 25,
+          "now": 80,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Sherwani",
+          "min_display": 5,
+          "now": 24,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Indo-Western",
+          "min_display": 4,
+          "now": 20,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Jacket",
+          "min_display": 8,
+          "now": 32,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Mojari",
+          "min_display": 6,
+          "now": 24,
+          "incoming": 0,
+          "outgoing": 0
+        },
+        {
+          "category": "Accessories (Safa/Mala/Stole)",
+          "min_display": 4,
+          "now": 20,
+          "incoming": 0,
+          "outgoing": 0
+        }
+      ],
+      "status": "NORMAL"
+    }
+  ],
+  "blocked": {
+    "donor_cover_30": 18,
+    "flagship": 6,
+    "min_display": 9,
+    "capacity": 3,
+    "in_transit": 4
+  }
+}

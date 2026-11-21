@@ -1,4 +1,4 @@
-# Engine spec (pure TypeScript, deterministic, `lib/engine/`)
+# Engine spec (pure TypeScript, deterministic, `apps/api/src/engine/`)
 
 Pipeline: `prepare → velocity → needs/surplus → moves → validate → moves.json`
 

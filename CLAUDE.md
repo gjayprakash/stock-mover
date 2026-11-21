@@ -32,10 +32,10 @@ in 10 minutes and every move must make sense. Full brief: `docs/01-brief.md`.
   Postgres on Neon (project `stock-mover`, Singapore) via `pg`, `DATABASE_URL` env var.
   Deployed on Render as ONE web service (`render.yaml`): Nest serves the built web app and `/api/*`.
   Local: `npm install`, put `DATABASE_URL` in `.env`/shell, `npm run dev` (web :5173 proxies `/api` to :3000).
-- Data: workbook → `scripts/prepare` → small JSON in `data/derived/`. Engine is pure TypeScript in `lib/engine/`.
-- Engine output is one file, `moves.json`, shaped as in `shared/moves.schema.md`. UI reads only that.
+- Data: workbook → `scripts/prepare` → small JSON in `data/derived/`. Engine is pure TypeScript in `apps/api/src/engine/`.
+- Engine output is one file, `moves.json`, shaped as in `packages/contract/index.d.ts` (`@sm/contract`). UI reads only that.
 - Approvals live in the browser (localStorage) + "Export approved CSV". No auth, no users.
-- Daily run = Render Cron Job hitting `/api/run`. UI shows last run and next run.
+- Daily run = GitHub Actions schedule hitting `POST /api/run` (Render cron jobs are not free). UI shows last run and next run.
 - AI (MeshAPI) does three things only: morning brief, "Ask Stock Mover" chat grounded in moves.json, polishing nothing else.
 - Reason lines are built from templates with real numbers, not written by the LLM.
 
@@ -54,6 +54,7 @@ simple rates, mobile layout, settings pages, salesperson/roster/footfall analysi
 ## Decision log
 - (add: time, who, decision)
 - 2026-11-21, Jay: switched stack from Next.js/Vercel/no-DB to React Vite + NestJS + Neon Postgres on Render. Daily run = Render cron (to wire) hitting `/api/run`.
+- 2026-11-21, Jay: contract v2 in `packages/contract` (`@sm/contract`, types-only `index.d.ts` + samples). Adds run_id/status, needs_signoff, problems[], stores[], blocked, DATA_COUNT_MISMATCH flag, HistoryFile, RunRow, AiCall, BriefResponse. Engine lives in `apps/api/src/engine/`; `runEngine(input)` signature is the Jay-A/Jay-B contract.
 
 ## Open questions (resolve as soon as the workbook is opened)
 - Exact column names in `rules`, `min_display`, `lead_times` tabs (the brief does not list them).

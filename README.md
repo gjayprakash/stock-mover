@@ -15,7 +15,7 @@ each explained in one line, with zero rule violations.
 | `docs/03-ui.md` | You are working on the screens |
 | `docs/04-meshapi.md` | You are wiring the AI |
 | `docs/05-plan.md` | You want to know what to do right now and what we cut |
-| `shared/moves.schema.md` | The contract between engine and UI. Do not change without telling the other person |
+| `packages/contract/index.d.ts` | The contract between engine, API and UI (`@sm/contract`). Do not change without telling the other person |
 | `TASKS.md` | Live checklist with owners. Tick things off here |
 | `docs/claude-project/` | Context for the claude.ai Project: `instructions.md` → Project instructions, `knowledge.md` → Project knowledge |
 
