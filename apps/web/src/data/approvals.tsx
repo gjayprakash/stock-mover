@@ -9,6 +9,9 @@ export type ApprovalsState = {
   problems: Record<string, Decision>;
 };
 
+/** What happened when an approved store-to-store move was turned into a delivery (super admin only). */
+export type Delivery = 'sending' | 'sent' | { error: string };
+
 export type ApprovalsApi = {
   state: ApprovalsState;
   approveMoves: (ids: string[]) => void;
@@ -23,6 +26,10 @@ export type ApprovalsApi = {
   /** Approved moves from the current moves file, in file order. */
   approvedMoves: () => Move[];
   counts: { approved: number; skipped: number; total: number };
+  /** Delivery state of a store-to-store move approved in this visit; undefined when not sent from this page load. */
+  deliveryOf: (moveId: string) => Delivery | undefined;
+  /** Creates the delivery for an approved store-to-store move (safe to repeat: one delivery per move). */
+  sendDelivery: (moveId: string) => void;
 };
 
 const EMPTY: ApprovalsState = { moves: {}, problems: {} };
@@ -48,7 +55,7 @@ const Ctx = createContext<ApprovalsApi | null>(null);
 /** Approvals live in localStorage per run_id; a new run_id starts empty. Must sit inside <MovesFileProvider>. */
 export function ApprovalsProvider({ children }: { children: ReactNode }) {
   const { data } = useMovesFile();
-  const { me } = useAuth();
+  const { me, isAdmin } = useAuth();
   const key = data ? keyFor(me?.id ?? 'anon', data.run.run_id) : null;
   const [store, setStore] = useState<{ key: string | null; state: ApprovalsState }>({ key: null, state: EMPTY });
 
@@ -77,13 +84,34 @@ export function ApprovalsProvider({ children }: { children: ReactNode }) {
     [update],
   );
 
+  // A super admin approving a store-to-store move also creates its delivery: the giving store sees it under
+  // Going out and hands it to a driver, the receiving store under Coming in. Warehouse moves: not tracked yet.
+  const [deliveries, setDeliveries] = useState<Record<string, Delivery>>({});
+  useEffect(() => setDeliveries({}), [key]);
+  const send = useCallback((ids: string[]) => {
+    if (!isAdmin || !data) return;
+    const byId = new Map(data.moves.map((m) => [m.id, m]));
+    const mark = (id: string, d: Delivery) => setDeliveries((cur) => ({ ...cur, [id]: d }));
+    for (const id of ids) {
+      if (byId.get(id)?.type !== 'STORE_TO_STORE') continue;
+      mark(id, 'sending');
+      fetch('/api/requests/from-move', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ move_id: id }) })
+        .then(async (r) => {
+          if (r.ok) return mark(id, 'sent');
+          const j = (await r.json().catch(() => null)) as { error?: string } | null;
+          mark(id, { error: j?.error ?? 'The delivery could not be created' });
+        })
+        .catch(() => mark(id, { error: "Can't reach Stock Mover. Try again." }));
+    }
+  }, [isAdmin, data]);
+
   const api = useMemo<ApprovalsApi>(() => {
     const moves = data?.moves ?? [];
     const approved = Object.values(state.moves).filter((d) => d === 'approved').length;
     const skipped = Object.values(state.moves).filter((d) => d === 'skipped').length;
     return {
       state,
-      approveMoves: (ids) => setMoves(ids, 'approved'),
+      approveMoves: (ids) => { setMoves(ids, 'approved'); send(ids); },
       skipMoves: (ids) => setMoves(ids, 'skipped'),
       undo: (ids) => update((s) => {
         const m = { ...s.moves };
@@ -101,6 +129,7 @@ export function ApprovalsProvider({ children }: { children: ReactNode }) {
           for (const id of ok) m[id] = 'approved';
           return { moves: m, problems: { ...s.problems, [problem.id]: 'approved' } };
         });
+        send(ok);
         return pending;
       },
       skipProblem: (id) => update((s) => {
@@ -113,8 +142,10 @@ export function ApprovalsProvider({ children }: { children: ReactNode }) {
       problemStatusOf: (id) => state.problems[id],
       approvedMoves: () => moves.filter((m) => state.moves[m.id] === 'approved'),
       counts: { approved, skipped, total: moves.length },
+      deliveryOf: (id) => deliveries[id],
+      sendDelivery: (id) => send([id]),
     };
-  }, [data, state, setMoves, update]);
+  }, [data, state, setMoves, update, deliveries, send]);
 
   // Dev-only handle for the manual check in devtools: window.smApprovals.approveMoves([...])
   useEffect(() => {

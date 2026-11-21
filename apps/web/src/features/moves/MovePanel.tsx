@@ -1,4 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
+import { useApprovals } from '../../data/approvals';
+import { useAuth } from '../auth/auth';
 import type { Move, Side, StoreSummary } from '@sm/contract';
 import { Button, Chip, ConfidenceDot, KIND_LABEL, dateShort, inr, storeLabel } from './deps';
 import type { ApprovalStatus } from './filters';
@@ -124,6 +127,10 @@ export function MovePanel(p: MovePanelProps) {
   const name = (id: string) => (id === WH ? 'the warehouse (WH-KOL)' : storeLabel(id, p.stores));
   const title = (id: string) => (id === WH ? 'Warehouse · WH-KOL' : storeLabel(id, p.stores));
   const heading = useRef<HTMLHeadingElement>(null);
+  const { isAdmin } = useAuth();
+  const { deliveryOf, sendDelivery } = useApprovals();
+  const delivery = deliveryOf(m.id);
+  const storeMove = m.type === 'STORE_TO_STORE';
 
   // Focus the heading whenever a move is shown, without scrolling anything.
   useEffect(() => { heading.current?.focus({ preventScroll: true }); }, [m.id]);
@@ -233,6 +240,25 @@ export function MovePanel(p: MovePanelProps) {
 
       <footer className="flex flex-col gap-3 border-t border-line bg-white px-5 py-3">
         {p.bulk}
+        {/* What approving does beyond the tick: store-to-store becomes a delivery; warehouse moves are not tracked yet. */}
+        <p className="m-0 text-[13px] leading-snug text-muted" aria-live="polite">
+          {!storeMove ? (
+            <><strong className="font-semibold text-ink">Delivery tracking for warehouse moves is coming soon.</strong> For now an approved warehouse move goes into the download list.</>
+          ) : !isAdmin ? (
+            <>A super admin approves this move; {title(m.from)} then gives it to a driver.</>
+          ) : p.status !== 'approved' ? (
+            <>Approving creates a delivery: {title(m.from)} gives it to a driver and {title(m.to)} confirms it arrived.</>
+          ) : delivery === 'sending' ? (
+            <>Creating the delivery…</>
+          ) : typeof delivery === 'object' ? (
+            <><span className="font-semibold text-danger">{delivery.error}</span>{' '}
+              <button type="button" className="bg-transparent p-0 font-semibold text-cta underline" onClick={() => sendDelivery(m.id)}>Try again</button></>
+          ) : (
+            <><strong className="font-semibold text-ok">{delivery === 'sent' ? 'Delivery created.' : 'Approved.'}</strong> {title(m.from)} can now pick a driver, and {title(m.to)} will see it coming in.{' '}
+              <Link to="/shipments" className="font-semibold text-cta underline">Open Shipments</Link>
+              {delivery !== 'sent' && <>{' · '}<button type="button" className="bg-transparent p-0 font-semibold text-cta underline" onClick={() => sendDelivery(m.id)}>Send to Shipments</button></>}</>
+          )}
+        </p>
         <div className="flex flex-wrap items-center gap-2">
           {p.status ? (
             <Button variant="outline" onClick={p.onUndo}>Undo {p.status === 'approved' ? 'approval' : 'skip'}</Button>
